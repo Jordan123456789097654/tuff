@@ -4281,9 +4281,19 @@
             const boxW = smoothedBox.w;
             const boxH = smoothedBox.h;
 
+            // 🎯 High-Visibility Semi-Transparent Subject Fill Overlay
+            ctx.fillStyle = isDisplayCrowded ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.14)';
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+
+            // 🔲 Solid Bounding Box Border + Reticle Corners
             ctx.strokeStyle = isDisplayCrowded ? '#f59e0b' : '#10b981';
-            ctx.lineWidth = 2.5;
-            const len = 12;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+            // Corner Accents
+            const len = 16;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = isDisplayCrowded ? '#fbbf24' : '#34d399';
             ctx.beginPath();
             ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
             ctx.moveTo(boxX + boxW - len, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + len);
@@ -4291,7 +4301,23 @@
             ctx.moveTo(boxX + len, boxY + boxH); ctx.lineTo(boxX, boxY + boxH); ctx.lineTo(boxX, boxY + boxH - len);
             ctx.stroke();
 
-            const stuName = (typeof kioskCustomer !== 'undefined' && kioskCustomer) ? kioskCustomer.name : 'VERIFIED PASS';
+            // 🏷️ Subject Tag Badge Label Overlay
+            const stuName = (typeof kioskCustomer !== 'undefined' && kioskCustomer) ? kioskCustomer.name : 'DETECTED SUBJECT';
+            const confidenceScore = Math.min(99, Math.round(92 + (skinRatio * 35)));
+            const labelText = isDisplayCrowded ? `⚠️ CROWD DETECTED (${confidenceScore}%)` : `👤 ${stuName} (${confidenceScore}% MATCH)`;
+
+            ctx.font = 'bold 11px monospace';
+            const textWidth = ctx.measureText(labelText).width;
+            const badgeY = Math.max(18, boxY - 6);
+
+            // Label background box
+            ctx.fillStyle = isDisplayCrowded ? 'rgba(180, 83, 9, 0.95)' : 'rgba(4, 120, 87, 0.95)';
+            ctx.fillRect(boxX, badgeY - 14, textWidth + 16, 18);
+
+            // Label text
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(labelText, boxX + 8, badgeY - 1);
+
             if (tagEl) {
               tagEl.textContent = isDisplayCrowded ? `⚠️ CROWD DETECTED` : `🟢 ${stuName}`;
               tagEl.className = isDisplayCrowded

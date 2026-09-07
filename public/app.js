@@ -5529,10 +5529,19 @@ function startCashierCctvRenderLoop() {
           const boxX = (w - boxW) / 2;
           const boxY = (h - boxH) / 2;
 
-          ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 2.5;
-          const len = 20;
+          // 🎯 Semi-transparent fill highlight
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+          ctx.fillRect(boxX, boxY, boxW, boxH);
 
+          // 🔲 Solid Green Bounding Box Border
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+          // Corner Reticle Accents
+          const len = 20;
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 4;
           ctx.beginPath();
           ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
           ctx.moveTo(boxX + boxW - len, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + len);
