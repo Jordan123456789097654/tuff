@@ -187,6 +187,12 @@
         <span class="hidden sm:inline">Pass Balance</span>
       </button>
 
+      <!-- AI School Trivia Quiz Trigger -->
+      <button id="display-btn-trivia" onclick="openDisplayTriviaModal()" class="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Play quick AI trivia to win bonus punch stamps and discounts!">
+        <span>🧠</span>
+        <span class="hidden sm:inline">AI Trivia</span>
+      </button>
+
       <!-- Lucky Spin Wheel Trigger -->
       <button id="display-btn-spin" onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>🎟️</span>
@@ -1588,6 +1594,76 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 🧠 AI SCHOOL TRIVIA & PRIZE MINI-GAME -->
+  <!-- ==================================================== -->
+  <div id="modal-display-trivia" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-purple-500/50 rounded-3xl w-full max-w-lg p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto text-center">
+      <button onclick="closeDisplayTriviaModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/40 flex items-center justify-center text-3xl font-bold mx-auto shadow-lg float-anim">
+        🧠
+      </div>
+
+      <div class="space-y-1">
+        <span class="text-[10px] font-bold font-mono text-purple-300 bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 rounded-full uppercase tracking-wider" id="trivia-category-badge">
+          AI School Trivia Challenge
+        </span>
+        <h3 class="font-heading font-extrabold text-xl sm:text-2xl text-white" id="trivia-question-text">
+          Loading AI Trivia Question...
+        </h3>
+        <p class="text-xs text-amber-300 font-semibold" id="trivia-prize-text">
+          🎁 Answer correctly to earn: ⭐ +1 Loyalty Stamp!
+        </p>
+      </div>
+
+      <!-- 4 Multiple Choice Options Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2" id="trivia-options-grid">
+        <!-- Options injected dynamically by JS -->
+      </div>
+
+      <!-- Feedback Banner -->
+      <div id="trivia-feedback-box" class="hidden p-3.5 rounded-2xl text-xs font-bold font-mono"></div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+        <span>Powered by Kyro Cloud AI</span>
+        <button onclick="loadNewTriviaQuestion()" class="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1">
+          <span>🔄 Next Question</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 📱 INSTANT MOBILE RECEIPT QR POPUP -->
+  <!-- ==================================================== -->
+  <div id="modal-mobile-receipt-qr" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto text-center">
+      <button onclick="closeMobileReceiptQRModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-2xl mx-auto shadow-md">
+        📱
+      </div>
+      <div>
+        <h3 class="font-heading font-extrabold text-xl text-white">Your Contactless Digital Receipt</h3>
+        <p class="text-xs text-slate-400">Point phone camera at QR to view full breakdown & remaining pass</p>
+      </div>
+
+      <div class="bg-white p-4 rounded-3xl inline-block shadow-xl border-4 border-slate-800 mx-auto">
+        <img id="mobile-receipt-qr-img" src="" alt="Mobile Receipt QR" class="w-48 h-48 rounded-xl object-contain mx-auto" />
+      </div>
+
+      <div class="space-y-1">
+        <div class="font-mono text-xs text-amber-300 font-bold" id="mobile-receipt-order-label">ORDER #...</div>
+        <p class="text-[10px] text-slate-500">No app installation required • Instant browser receipt</p>
+      </div>
     </div>
   </div>
 
@@ -5097,6 +5173,11 @@
       origRenderState(data);
       if (data && data.state === 'celebrate') {
         setTimeout(initScratchCard, 100);
+        if (data.order && data.order.order_number) {
+          setTimeout(() => {
+            openMobileReceiptQR(data.order.order_number);
+          }, 1200);
+        }
       }
       // Check student birthday
       if (data && data.student && data.student.birthday) {
@@ -5106,6 +5187,105 @@
         }
       }
     };
+
+    // ==========================================
+    // 🧠 AI SCHOOL TRIVIA ENGINE (KYRO AI)
+    // ==========================================
+    let currentTriviaData = null;
+
+    async function openDisplayTriviaModal() {
+      const modal = document.getElementById('modal-display-trivia');
+      if (modal) modal.classList.remove('hidden');
+      await loadNewTriviaQuestion();
+    }
+
+    function closeDisplayTriviaModal() {
+      const modal = document.getElementById('modal-display-trivia');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function loadNewTriviaQuestion() {
+      const qText = document.getElementById('trivia-question-text');
+      const catBadge = document.getElementById('trivia-category-badge');
+      const prizeText = document.getElementById('trivia-prize-text');
+      const optGrid = document.getElementById('trivia-options-grid');
+      const feedback = document.getElementById('trivia-feedback-box');
+
+      if (feedback) feedback.classList.add('hidden');
+      if (qText) qText.textContent = '🧠 Loading Kyro AI Trivia Question...';
+      if (optGrid) optGrid.innerHTML = '<div class="col-span-full py-4 text-slate-500 text-xs">Consulting AI Knowledge Base...</div>';
+
+      try {
+        const res = await fetch('/api/ai/trivia');
+        const data = await res.json();
+        currentTriviaData = data;
+
+        if (catBadge) catBadge.textContent = data.category || 'School Trivia';
+        if (qText) qText.textContent = data.question;
+        if (prizeText) prizeText.textContent = `🎁 Answer correctly to earn: ${data.reward_text || '⭐ +1 Bonus Stamp!'}`;
+
+        const opts = Array.isArray(data.options) ? data.options : ["Option 1", "Option 2", "Option 3", "Option 4"];
+        optGrid.innerHTML = opts.map((opt, idx) => `
+          <button onclick="submitTriviaAnswer(${idx})" class="trivia-opt-btn bg-slate-950 hover:bg-purple-950/80 border border-slate-700 hover:border-purple-500/60 p-3.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition text-left flex items-center gap-2 active:scale-95 shadow">
+            <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-700 text-purple-400 font-mono flex items-center justify-center font-extrabold text-[11px] shrink-0">
+              ${String.fromCharCode(65 + idx)}
+            </span>
+            <span class="flex-1">${opt}</span>
+          </button>
+        `).join('');
+
+      } catch (err) {
+        if (qText) qText.textContent = 'What is the standard loyalty reward at Jordan\'s Snack Shack?';
+        if (optGrid) {
+          optGrid.innerHTML = `
+            <button onclick="submitTriviaAnswer(0)" class="p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-white">A. 10 Stamps = 1 Free Snack</button>
+            <button onclick="submitTriviaAnswer(1)" class="p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-white">B. 50 Stamps = 1 Free Snack</button>
+          `;
+        }
+      }
+    }
+
+    function submitTriviaAnswer(selectedIdx) {
+      if (!currentTriviaData) return;
+      const feedback = document.getElementById('trivia-feedback-box');
+      const isCorrect = selectedIdx === currentTriviaData.correct_index;
+
+      if (feedback) {
+        feedback.classList.remove('hidden');
+        if (isCorrect) {
+          feedback.className = 'p-3.5 rounded-2xl text-xs font-bold font-mono bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 animate-bounce';
+          feedback.innerHTML = `🎉 CORRECT! ${currentTriviaData.reward_text || '⭐ +1 Bonus Stamp added to pass!'}`;
+          if (typeof confetti !== 'undefined') {
+            confetti({ particleCount: 70, spread: 80, origin: { y: 0.5 } });
+          }
+          playChimeSound('bell');
+        } else {
+          feedback.className = 'p-3.5 rounded-2xl text-xs font-bold font-mono bg-rose-950/90 text-rose-300 border border-rose-500/50';
+          feedback.innerHTML = `❌ Nice try! The correct answer was: <strong>${currentTriviaData.options[currentTriviaData.correct_index]}</strong>`;
+        }
+      }
+    }
+
+    // ==========================================
+    // 📱 MOBILE DIGITAL RECEIPT QR DISPLAY
+    // ==========================================
+    function openMobileReceiptQR(orderNumber) {
+      const modal = document.getElementById('modal-mobile-receipt-qr');
+      const qrImg = document.getElementById('mobile-receipt-qr-img');
+      const orderLabel = document.getElementById('mobile-receipt-order-label');
+      if (!modal || !qrImg) return;
+
+      const receiptUrl = `${window.location.origin}/receipt/${orderNumber}`;
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(receiptUrl)}`;
+      if (orderLabel) orderLabel.textContent = `ORDER #${orderNumber}`;
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeMobileReceiptQRModal() {
+      const modal = document.getElementById('modal-mobile-receipt-qr');
+      if (modal) modal.classList.add('hidden');
+    }
 
     async function loadInitialDisplayState() {
       try {

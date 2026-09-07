@@ -157,6 +157,11 @@
       <button onclick="openManagerDashboard()" class="flex items-center gap-1.5 text-xs text-purple-200 hover:text-white bg-purple-600/30 hover:bg-purple-600/40 border border-purple-500/50 px-3 py-1.5 rounded-xl transition font-black shadow-md shadow-purple-950/40" title="Open Manager Operations Dashboard & Security Center">
         <span>👔 Manager Hub</span>
       </button>
+
+      <!-- Emergency Panic Lockdown Button -->
+      <button onclick="triggerEmergencyLockdown()" class="flex items-center gap-1.5 text-xs text-rose-200 hover:text-white bg-rose-700/80 hover:bg-rose-600 border border-rose-500 px-2.5 py-1.5 rounded-xl transition font-black shadow-md shadow-rose-950/60" title="Emergency Counter Panic Lockdown (Ctrl+Shift+Esc)">
+        <span>🚨 Panic</span>
+      </button>
     </div>
 
     <!-- Group 3: Store Utilities & Portals Dropdown Hub -->
@@ -192,11 +197,35 @@
           </div>
         </button>
 
-        <button onclick="openConfigModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
-          <span class="text-base">⚙️</span>
+        <button onclick="openThermalReceiptModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-emerald-300 hover:bg-emerald-500/10 transition font-semibold">
+          <span class="text-base">🧾</span>
           <div>
-            <div class="text-white font-bold">Feature Configuration</div>
-            <div class="text-[10px] text-slate-400">POS & Display toggle settings</div>
+            <div class="text-white font-bold">Thermal Receipt Simulator</div>
+            <div class="text-[10px] text-slate-400">58mm/80mm authentic print</div>
+          </div>
+        </button>
+
+        <button onclick="openZReportModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-teal-300 hover:bg-teal-500/10 transition font-semibold">
+          <span class="text-base">📑</span>
+          <div>
+            <div class="text-white font-bold">Financial Z-Report Audit</div>
+            <div class="text-[10px] text-slate-400">End-of-day revenue reconciliation</div>
+          </div>
+        </button>
+
+        <button onclick="openAiRestockModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-purple-300 hover:bg-purple-500/10 transition font-semibold">
+          <span class="text-base">🤖</span>
+          <div>
+            <div class="text-white font-bold">AI Restock Predictor</div>
+            <div class="text-[10px] text-slate-400">Locker Vault #314 Kyro AI forecasting</div>
+          </div>
+        </button>
+
+        <button onclick="openVolunteerModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
+          <span class="text-base">🤝</span>
+          <div>
+            <div class="text-white font-bold">Volunteer Hub &amp; Rankings</div>
+            <div class="text-[10px] text-slate-400">Clock in/out &amp; student leaderboard</div>
           </div>
         </button>
 
@@ -282,6 +311,23 @@
 
         <!-- Product Cards Grid -->
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <!-- 🚨 WATCHLIST INTERCEPTION DISCREET POS ALERT BANNER -->
+          <div id="pos-watchlist-alert" class="hidden bg-rose-950/90 border-2 border-rose-500/80 p-3.5 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-xl animate-bounce">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🚨</span>
+              <div>
+                <div class="font-extrabold text-white text-sm flex items-center gap-2">
+                  <span id="pos-watchlist-name">Watchlist Alert: Student Account Flagged</span>
+                  <span class="text-[10px] bg-rose-500 text-slate-950 px-2 py-0.5 rounded font-black font-mono">FLAGGED</span>
+                </div>
+                <p class="text-rose-300 font-semibold" id="pos-watchlist-reason">Reason: Disputed balance or counter conduct flag</p>
+              </div>
+            </div>
+            <button onclick="dismissWatchlistAlert()" class="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl font-bold border border-slate-700 text-xs transition">
+              Dismiss
+            </button>
+          </div>
+
           <!-- Register Closed Alert Banner -->
           <div id="pos-closed-banner" class="hidden bg-rose-950/70 border border-rose-800/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg">
             <div class="flex items-center gap-2.5 text-rose-300 font-bold">
@@ -3880,6 +3926,200 @@
 
       </div>
 
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 🧾 THERMAL RECEIPT PRINTER SIMULATOR (58mm / 80mm)   -->
+  <!-- ==================================================== -->
+  <div id="modal-thermal-receipt" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto">
+      <button onclick="closeModal('modal-thermal-receipt')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Thermal Paper Receipt Container -->
+      <div id="thermal-receipt-paper" class="bg-white text-slate-900 p-5 rounded-2xl shadow-xl font-mono text-xs space-y-3 border border-slate-300 select-all">
+        <div class="text-center space-y-0.5 border-b-2 border-dashed border-slate-400 pb-3">
+          <div class="text-2xl font-bold">🍿 JORDAN'S SNACK SHACK</div>
+          <div class="text-[11px] font-bold">OFFICIAL SCHOOL STORE • TABLE 4B</div>
+          <div class="text-[10px] text-slate-600">Forsyth County, GA</div>
+          <div class="text-[10px] text-slate-600 pt-1" id="th-receipt-datetime">09/07/2026 08:30:00</div>
+          <div class="text-[11px] font-extrabold text-slate-900" id="th-receipt-ordernum">ORDER #2026-0000</div>
+        </div>
+
+        <div class="space-y-1 text-xs" id="th-receipt-items">
+          <div class="flex justify-between font-bold border-b border-slate-300 pb-1">
+            <span>ITEM</span>
+            <span>QTY  PRICE  TOTAL</span>
+          </div>
+          <!-- Item rows inserted dynamically -->
+        </div>
+
+        <div class="border-t-2 border-dashed border-slate-400 pt-2 space-y-1 text-xs">
+          <div class="flex justify-between">
+            <span>SUBTOTAL:</span>
+            <span id="th-receipt-subtotal">$0.00</span>
+          </div>
+          <div class="flex justify-between" id="th-receipt-discount-row">
+            <span>DISCOUNT:</span>
+            <span id="th-receipt-discount">-$0.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>SALES TAX:</span>
+            <span id="th-receipt-tax">$0.00</span>
+          </div>
+          <div class="flex justify-between font-extrabold text-sm border-t border-slate-900 pt-1">
+            <span>TOTAL:</span>
+            <span id="th-receipt-total">$0.00</span>
+          </div>
+          <div class="flex justify-between pt-1">
+            <span>PAYMENT:</span>
+            <span id="th-receipt-payment" class="font-bold">STUDENT PASS</span>
+          </div>
+        </div>
+
+        <div class="text-center border-t-2 border-dashed border-slate-400 pt-3 space-y-1">
+          <div class="text-[10px] font-bold">⭐ LOYALTY CARD STATUS</div>
+          <div class="text-[10px]" id="th-receipt-loyalty">10 Stamps = 1 Free Snack!</div>
+          <div class="font-mono text-xs tracking-widest font-black py-1">|||| | |||| ||| ||||| || |||</div>
+          <div class="text-[9px] text-slate-500">THANK YOU FOR SUPPORTING OUR STORE!</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <button onclick="printThermalReceiptDirect()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Print Receipt</span>
+        </button>
+        <button onclick="copyThermalReceiptText()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition border border-slate-700">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+          <span>Copy Text</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 🤝 STUDENT VOLUNTEER GOVERNANCE & LEADERBOARD MODAL -->
+  <!-- ==================================================== -->
+  <div id="modal-volunteer-hub" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl w-full max-w-3xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-volunteer-hub')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg">
+            🤝
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <span>Student Volunteer Hub &amp; Shift Manager</span>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-mono">STAFF GOVERNANCE</span>
+            </h3>
+            <p class="text-xs text-slate-400">Clock in/out, track service hours, award merit points &amp; review monthly rankings</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Volunteer Clock-In Bar -->
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+        <h4 class="font-bold text-xs text-amber-400 uppercase tracking-wider">⏱️ Quick Shift Clock In / Out</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+          <div class="sm:col-span-2">
+            <select id="vol-shift-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <input type="password" id="vol-pin-input" placeholder="4-Digit PIN..." maxlength="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold text-center" />
+          </div>
+          <div class="flex gap-2">
+            <button onclick="submitVolunteerClockIn()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition">Clock In</button>
+            <button onclick="submitVolunteerClockOut()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-xl text-xs transition">Clock Out</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard & Volunteer Roster -->
+      <div class="flex-1 overflow-y-auto space-y-3">
+        <h4 class="font-bold text-xs text-white uppercase tracking-wider">🏆 Volunteer Leaderboard &amp; Hours</h4>
+        <div id="vol-leaderboard-container" class="space-y-2 text-xs">
+          <div class="text-center text-slate-500 py-6">Loading volunteer leaderboard...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 📑 END-OF-DAY FINANCIAL Z-REPORT AUDIT MODAL        -->
+  <!-- ==================================================== -->
+  <div id="modal-z-report" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-z-report')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-2xl shadow-lg">
+            📑
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white">Daily Financial Z-Report Audit</h3>
+            <p class="text-xs text-slate-400">Complete end-of-day register reconciliation &amp; revenue audit</p>
+          </div>
+        </div>
+        <button onclick="printZReportDirect()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          <span>Print Z-Report</span>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs" id="z-report-content">
+        <div class="text-center text-slate-500 py-10">Calculating financial summary...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 📦 AI RESTOCK PREDICTOR & STORAGE VAULT #314 MODAL  -->
+  <!-- ==================================================== -->
+  <div id="modal-ai-restock" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-purple-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-ai-restock')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl shadow-lg">
+          🤖
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <span>AI Restock Predictor &amp; Locker Vault #314</span>
+            <span class="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full">KYRO AI INSIGHTS</span>
+          </h3>
+          <p class="text-xs text-slate-400">Predictive replenishment recommendations based on real-time sales velocity</p>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+        <div id="ai-restock-forecast-box" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 leading-relaxed text-slate-200 whitespace-pre-wrap font-sans">
+          Loading AI Restock Intelligence...
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+        <span class="text-slate-400 font-mono text-[11px]">Storage Target: Locker Vault #314</span>
+        <button onclick="generateAiRestockForecast()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Re-Analyze Inventory</span>
+        </button>
+      </div>
     </div>
   </div>
 

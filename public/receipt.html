@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Digital Receipt • Jordan's Snack Shack</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-heading { font-family: 'Fredoka', cursive, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-6 flex flex-col items-center justify-center">
+  <div class="w-full max-w-md bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
+    <div class="text-center space-y-1 border-b border-slate-800 pb-4">
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mx-auto shadow-md">
+        🍿
+      </div>
+      <h1 class="font-heading font-extrabold text-xl text-white tracking-wide">JORDAN'S SNACK SHACK</h1>
+      <p class="text-xs text-slate-400 font-mono">Official School Store Digital Receipt</p>
+    </div>
+
+    <div id="receipt-card" class="space-y-4">
+      <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800/60 pb-3">
+        <div>
+          <span>ORDER: </span>
+          <strong id="rcpt-order-num" class="text-amber-400">#...</strong>
+        </div>
+        <div id="rcpt-time">--:--:--</div>
+      </div>
+
+      <div id="rcpt-student-box" class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">
+            👤
+          </div>
+          <div>
+            <div id="rcpt-student-name" class="font-bold text-white">Student Customer</div>
+            <div id="rcpt-student-id" class="text-[10px] font-mono text-slate-400">STU-PASS</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] text-slate-400 block">Remaining Pass</span>
+          <strong id="rcpt-student-bal" class="text-emerald-400 font-mono font-bold">$0.00</strong>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <h3 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Itemized Breakdown</h3>
+        <div id="rcpt-items-list" class="space-y-1.5 text-xs divide-y divide-slate-800/40">
+          <div class="text-center text-slate-500 py-4">Loading items...</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5 text-xs font-mono">
+        <div class="flex justify-between text-slate-400">
+          <span>Subtotal</span>
+          <span id="rcpt-subtotal">$0.00</span>
+        </div>
+        <div id="rcpt-discount-row" class="flex justify-between text-cyan-400">
+          <span>Discount</span>
+          <span id="rcpt-discount">-$0.00</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Sales Tax</span>
+          <span id="rcpt-tax">$0.00</span>
+        </div>
+        <div class="flex justify-between text-white font-bold text-sm border-t border-slate-800 pt-1.5">
+          <span>Total Paid</span>
+          <span id="rcpt-total" class="text-emerald-400">$0.00</span>
+        </div>
+        <div class="flex justify-between text-[11px] text-slate-400 pt-0.5">
+          <span>Payment Method</span>
+          <span id="rcpt-payment" class="font-bold uppercase text-slate-200">PASS</span>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-3 rounded-2xl text-center space-y-1">
+        <div class="text-[11px] font-bold text-amber-300">⭐ Loyalty Stamp Program</div>
+        <div class="text-xs text-slate-300 font-mono" id="rcpt-stamps-info">10 Stamps = 1 Free Snack!</div>
+      </div>
+    </div>
+
+    <div class="text-center text-[10px] text-slate-500 space-y-1">
+      <p>Thank you for supporting Jordan's Snack Shack!</p>
+      <p>Official School Store • Station Table 4B</p>
+    </div>
+  </div>
+
+  <script>
+    async function loadReceipt() {
+      const parts = window.location.pathname.split('/');
+      const orderNum = parts[parts.length - 1] || parts[parts.length - 2];
+      try {
+        const res = await fetch('/api/receipt/' + orderNum);
+        if (!res.ok) throw new Error('Receipt not found');
+        const data = await res.json();
+        const order = data.order;
+        const items = data.items || [];
+
+        document.getElementById('rcpt-order-num').textContent = '#' + order.order_number;
+        document.getElementById('rcpt-time').textContent = new Date(order.created_at).toLocaleTimeString();
+        document.getElementById('rcpt-student-name').textContent = order.student_name || 'Guest Student';
+        document.getElementById('rcpt-student-id').textContent = order.student_code || 'GUEST';
+        document.getElementById('rcpt-student-bal').textContent = '$' + parseFloat(order.student_balance || 0).toFixed(2);
+        document.getElementById('rcpt-subtotal').textContent = '$' + parseFloat(order.subtotal).toFixed(2);
+        document.getElementById('rcpt-discount').textContent = '-$' + parseFloat(order.discount || 0).toFixed(2);
+        document.getElementById('rcpt-tax').textContent = '$' + parseFloat(order.tax || 0).toFixed(2);
+        document.getElementById('rcpt-total').textContent = '$' + parseFloat(order.total).toFixed(2);
+        document.getElementById('rcpt-payment').textContent = (order.payment_method || 'CASH').toUpperCase();
+        
+        const stampsInfo = document.getElementById('rcpt-stamps-info');
+        if (stampsInfo && order.punch_card) {
+          stampsInfo.textContent = 'Current Progress: ' + order.punch_card + ' / 10 Stamps collected!';
+        }
+
+        const itemsContainer = document.getElementById('rcpt-items-list');
+        itemsContainer.innerHTML = items.map(i => `
+          <div class="flex justify-between items-center py-1">
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-white">${i.quantity}x</span>
+              <span class="text-slate-200">${i.product_name}</span>
+            </div>
+            <span class="font-mono text-slate-300 font-bold">$${parseFloat(i.total_price).toFixed(2)}</span>
+          </div>
+        `).join('');
+
+        if (parseFloat(order.discount || 0) <= 0) {
+          document.getElementById('rcpt-discount-row').classList.add('hidden');
+        }
+      } catch (err) {
+        document.getElementById('receipt-card').innerHTML = `
+          <div class="text-center py-10 space-y-2 text-rose-400">
+            <div class="text-3xl">⚠️</div>
+            <div class="font-bold text-sm">Receipt Not Found</div>
+            <p class="text-xs text-slate-500">This order may have expired or the link is invalid.</p>
+          </div>
+        `;
+      }
+    }
+    loadReceipt();
+  </script>
+</body>
+</html>

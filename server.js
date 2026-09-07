@@ -2492,89 +2492,499 @@ app.put('/api/manager/security_settings', async (req, res) => {
   }
 });
 
-// 5. Watchlist & Flagging Manager
-app.get('/api/manager/watchlist', async (req, res) => {
+// ----------------------------------------------------
+// 🤖 KYRO CLOUD AI API GATEWAY INTEGRATION
+// ----------------------------------------------------
+const KYRO_API_URL = 'https://kyro-api-auou.onrender.com/v1/chat/completions';
+const KYRO_API_KEY = process.env.KYRO_API_KEY || 'kyro_sk_live_AZaSMSvATejSUM4OAVVnjw-cogIz4q7b';
+
+async function callKyroAI(messages, model = 'kyro-flash-8b', maxTokens = 600, temperature = 0.2) {
   try {
-    const flaggedRes = await db.query(
-      `SELECT * FROM students WHERE is_flagged = TRUE OR unpaid_balance > 0 ORDER BY name ASC`
-    );
-    const allStudentsRes = await db.query(
-      `SELECT id, student_id, name, grade, balance, is_flagged, watchlist_reason, unpaid_balance FROM students ORDER BY name ASC`
-    );
+    const res = await fetch(KYRO_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${KYRO_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: messages,
+        max_tokens: maxTokens,
+        temperature: temperature
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn('Kyro AI Gateway Error status:', res.status, errText);
+      return null;
+    }
+
+    const data = await res.json();
+    let content = data.choices?.[0]?.message?.content || '';
+    // Strip <think>...</think> reasoning blocks from Qwen/Llama models if present (closed or unclosed)
+    content = content.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    content = content.replace(/<think>[\s\S]*$/gi, '').trim();
+    return content;
+  } catch (err) {
+    console.warn('Kyro AI call failed (offline fallback):', err.message);
+    return null;
+  }
+}
+
+// 1. Voice-to-Cart Natural Language Ordering
+app.post('/api/ai/voice-to-cart', async (req, res) => {
+  try {
+    const { speechText } = req.body;
+    if (!speechText || !speechText.trim()) {
+      return res.status(400).json({ error: 'Speech text is required.' });
+    }
+
+    // Get current active products
+    const prodRes = await db.query(`SELECT id, name, price, emoji FROM products WHERE is_active = TRUE`);
+    const catalog = prodRes.rows;
+
+    const catalogList = catalog.map(p => `ID:${p.id} | "${p.name}" | $${p.price}`).join('\n');
+
+    const prompt = `You are a cashier speech parser for Jordan's Snack Shack school store.
+Convert the cashier/customer speech order into a structured list of cart items matching our exact product catalog IDs.
+
+CURRENT CATALOG:
+${catalogList}
+
+CUSTOMER SPEECH ORDER:
+"${speechText}"
+
+Return ONLY a JSON array in this exact format:
+[{"id": <number>, "quantity": <number>, "name": "<product name>", "price": <number>}]
+
+If no products match, return []. Do not include markdown formatting, backticks, or other text.`;
+
+    const aiResponse = await callKyroAI([
+      { role: 'system', content: 'You extract items and quantities from cashier voice input into strict JSON arrays.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-flash-8b', 600, 0.1);
+
+    let parsedItems = [];
+    if (aiResponse) {
+      try {
+        const cleanJson = aiResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsedItems = JSON.parse(cleanJson);
+      } catch (parseErr) {
+        console.warn('AI Voice-to-cart JSON parse error:', parseErr.message);
+      }
+    }
+
+    // Fallback heuristic if AI parsing returned empty or failed
+    if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+      const lower = speechText.toLowerCase();
+      catalog.forEach(p => {
+        const pName = p.name.toLowerCase();
+        if (lower.includes(pName)) {
+          parsedItems.push({ id: p.id, quantity: 1, name: p.name, price: parseFloat(p.price) });
+        }
+      });
+    }
+
     res.json({
-      flagged: flaggedRes.rows,
-      all: allStudentsRes.rows
+      success: true,
+      originalText: speechText,
+      items: parsedItems
     });
   } catch (err) {
-    console.error('Error fetching watchlist:', err);
-    res.status(500).json({ error: 'Failed to fetch watchlist' });
+    console.error('Voice to cart error:', err);
+    res.status(500).json({ error: 'Failed to process voice order' });
   }
 });
 
-app.post('/api/manager/watchlist/toggle', async (req, res) => {
+// 2. AI Restock Predictor & Demand Forecasting for Locker Vault #314
+app.post('/api/ai/restock-forecast', async (req, res) => {
   try {
-    const { student_id, is_flagged, watchlist_reason, unpaid_balance } = req.body;
-    const result = await db.query(
-      `UPDATE students
-       SET is_flagged = $1,
-           watchlist_reason = $2,
-           unpaid_balance = $3
-       WHERE id = $4 RETURNING *`,
-      [!!is_flagged, watchlist_reason || '', parseFloat(unpaid_balance) || 0.00, student_id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
-    res.json(result.rows[0]);
+    const productsRes = await db.query(`
+      SELECT p.id, p.name, p.stock_quantity, p.low_stock_threshold, p.price, p.cost_price,
+             COALESCE(SUM(oi.quantity), 0) as total_sold_recent
+      FROM products p
+      LEFT JOIN order_items oi ON p.id = oi.product_id
+      WHERE p.is_active = TRUE
+      GROUP BY p.id
+      ORDER BY p.stock_quantity ASC
+    `);
+
+    const inventoryData = productsRes.rows.map(p => 
+      `${p.name}: Stock = ${p.stock_quantity} (Low Threshold: ${p.low_stock_threshold}), Sold Recently = ${p.total_sold_recent}`
+    ).join('\n');
+
+    const prompt = `You are the AI Inventory & Logistics Manager for Jordan's Snack Shack (Storage Locker Vault #314).
+Analyze the current stock levels and sales velocity below. Provide:
+1. Urgent Restock Items (items below threshold or high sales velocity).
+2. Recommended replenishment quantities to fetch from Locker Vault #314.
+3. A 2-sentence actionable operational summary for student volunteers.
+
+INVENTORY AUDIT:
+${inventoryData}`;
+
+    const aiForecast = await callKyroAI([
+      { role: 'system', content: 'You are an operations and logistics inventory specialist for a high-volume school snack store. Provide a concise, directly formatted restock breakdown without internal chain-of-thought.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 1200, 0.3);
+
+    res.json({
+      success: true,
+      forecast: aiForecast || 'All current stock levels are within normal operating margins. Keep Locker Vault #314 stocked with extra chips and cold beverages.'
+    });
   } catch (err) {
-    console.error('Error toggling watchlist:', err);
-    res.status(500).json({ error: 'Failed to toggle watchlist status' });
+    console.error('Restock forecast error:', err);
+    res.status(500).json({ error: 'Failed to generate restock forecast' });
   }
 });
 
-// 6. Security Diagnostics & Test Simulator
-app.post('/api/manager/security/test_alert', (req, res) => {
-  const { test_type } = req.body;
-  const now = Date.now();
-  const timeStr = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+// 3. AI Incident Report Synthesizer & Recommendations
+app.post('/api/ai/incident-summary', async (req, res) => {
+  try {
+    const { incidentType, rawNotes, location } = req.body;
+    const prompt = `You are a school store security and safety compliance officer.
+Generate a formal, professional incident report summary and 2 recommended corrective actions based on the following raw notes:
+Incident Type: ${incidentType || 'Security Notice'}
+Location: ${location || 'Station Table 4B'}
+Raw Notes: "${rawNotes || 'No notes'}"
 
-  if (test_type === 'hostile_audio') {
-    broadcastToDisplayClients({
-      type: 'cctv_customer_frame',
-      timestamp: now,
-      isHostileAudio: true,
-      hostileConfidence: 98,
-      audioLevel: 88,
-      tag: 'TEST-HOSTILE',
-      isHumanDetected: true
-    });
-    res.json({ success: true, message: `🚨 Simulated Hostile Audio Alert broadcast at ${timeStr}` });
-  } else if (test_type === 'crowd_warning') {
-    broadcastToDisplayClients({
-      type: 'cctv_customer_frame',
-      timestamp: now,
-      isCrowded: true,
-      crowdCount: 4,
-      audioLevel: 65,
-      tag: 'TEST-CROWD',
-      isHumanDetected: true
-    });
-    res.json({ success: true, message: `⚠️ Simulated Multi-Person Crowd Warning broadcast at ${timeStr}` });
-  } else if (test_type === 'silent_duress') {
-    broadcastToDisplayClients({
-      type: 'security_alert',
-      timestamp: now,
-      alert_type: 'silent_duress',
-      zone: 'Table 4B',
-      notes: 'Diagnostic Test Alarm'
-    });
-    res.json({ success: true, message: `🚨 Simulated Silent Duress Alarm broadcast at ${timeStr}` });
-  } else {
-    broadcastToDisplayClients({
-      type: 'display_heartbeat',
-      timestamp: now,
-      ping: true
-    });
-    res.json({ success: true, message: `📡 2nd Display Connectivity Ping sent at ${timeStr}` });
+Format output cleanly with:
+- Formal Incident Summary
+- Severity Assessment (LOW / MEDIUM / HIGH)
+- Recommended Protocol & Prevention Action`;
+
+    const summary = await callKyroAI([
+      { role: 'system', content: 'You write concise, professional school security incident assessments.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 500, 0.2);
+
+    res.json({ success: true, summary: summary || rawNotes });
+  } catch (err) {
+    console.error('Incident summary error:', err);
+    res.status(500).json({ error: 'Failed to synthesize incident' });
   }
+});
+
+// 4. Live School Trivia Generator & Prize Engine
+app.get('/api/ai/trivia', async (req, res) => {
+  try {
+    // Try pulling from DB first
+    const dbTrivia = await db.query(`SELECT * FROM trivia_questions ORDER BY RANDOM() LIMIT 1`);
+    if (dbTrivia.rows.length > 0 && Math.random() > 0.4) {
+      const row = dbTrivia.rows[0];
+      return res.json({
+        id: row.id,
+        question: row.question,
+        options: typeof row.options === 'string' ? JSON.parse(row.options) : row.options,
+        correct_index: row.correct_index,
+        category: row.category,
+        reward_text: row.reward_text
+      });
+    }
+
+    // Generate fresh trivia with Kyro AI
+    const prompt = `Generate 1 fun, multiple-choice school/science/math/sports trivia question for high school students waiting in line at a snack store.
+Return ONLY a JSON object with this exact format:
+{
+  "question": "...",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correct_index": 0,
+  "category": "Science / General Knowledge",
+  "reward_text": "⭐ +1 Loyalty Stamp!"
+}
+No additional markdown or commentary.`;
+
+    const aiRes = await callKyroAI([
+      { role: 'system', content: 'You generate trivia questions formatted strictly as JSON objects.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-flash-8b', 300, 0.7);
+
+    if (aiRes) {
+      try {
+        const clean = aiRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const triviaObj = JSON.parse(clean);
+        return res.json(triviaObj);
+      } catch (e) {}
+    }
+
+    // Fallback trivia
+    res.json({
+      question: "How many loyalty punch stamps earn a 100% FREE snack reward?",
+      options: ["5 Stamps", "10 Stamps", "15 Stamps", "20 Stamps"],
+      correct_index: 1,
+      category: "Snack Shack Loyalty",
+      reward_text: "⭐ +1 Bonus Stamp!"
+    });
+  } catch (err) {
+    console.error('Trivia generation error:', err);
+    res.json({
+      question: "What is the speed of light approximately in vacuum?",
+      options: ["300,000 km/s", "150,000 km/s", "500,000 km/s", "1,000,000 km/s"],
+      correct_index: 0,
+      category: "Physics",
+      reward_text: "🎟️ 10¢ Off Any Snack!"
+    });
+  }
+});
+
+// ----------------------------------------------------
+// 🤝 VOLUNTEER GOVERNANCE & LEADERBOARD
+// ----------------------------------------------------
+app.get('/api/volunteers', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT v.*,
+             (SELECT COUNT(*) FROM volunteer_shifts vs WHERE vs.volunteer_id = v.id AND vs.status = 'ACTIVE') > 0 as is_clocked_in,
+             (SELECT clock_in FROM volunteer_shifts vs WHERE vs.volunteer_id = v.id AND vs.status = 'ACTIVE' ORDER BY id DESC LIMIT 1) as active_clock_in
+      FROM volunteers v
+      WHERE v.is_active = TRUE
+      ORDER BY v.points DESC, v.total_hours DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching volunteers:', err);
+    res.status(500).json({ error: 'Failed to fetch volunteers' });
+  }
+});
+
+app.post('/api/volunteers', async (req, res) => {
+  try {
+    const { name, role, pin, avatar_emoji } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+    const result = await db.query(
+      `INSERT INTO volunteers (name, role, pin, avatar_emoji) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [name.trim(), role || 'Student Volunteer', pin || '1234', avatar_emoji || '🌟']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating volunteer:', err);
+    res.status(500).json({ error: 'Failed to create volunteer' });
+  }
+});
+
+app.post('/api/volunteers/clock-in', async (req, res) => {
+  try {
+    const { volunteer_id, pin } = req.body;
+    const vol = await db.query('SELECT * FROM volunteers WHERE id = $1', [volunteer_id]);
+    if (vol.rows.length === 0) return res.status(404).json({ error: 'Volunteer not found' });
+    if (pin && vol.rows[0].pin !== pin) return res.status(401).json({ error: 'Invalid volunteer PIN code' });
+
+    // Check if already active
+    const activeShift = await db.query(`SELECT * FROM volunteer_shifts WHERE volunteer_id = $1 AND status = 'ACTIVE'`, [volunteer_id]);
+    if (activeShift.rows.length > 0) {
+      return res.json({ message: 'Volunteer already clocked in', shift: activeShift.rows[0] });
+    }
+
+    const shift = await db.query(
+      `INSERT INTO volunteer_shifts (volunteer_id, volunteer_name, clock_in, status)
+       VALUES ($1, $2, CURRENT_TIMESTAMP, 'ACTIVE') RETURNING *`,
+      [volunteer_id, vol.rows[0].name]
+    );
+
+    res.json({ success: true, shift: shift.rows[0], volunteer: vol.rows[0] });
+  } catch (err) {
+    console.error('Clock in error:', err);
+    res.status(500).json({ error: 'Failed to clock in' });
+  }
+});
+
+app.post('/api/volunteers/clock-out', async (req, res) => {
+  try {
+    const { volunteer_id, orders_served, notes } = req.body;
+    const activeShift = await db.query(
+      `SELECT * FROM volunteer_shifts WHERE volunteer_id = $1 AND status = 'ACTIVE' ORDER BY id DESC LIMIT 1`,
+      [volunteer_id]
+    );
+
+    if (activeShift.rows.length === 0) {
+      return res.status(400).json({ error: 'No active shift found for this volunteer.' });
+    }
+
+    const shiftId = activeShift.rows[0].id;
+    const clockInTime = new Date(activeShift.rows[0].clock_in).getTime();
+    const clockOutTime = Date.now();
+    const hours = Math.max(0.1, parseFloat(((clockOutTime - clockInTime) / (1000 * 60 * 60)).toFixed(2)));
+    const orders = parseInt(orders_served, 10) || 0;
+    const pointsAwarded = Math.round(hours * 20 + orders * 5);
+
+    await db.query(
+      `UPDATE volunteer_shifts
+       SET clock_out = CURRENT_TIMESTAMP,
+           hours_worked = $1,
+           orders_processed = $2,
+           notes = $3,
+           status = 'COMPLETED'
+       WHERE id = $4`,
+      [hours, orders, notes || '', shiftId]
+    );
+
+    await db.query(
+      `UPDATE volunteers
+       SET total_hours = total_hours + $1,
+           total_orders_served = total_orders_served + $2,
+           points = points + $3
+       WHERE id = $4`,
+      [hours, orders, pointsAwarded, volunteer_id]
+    );
+
+    res.json({
+      success: true,
+      hoursWorked: hours,
+      ordersProcessed: orders,
+      pointsEarned: pointsAwarded
+    });
+  } catch (err) {
+    console.error('Clock out error:', err);
+    res.status(500).json({ error: 'Failed to clock out' });
+  }
+});
+
+app.get('/api/volunteers/leaderboard', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT id, name, role, avatar_emoji, total_hours, total_orders_served, points
+      FROM volunteers
+      WHERE is_active = TRUE
+      ORDER BY points DESC, total_hours DESC
+      LIMIT 10
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Leaderboard error:', err);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// ----------------------------------------------------
+// 🍟 SMART COMBOS & BUNDLES ENGINE
+// ----------------------------------------------------
+app.get('/api/combos', async (req, res) => {
+  try {
+    const result = await db.query(`SELECT * FROM combo_deals WHERE is_active = TRUE ORDER BY bundle_price ASC`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching combos:', err);
+    res.status(500).json({ error: 'Failed to fetch combos' });
+  }
+});
+
+app.post('/api/combos', async (req, res) => {
+  try {
+    const { name, description, bundle_price, item_requirements } = req.body;
+    const result = await db.query(
+      `INSERT INTO combo_deals (name, description, bundle_price, item_requirements)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [name, description || '', parseFloat(bundle_price) || 2.50, JSON.stringify(item_requirements || [])]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating combo:', err);
+    res.status(500).json({ error: 'Failed to create combo' });
+  }
+});
+
+// ----------------------------------------------------
+// 🧾 MOBILE DIGITAL RECEIPT & FINANCIAL Z-REPORT
+// ----------------------------------------------------
+app.get('/api/receipt/:orderNumber', async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const orderRes = await db.query(`
+      SELECT o.*, s.name as student_name, s.student_id as student_code, s.balance as student_balance, s.punch_card
+      FROM orders o
+      LEFT JOIN students s ON o.student_id = s.id
+      WHERE o.order_number = $1
+    `, [orderNumber]);
+
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Receipt not found' });
+    }
+
+    const order = orderRes.rows[0];
+    const itemsRes = await db.query(`
+      SELECT * FROM order_items WHERE order_id = $1
+    `, [order.id]);
+
+    res.json({
+      order: order,
+      items: itemsRes.rows
+    });
+  } catch (err) {
+    console.error('Receipt fetch error:', err);
+    res.status(500).json({ error: 'Failed to load receipt' });
+  }
+});
+
+// End of Day Z-Report
+app.get('/api/reports/z-report', async (req, res) => {
+  try {
+    const summaryRes = await db.query(`
+      SELECT 
+        COUNT(*) as total_transactions,
+        COALESCE(SUM(total), 0) as gross_sales,
+        COALESCE(SUM(subtotal), 0) as gross_subtotal,
+        COALESCE(SUM(discount), 0) as total_discounts,
+        COALESCE(SUM(tax), 0) as total_tax,
+        COALESCE(SUM(tip_amount), 0) as total_tips
+      FROM orders
+      WHERE created_at::date = CURRENT_DATE
+    `);
+
+    const paymentsRes = await db.query(`
+      SELECT payment_method, COUNT(*) as count, COALESCE(SUM(total), 0) as amount
+      FROM orders
+      WHERE created_at::date = CURRENT_DATE
+      GROUP BY payment_method
+    `);
+
+    const itemsRes = await db.query(`
+      SELECT oi.product_name, SUM(oi.quantity) as qty_sold, SUM(oi.total_price) as revenue
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.created_at::date = CURRENT_DATE
+      GROUP BY oi.product_name
+      ORDER BY qty_sold DESC
+    `);
+
+    res.json({
+      report_date: new Date().toLocaleDateString(),
+      generated_at: new Date().toLocaleTimeString(),
+      summary: summaryRes.rows[0],
+      payment_breakdown: paymentsRes.rows,
+      top_selling_items: itemsRes.rows
+    });
+  } catch (err) {
+    console.error('Z-Report error:', err);
+    res.status(500).json({ error: 'Failed to generate Z-Report' });
+  }
+});
+
+// ----------------------------------------------------
+// 🚨 EMERGENCY COUNTER LOCKDOWN / PANIC PROTOCOL
+// ----------------------------------------------------
+app.post('/api/security/panic', (req, res) => {
+  const now = Date.now();
+  const timeStr = new Date(now).toLocaleTimeString();
+
+  broadcastToDisplayClients({
+    type: 'panic_lockdown',
+    timestamp: now,
+    message: 'EMERGENCY LOCKDOWN INITIATED'
+  });
+
+  // Log to database
+  db.query(
+    `INSERT INTO security_incidents (incident_tag, label, zone, severity, notes)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [`PANIC-${Math.floor(1000 + Math.random() * 9000)}`, 'Emergency Register Panic Lockdown', 'Table 4B', 'CRITICAL', `Manual emergency lockdown hotkey triggered at ${timeStr}`]
+  ).catch(()=>{});
+
+  res.json({ success: true, message: `🚨 Emergency Lockdown Signal Broadcast at ${timeStr}` });
+});
+
+// Public Mobile Receipt Web Viewer Route
+app.get('/receipt/:orderNumber', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'receipt.html'));
 });
 
 app.get('/api/network-info', (req, res) => {

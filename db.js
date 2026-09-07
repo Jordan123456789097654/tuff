@@ -308,14 +308,141 @@ async function initDB() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS display_announcements (
+      CREATE TABLE IF NOT EXISTS volunteers (
         id SERIAL PRIMARY KEY,
-        message TEXT NOT NULL,
-        emoji VARCHAR(10) DEFAULT '📢',
+        name VARCHAR(150) NOT NULL,
+        role VARCHAR(100) DEFAULT 'Student Volunteer',
+        pin VARCHAR(10) DEFAULT '1234',
+        avatar_emoji VARCHAR(10) DEFAULT '🌟',
+        total_hours NUMERIC(10, 2) DEFAULT 0.00,
+        total_orders_served INT DEFAULT 0,
+        points INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS volunteer_shifts (
+        id SERIAL PRIMARY KEY,
+        volunteer_id INT REFERENCES volunteers(id) ON DELETE CASCADE,
+        volunteer_name VARCHAR(150) NOT NULL,
+        clock_in TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        clock_out TIMESTAMP WITH TIME ZONE,
+        hours_worked NUMERIC(6, 2) DEFAULT 0.00,
+        orders_processed INT DEFAULT 0,
+        notes TEXT DEFAULT '',
+        status VARCHAR(20) DEFAULT 'ACTIVE' -- 'ACTIVE', 'COMPLETED'
+      );
+
+      CREATE TABLE IF NOT EXISTS combo_deals (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        description TEXT DEFAULT '',
+        bundle_price NUMERIC(10, 2) NOT NULL,
+        item_requirements JSONB NOT NULL, -- e.g. [{"category": "Chips", "qty": 1}, {"category": "Cold Drinks", "qty": 1}]
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS trivia_questions (
+        id SERIAL PRIMARY KEY,
+        question TEXT NOT NULL,
+        options JSONB NOT NULL, -- ["A", "B", "C", "D"]
+        correct_index INT NOT NULL,
+        category VARCHAR(100) DEFAULT 'General School Trivia',
+        reward_type VARCHAR(50) DEFAULT 'bonus_stamp', -- 'bonus_stamp', 'discount_10c'
+        reward_text VARCHAR(150) DEFAULT '⭐ +1 Loyalty Stamp!',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
+
+    // Ensure default volunteers exist
+    const volCheck = await client.query('SELECT COUNT(*) FROM volunteers');
+    if (parseInt(volCheck.rows[0].count, 10) === 0) {
+      const defaultVolunteers = [
+        { name: 'Jordan Daniels', role: 'Store Lead & General Manager', pin: '1234', emoji: '👑', hours: 42.5, orders: 380, points: 1250 },
+        { name: 'Alex Taylor', role: 'Senior Cashier Volunteer', pin: '1111', emoji: '⭐', hours: 28.0, orders: 215, points: 740 },
+        { name: 'Marcus Vance', role: 'Stock & Inventory Specialist', pin: '2222', emoji: '📦', hours: 19.5, orders: 140, points: 510 },
+        { name: 'Samantha Reed', role: 'Customer Service Lead', pin: '3333', emoji: '💖', hours: 22.0, orders: 175, points: 620 },
+      ];
+      for (const v of defaultVolunteers) {
+        await client.query(
+          'INSERT INTO volunteers (name, role, pin, avatar_emoji, total_hours, total_orders_served, points) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+          [v.name, v.role, v.pin, v.emoji, v.hours, v.orders, v.points]
+        );
+      }
+    }
+
+    // Ensure default combo deals exist
+    const comboCheck = await client.query('SELECT COUNT(*) FROM combo_deals');
+    if (parseInt(comboCheck.rows[0].count, 10) === 0) {
+      const defaultCombos = [
+        {
+          name: 'Classic Snack & Cold Drink Combo',
+          desc: 'Any bag of chips or crunchy snack paired with any cold drink/juice',
+          price: 2.25,
+          reqs: [{ category: 'Chips', qty: 1 }, { category: 'Drinks', qty: 1 }]
+        },
+        {
+          name: 'Sweet Tooth Treat Pack',
+          desc: '1 Candy/Sweet item + 1 Cold Beverage',
+          price: 2.50,
+          reqs: [{ category: 'Candy', qty: 1 }, { category: 'Drinks', qty: 1 }]
+        },
+        {
+          name: 'Mega Power Trio Bundle',
+          desc: '1 Chip snack + 1 Cold drink + 1 Candy/Baked treat',
+          price: 3.50,
+          reqs: [{ category: 'Chips', qty: 1 }, { category: 'Drinks', qty: 1 }, { category: 'Candy', qty: 1 }]
+        }
+      ];
+      for (const c of defaultCombos) {
+        await client.query(
+          'INSERT INTO combo_deals (name, description, bundle_price, item_requirements) VALUES ($1, $2, $3, $4)',
+          [c.name, c.desc, c.price, JSON.stringify(c.reqs)]
+        );
+      }
+    }
+
+    // Ensure default trivia questions exist
+    const triviaCheck = await client.query('SELECT COUNT(*) FROM trivia_questions');
+    if (parseInt(triviaCheck.rows[0].count, 10) === 0) {
+      const defaultTrivia = [
+        {
+          q: "What is the primary currency unit used for fast loyalty awards at Jordan's Snack Shack?",
+          opts: ["Paper Coupons", "Digital Punch Stamps", "Gold Coins", "School Tokens"],
+          ans: 1,
+          cat: "Snack Shack Knowledge",
+          reward: "⭐ +1 Bonus Stamp!"
+        },
+        {
+          q: "How many loyalty punch stamps earn a 100% FREE snack reward?",
+          opts: ["5 Stamps", "10 Stamps", "15 Stamps", "20 Stamps"],
+          ans: 1,
+          cat: "Snack Shack Loyalty",
+          reward: "🎁 +1 Bonus Stamp!"
+        },
+        {
+          q: "Which nutrient is essential for muscle growth and repair in human biology?",
+          opts: ["Lipids", "Proteins", "Simple Sugars", "Cellulose"],
+          ans: 1,
+          cat: "Science Trivia",
+          reward: "🎟️ 10¢ Off Any Snack!"
+        },
+        {
+          q: "What planet in our solar system is known as the Red Planet?",
+          opts: ["Venus", "Mars", "Jupiter", "Saturn"],
+          ans: 1,
+          cat: "Astronomy",
+          reward: "⭐ +1 Bonus Stamp!"
+        }
+      ];
+      for (const t of defaultTrivia) {
+        await client.query(
+          'INSERT INTO trivia_questions (question, options, correct_index, category, reward_text) VALUES ($1, $2, $3, $4, $5)',
+          [t.q, JSON.stringify(t.opts), t.ans, t.cat, t.reward]
+        );
+      }
+    }
 
     // Ensure default announcements exist
     const annCheck = await client.query('SELECT COUNT(*) FROM display_announcements');

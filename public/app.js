@@ -6408,6 +6408,495 @@ async function deleteDailyShiftLog(id) {
 }
 
 // ==========================================
+// 🎙️ KYRO AI VOICE-TO-CART NATURAL LANGUAGE ORDERING
+// ==========================================
+let isVoiceDictating = false;
+let speechRecognizer = null;
+
+function toggleVoiceOrder() {
+  if (isVoiceDictating) {
+    stopVoiceOrder();
+  } else {
+    startVoiceOrder();
+  }
+}
+
+function startVoiceOrder() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    const manualSpeech = prompt("🎙️ Voice AI Dictation: Type what you'd like to order (e.g. '2 Doritos and 1 cold Gatorade'):");
+    if (manualSpeech) processVoiceTextWithKyroAI(manualSpeech);
+    return;
+  }
+
+  try {
+    speechRecognizer = new SpeechRec();
+    speechRecognizer.continuous = false;
+    speechRecognizer.interimResults = false;
+    speechRecognizer.lang = 'en-US';
+
+    const btn = document.getElementById('btn-voice-order');
+    const textEl = document.getElementById('voice-order-text');
+    const icon = document.getElementById('voice-order-icon');
+
+    if (btn) btn.className = 'px-3 py-2 bg-rose-600 text-white border border-rose-500 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-lg animate-pulse';
+    if (textEl) textEl.textContent = 'Listening...';
+    if (icon) icon.setAttribute('data-lucide', 'mic-off');
+    isVoiceDictating = true;
+
+    speechRecognizer.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      stopVoiceOrder();
+      processVoiceTextWithKyroAI(transcript);
+    };
+
+    speechRecognizer.onerror = (err) => {
+      console.warn('Speech recognition notice:', err);
+      stopVoiceOrder();
+    };
+
+    speechRecognizer.onend = () => {
+      stopVoiceOrder();
+    };
+
+    speechRecognizer.start();
+    showToast('🎙️ Speak order into microphone (e.g. "2 Takis and 1 Slushie")', 'info');
+  } catch (err) {
+    console.warn('Speech recognition init error:', err);
+    stopVoiceOrder();
+  }
+}
+
+function stopVoiceOrder() {
+  isVoiceDictating = false;
+  if (speechRecognizer) {
+    try { speechRecognizer.stop(); } catch(e){}
+    speechRecognizer = null;
+  }
+  const btn = document.getElementById('btn-voice-order');
+  const textEl = document.getElementById('voice-order-text');
+  const icon = document.getElementById('voice-order-icon');
+
+  if (btn) btn.className = 'px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-500/30 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition shadow-sm';
+  if (textEl) textEl.textContent = 'Voice Order';
+  if (icon) icon.setAttribute('data-lucide', 'mic');
+  if (window.lucide) lucide.createIcons();
+}
+
+async function processVoiceTextWithKyroAI(transcript) {
+  if (!transcript || !transcript.trim()) return;
+  showToast(`🤖 Processing order: "${transcript}" with Kyro AI...`, 'info');
+
+  try {
+    const res = await fetch('/api/ai/voice-to-cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ speechText: transcript })
+    });
+
+    const data = await res.json();
+    const items = data.items || [];
+
+    if (items.length === 0) {
+      showToast('⚠️ No matching menu snacks identified. Try saying the exact snack name.', 'error');
+      return;
+    }
+
+    let addedCount = 0;
+    items.forEach(item => {
+      if (item.id) {
+        for (let i = 0; i < (item.quantity || 1); i++) {
+          addToCart(item.id);
+          addedCount++;
+        }
+      }
+    });
+
+    if (typeof playChimeSound === 'function') playChimeSound('bell');
+    showToast(`✅ Kyro AI added ${addedCount} item(s) directly to your cart!`, 'success');
+  } catch (err) {
+    console.error('Voice parsing error:', err);
+    showToast('Failed to process voice order', 'error');
+  }
+}
+
+// Spacebar Hotkey for Voice-To-Cart (when not typing in an input)
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    toggleVoiceOrder();
+  }
+  // Emergency Panic Lockdown Hotkey: Ctrl + Shift + Esc
+  if (e.ctrlKey && e.shiftKey && (e.key === 'Escape' || e.code === 'Escape')) {
+    e.preventDefault();
+    triggerEmergencyLockdown();
+  }
+});
+
+// ==========================================
+// 👤 WATCHLIST INTERCEPTION POS ALERT HUD
+// ==========================================
+function checkStudentWatchlistInterception(student) {
+  const alertBox = document.getElementById('pos-watchlist-alert');
+  const nameEl = document.getElementById('pos-watchlist-name');
+  const reasonEl = document.getElementById('pos-watchlist-reason');
+  if (!alertBox) return;
+
+  if (student && (student.is_flagged || parseFloat(student.unpaid_balance || 0) > 0)) {
+    const unpaidStr = parseFloat(student.unpaid_balance || 0) > 0 
+      ? ` • Unpaid Balance: $${parseFloat(student.unpaid_balance).toFixed(2)}` 
+      : '';
+    if (nameEl) nameEl.textContent = `Watchlist Alert: ${student.name} (${student.student_id})`;
+    if (reasonEl) reasonEl.textContent = `Flag Note: ${student.watchlist_reason || 'Disputed balance conduct note'}${unpaidStr}`;
+    alertBox.classList.remove('hidden');
+
+    if (typeof playTone === 'function') playTone(240, 0.3, 'sawtooth');
+  } else {
+    alertBox.classList.add('hidden');
+  }
+}
+
+function dismissWatchlistAlert() {
+  const alertBox = document.getElementById('pos-watchlist-alert');
+  if (alertBox) alertBox.classList.add('hidden');
+}
+
+// ==========================================
+// 🚨 EMERGENCY COUNTER LOCKDOWN / PANIC PROTOCOL
+// ==========================================
+async function triggerEmergencyLockdown() {
+  if (!confirm('🚨 ACTIVATE EMERGENCY COUNTER LOCKDOWN?\n\nThis will freeze the register, activate stealth assignment disguise, and broadcast emergency alert to manager log.')) return;
+
+  try {
+    await fetch('/api/security/panic', { method: 'POST' });
+  } catch(e){}
+
+  // Activate stealth disguise screen immediately
+  if (typeof toggleStealthMode === 'function') {
+    toggleStealthMode(true);
+  }
+
+  showToast('🚨 EMERGENCY COUNTER LOCKDOWN ACTIVATED', 'error');
+}
+
+// ==========================================
+// 🧾 THERMAL RECEIPT PRINTER SIMULATOR (58mm/80mm)
+// ==========================================
+let currentReceiptOrder = null;
+
+function openThermalReceiptModal(order = null) {
+  openModal('modal-thermal-receipt');
+  
+  const o = order || (ordersHistory && ordersHistory.length > 0 ? ordersHistory[0] : null) || {
+    order_number: 'REC-' + Math.floor(1000 + Math.random() * 9000),
+    created_at: new Date().toISOString(),
+    items: cart.length > 0 ? cart : [{ name: 'Takis Fuego', quantity: 2, price: 1.50, total_price: 3.00 }],
+    subtotal: cart.reduce((s, i) => s + (parseFloat(i.price) * (i.quantity || 1)), 0) || 3.00,
+    discount: currentDiscount || 0.00,
+    tax: 0.00,
+    total: calculateTotal() || 3.00,
+    payment_method: selectedPaymentMethod || 'STUDENT PASS'
+  };
+
+  currentReceiptOrder = o;
+
+  const dtEl = document.getElementById('th-receipt-datetime');
+  const numEl = document.getElementById('th-receipt-ordernum');
+  const itemsContainer = document.getElementById('th-receipt-items');
+  const subEl = document.getElementById('th-receipt-subtotal');
+  const discRow = document.getElementById('th-receipt-discount-row');
+  const discEl = document.getElementById('th-receipt-discount');
+  const taxEl = document.getElementById('th-receipt-tax');
+  const totEl = document.getElementById('th-receipt-total');
+  const payEl = document.getElementById('th-receipt-payment');
+  const loyaltyEl = document.getElementById('th-receipt-loyalty');
+
+  if (dtEl) dtEl.textContent = new Date(o.created_at || Date.now()).toLocaleString();
+  if (numEl) numEl.textContent = `ORDER #${o.order_number}`;
+  if (subEl) subEl.textContent = `$${parseFloat(o.subtotal || o.total || 0).toFixed(2)}`;
+  if (taxEl) taxEl.textContent = `$${parseFloat(o.tax || 0).toFixed(2)}`;
+  if (totEl) totEl.textContent = `$${parseFloat(o.total || 0).toFixed(2)}`;
+  if (payEl) payEl.textContent = (o.payment_method || 'STUDENT PASS').toUpperCase();
+
+  const discVal = parseFloat(o.discount || 0);
+  if (discRow) discRow.classList.toggle('hidden', discVal <= 0);
+  if (discEl) discEl.textContent = `-$${discVal.toFixed(2)}`;
+
+  if (loyaltyEl && currentStudent) {
+    loyaltyEl.textContent = `Pass: ${currentStudent.name} • ${currentStudent.punch_card || 1}/10 Stamps`;
+  }
+
+  const itemsList = o.items || cart || [];
+  if (itemsContainer) {
+    itemsContainer.innerHTML = `
+      <div class="flex justify-between font-bold border-b border-slate-300 pb-1">
+        <span>ITEM</span>
+        <span>QTY  PRICE  TOTAL</span>
+      </div>
+    ` + itemsList.map(item => {
+      const q = item.quantity || 1;
+      const p = parseFloat(item.price || item.unit_price || 0);
+      const t = parseFloat(item.total_price || (p * q));
+      return `
+        <div class="flex justify-between py-0.5">
+          <span class="truncate max-w-[160px]">${item.name || item.product_name}</span>
+          <span>${q}x  $${p.toFixed(2)}  $${t.toFixed(2)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function printThermalReceiptDirect() {
+  const paper = document.getElementById('thermal-receipt-paper');
+  if (!paper) return;
+  const w = window.open('', '_blank', 'width=400,height=600');
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Thermal Receipt Print</title>
+      <style>
+        @page { size: 80mm auto; margin: 0; }
+        body { font-family: monospace; padding: 10px; font-size: 11px; line-height: 1.3; }
+        .text-center { text-align: center; }
+        .border-b { border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
+        .flex { display: flex; justify-content: space-between; }
+        .font-bold { font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      ${paper.innerHTML}
+      <script>setTimeout(() => { window.print(); window.close(); }, 300);<\\/script>
+    </body>
+    </html>
+  `);
+  w.document.close();
+}
+
+function copyThermalReceiptText() {
+  const paper = document.getElementById('thermal-receipt-paper');
+  if (!paper) return;
+  const text = paper.innerText || paper.textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('📋 Plaintext Thermal Receipt copied to clipboard!', 'success');
+    });
+  }
+}
+
+// ==========================================
+// 🤝 VOLUNTEER GOVERNANCE & LEADERBOARD
+// ==========================================
+let volunteerRoster = [];
+
+async function openVolunteerModal() {
+  openModal('modal-volunteer-hub');
+  await loadVolunteers();
+}
+
+async function loadVolunteers() {
+  try {
+    const [volRes, leadRes] = await Promise.all([
+      fetch('/api/volunteers'),
+      fetch('/api/volunteers/leaderboard')
+    ]);
+
+    volunteerRoster = await volRes.json();
+    const leaderboard = await leadRes.json();
+
+    const select = document.getElementById('vol-shift-select');
+    if (select) {
+      select.innerHTML = volunteerRoster.map(v => `
+        <option value="${v.id}">
+          ${v.avatar_emoji || '🌟'} ${v.name} (${v.role}) ${v.is_clocked_in ? '• [CLOCKED IN]' : ''}
+        </option>
+      `).join('');
+    }
+
+    const container = document.getElementById('vol-leaderboard-container');
+    if (container) {
+      container.innerHTML = leaderboard.map((v, i) => `
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between hover:border-amber-500/40 transition">
+          <div class="flex items-center gap-3">
+            <span class="font-black text-sm text-amber-400 font-mono">#${i + 1}</span>
+            <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-xl shadow">
+              ${v.avatar_emoji || '🌟'}
+            </div>
+            <div>
+              <div class="font-bold text-white">${v.name}</div>
+              <div class="text-[10px] text-slate-400">${v.role} • <strong class="text-amber-300">${v.points || 0} pts</strong></div>
+            </div>
+          </div>
+          <div class="text-right font-mono text-xs">
+            <div class="text-emerald-400 font-bold">${parseFloat(v.total_hours || 0).toFixed(1)} hrs</div>
+            <div class="text-[10px] text-slate-500">${v.total_orders_served || 0} orders served</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+  } catch (err) {
+    console.error('Volunteer load error:', err);
+  }
+}
+
+async function submitVolunteerClockIn() {
+  const volId = document.getElementById('vol-shift-select')?.value;
+  const pin = document.getElementById('vol-pin-input')?.value.trim();
+  if (!volId) return;
+
+  try {
+    const res = await fetch('/api/volunteers/clock-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volunteer_id: volId, pin })
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || 'Clock in failed');
+
+    showToast(`✅ ${data.volunteer?.name || 'Volunteer'} Clocked In Successfully!`, 'success');
+    document.getElementById('vol-pin-input').value = '';
+    loadVolunteers();
+  } catch (err) {
+    showToast('Clock in error', 'error');
+  }
+}
+
+async function submitVolunteerClockOut() {
+  const volId = document.getElementById('vol-shift-select')?.value;
+  if (!volId) return;
+
+  try {
+    const res = await fetch('/api/volunteers/clock-out', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volunteer_id: volId, orders_served: cart.length > 0 ? 1 : 0 })
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || 'Clock out failed');
+
+    showToast(`🏁 Clocked Out! Worked ${data.hoursWorked} hrs • Earned +${data.pointsEarned} Points!`, 'success');
+    loadVolunteers();
+  } catch (err) {
+    showToast('Clock out error', 'error');
+  }
+}
+
+// ==========================================
+// 📑 END-OF-DAY FINANCIAL Z-REPORT AUDIT
+// ==========================================
+async function openZReportModal() {
+  openModal('modal-z-report');
+  const container = document.getElementById('z-report-content');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/reports/z-report');
+    const data = await res.json();
+    const sum = data.summary || {};
+    const payments = data.payment_breakdown || [];
+    const topItems = data.top_selling_items || [];
+
+    container.innerHTML = `
+      <!-- Financial Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Gross Sales</div>
+          <div class="font-heading font-extrabold text-lg text-emerald-400">$${parseFloat(sum.gross_sales || 0).toFixed(2)}</div>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Transactions</div>
+          <div class="font-heading font-extrabold text-lg text-white">${sum.total_transactions || 0}</div>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Discounts</div>
+          <div class="font-heading font-extrabold text-lg text-cyan-400">-$${parseFloat(sum.total_discounts || 0).toFixed(2)}</div>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Tax Collected</div>
+          <div class="font-heading font-extrabold text-lg text-amber-400">$${parseFloat(sum.total_tax || 0).toFixed(2)}</div>
+        </div>
+      </div>
+
+      <!-- Payment Breakdown -->
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+        <h4 class="font-bold text-xs text-white uppercase tracking-wider">Payment Method Reconciliations</h4>
+        <div class="space-y-1.5 font-mono text-xs">
+          ${payments.map(p => `
+            <div class="flex justify-between items-center py-1 border-b border-slate-800/60">
+              <span class="uppercase font-bold text-slate-300">${p.payment_method} (${p.count} orders)</span>
+              <span class="font-bold text-emerald-400">$${parseFloat(p.amount).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Top Selling Items -->
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+        <h4 class="font-bold text-xs text-white uppercase tracking-wider">Top Velocity Items Today</h4>
+        <div class="space-y-1 font-mono text-xs">
+          ${topItems.slice(0, 6).map(i => `
+            <div class="flex justify-between items-center py-0.5">
+              <span class="text-slate-200">${i.qty_sold}x ${i.product_name}</span>
+              <span class="text-slate-400">$${parseFloat(i.revenue).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<div class="text-center text-rose-400 py-6">Failed to generate Z-Report</div>';
+  }
+}
+
+function printZReportDirect() {
+  const content = document.getElementById('z-report-content');
+  if (!content) return;
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Daily Financial Z-Report • Jordan's Snack Shack</title>
+      <style>body { font-family: monospace; padding: 20px; font-size: 12px; }</style>
+    </head>
+    <body>
+      <h2>🍿 JORDAN'S SNACK SHACK • DAILY FINANCIAL Z-REPORT</h2>
+      <p>Date: ${new Date().toLocaleDateString()} • Generated at: ${new Date().toLocaleTimeString()}</p>
+      <hr>
+      ${content.innerHTML}
+      <script>setTimeout(() => window.print(), 300);<\\/script>
+    </body>
+    </html>
+  `);
+  w.document.close();
+}
+
+// ==========================================
+// 📦 AI RESTOCK PREDICTOR (KYRO AI)
+// ==========================================
+async function openAiRestockModal() {
+  openModal('modal-ai-restock');
+  await generateAiRestockForecast();
+}
+
+async function generateAiRestockForecast() {
+  const box = document.getElementById('ai-restock-forecast-box');
+  if (!box) return;
+
+  box.innerHTML = '<div class="text-center text-purple-400 py-8 animate-pulse font-mono">🧠 Kyro AI analyzing inventory velocity & storage locker vault #314...</div>';
+
+  try {
+    const res = await fetch('/api/ai/restock-forecast', { method: 'POST' });
+    const data = await res.json();
+    box.textContent = data.forecast || 'Inventory levels optimal.';
+  } catch (err) {
+    box.textContent = 'Unable to reach Kyro AI Gateway. Check internet connection.';
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {
@@ -6441,4 +6930,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }).catch(()=>{});
 });
+
 
