@@ -4944,84 +4944,124 @@ function renderHistoricalDvrFrame(offsetSec) {
     watermark.textContent = `⏪ REWIND (CUSTOMER CAM): ${pastTimeStr} (-${m}m ${s}s)`;
   }
 
-  // Function to draw image and DVR HUD
-  function drawDvrImageFrame(imgToDraw, frameInfo) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.drawImage(imgToDraw, 0, 0, canvas.width, canvas.height);
-    ctx.restore();
+  // Frame is only considered present if within 3.5 seconds of target timestamp
+  const hasRecordedFrame = closestFrame && minDiff <= 3500 && (closestFrame.dataUrl || closestFrame.imgObj);
 
-    // Vintage Surveillance Amber Filter
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.06)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (hasRecordedFrame) {
+    // Function to draw image and DVR HUD
+    function drawDvrImageFrame(imgToDraw, frameInfo) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.drawImage(imgToDraw, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
-    // Scanlines
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-    for (let y = 0; y < canvas.height; y += 4) {
-      ctx.fillRect(0, y, canvas.width, 2);
+      // Vintage Surveillance Amber Filter
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.06)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Scanlines
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+      for (let y = 0; y < canvas.height; y += 4) {
+        ctx.fillRect(0, y, canvas.width, 2);
+      }
+
+      // Rewind HUD Border Lines
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+      // Tag Pill
+      const tag = (frameInfo && frameInfo.tag) ? frameInfo.tag : 'SURVEILLANCE ARCHIVE';
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+      ctx.fillRect(18, 18, 260, 22);
+      ctx.fillStyle = '#022c22';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`CUSTOMER CAM: ${tag}`, 24, 33);
+
+      // Audio recording indicator
+      const audioLvl = (frameInfo && frameInfo.audioLevel) ? frameInfo.audioLevel : 0;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(canvas.width - 180, 18, 160, 22);
+      ctx.fillStyle = audioLvl > 20 ? '#fbbf24' : '#6ee7b7';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(`🎙️ AUDIO REC: ${audioLvl}%`, canvas.width - 170, 33);
     }
 
-    // Rewind HUD Border Lines
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
-    // Tag Pill
-    const tag = (frameInfo && frameInfo.tag) ? frameInfo.tag : 'SURVEILLANCE ARCHIVE';
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
-    ctx.fillRect(18, 18, 260, 22);
-    ctx.fillStyle = '#022c22';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(`CUSTOMER CAM: ${tag}`, 24, 33);
-
-    // Audio recording indicator
-    const audioLvl = (frameInfo && frameInfo.audioLevel) ? frameInfo.audioLevel : 0;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(canvas.width - 180, 18, 160, 22);
-    ctx.fillStyle = audioLvl > 20 ? '#fbbf24' : '#6ee7b7';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(`🎙️ AUDIO REC: ${audioLvl}%`, canvas.width - 170, 33);
-  }
-
-  if (closestFrame && closestFrame.imgObj && closestFrame.imgObj.complete && closestFrame.imgObj.naturalWidth > 0) {
-    drawDvrImageFrame(closestFrame.imgObj, closestFrame);
-  } else if (closestFrame && closestFrame.dataUrl) {
-    const img = new Image();
-    img.onload = () => {
-      closestFrame.imgObj = img;
-      drawDvrImageFrame(img, closestFrame);
-    };
-    img.src = closestFrame.dataUrl;
-  } else if (latestCustomerFrameImg && latestCustomerFrameImg.complete) {
-    // If no specific historical frame is cached yet, display the latest customer frame with playback overlay
-    drawDvrImageFrame(latestCustomerFrameImg, { tag: 'BUFFERING LIVE ARCHIVE', audioLevel: 15 });
+    if (closestFrame.imgObj && closestFrame.imgObj.complete && closestFrame.imgObj.naturalWidth > 0) {
+      drawDvrImageFrame(closestFrame.imgObj, closestFrame);
+    } else if (closestFrame.dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        closestFrame.imgObj = img;
+        drawDvrImageFrame(img, closestFrame);
+      };
+      img.src = closestFrame.dataUrl;
+    }
   } else {
-    // High-tech timecode historical surveillance fallback feed
-    ctx.fillStyle = '#090d16';
+    // ==========================================
+    // 📼 EXACT TACTICAL DVR TIME-MACHINE STANDBY SCREEN
+    // ==========================================
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#070b14';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-    for (let y = 0; y < canvas.height; y += 4) {
-      ctx.fillRect(0, y, canvas.width, 2);
+    // Subtle CRT Horizontal Scanlines
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
+    for (let y = 0; y < canvas.height; y += 3) {
+      ctx.fillRect(0, y, canvas.width, 1.5);
     }
 
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+    // Outer Reticle & Framing Border Lines
+    const pad = 16;
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+    ctx.strokeRect(pad, pad, canvas.width - (pad * 2), canvas.height - (pad * 2));
+
+    // Corner tick markers
+    const tickLen = 22;
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2.5;
+
+    // Top-Left
+    ctx.beginPath(); ctx.moveTo(pad, pad + tickLen); ctx.lineTo(pad, pad); ctx.lineTo(pad + tickLen, pad); ctx.stroke();
+    // Top-Right
+    ctx.beginPath(); ctx.moveTo(canvas.width - pad - tickLen, pad); ctx.lineTo(canvas.width - pad, pad); ctx.lineTo(canvas.width - pad, pad + tickLen); ctx.stroke();
+    // Bottom-Left
+    ctx.beginPath(); ctx.moveTo(pad, canvas.height - pad - tickLen); ctx.lineTo(pad, canvas.height - pad); ctx.lineTo(pad + tickLen, canvas.height - pad); ctx.stroke();
+    // Bottom-Right
+    ctx.beginPath(); ctx.moveTo(canvas.width - pad - tickLen, canvas.height - pad); ctx.lineTo(canvas.width - pad, canvas.height - pad); ctx.lineTo(canvas.width - pad, canvas.height - pad - tickLen); ctx.stroke();
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    // Center 1: Icon + "TIME-MACHINE DVR PLAYBACK" Header
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(cx - 150, cy - 66, 20, 20);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⏪', cx - 140, cy - 52);
 
     ctx.fillStyle = '#f59e0b';
-    ctx.font = 'bold 15px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`⏪ TIME-MACHINE DVR PLAYBACK`, canvas.width / 2, canvas.height / 2 - 25);
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 20px monospace';
-    ctx.fillText(pastTimeStr, canvas.width / 2, canvas.height / 2 + 5);
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'start';
+    ctx.fillText('TIME-MACHINE DVR PLAYBACK', cx - 120, cy - 51);
 
+    // Center 2: Large White Timecode
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(pastTimeStr, cx, cy - 8);
+
+    // Center 3: Offset & Camera Location
     ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px monospace';
+    ctx.fillText(`Offset: -${m} min ${s} sec • CAM-02 Customer Screen (Table 4B)`, cx, cy + 24);
+
+    // Center 4: Status / Subtitle
+    ctx.fillStyle = '#64748b';
     ctx.font = '11px monospace';
-    ctx.fillText(`Offset: -${m} min ${s} sec • CAM-02 Customer Screen (Table 4B)`, canvas.width / 2, canvas.height / 2 + 28);
-    ctx.fillText(`Buffer Active • 60-Min Customer Camera Archive`, canvas.width / 2, canvas.height / 2 + 48);
+    ctx.fillText('Logged Customer Screen DVR Archive • Continuous Rec', cx, cy + 46);
     ctx.textAlign = 'start';
   }
 }
