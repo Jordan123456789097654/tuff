@@ -3808,6 +3808,26 @@
                 <span class="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30">Form JSS-INC-01</span>
               </div>
 
+              <!-- ✨ Kyro AI Auto-Fill Assistant -->
+              <div class="bg-purple-950/40 border border-purple-500/40 rounded-xl p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-bold text-purple-300 flex items-center gap-1">
+                    <span>✨</span> Describe to AI &amp; Auto-Fill:
+                  </span>
+                  <span class="text-[9px] bg-purple-500/20 text-purple-200 border border-purple-500/40 px-1.5 py-0.5 rounded font-mono font-bold">KYRO AI</span>
+                </div>
+                <div class="flex gap-1.5">
+                  <input type="text" id="ai-inc-prompt-input" placeholder="Describe event: e.g. Marcus was yelling at cashier at Table 4B and tried to take Takis..." class="flex-1 bg-slate-900 border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
+                  <button type="button" onclick="dictateAiIncidentPrompt()" id="btn-dictate-ai-inc" class="bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/40 px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0" title="Voice Dictate">
+                    <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" onclick="triggerAiFillIncidentForm()" id="btn-run-ai-inc" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow">
+                    <span>Auto-Fill</span>
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
               <div class="grid grid-cols-2 gap-2">
                 <div>
                   <label class="font-semibold text-slate-300 block mb-1">Incident Type:</label>
@@ -3864,6 +3884,26 @@
                   <span>📋</span> Submit Daily Shift Operational Log
                 </h4>
                 <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">Form JSS-LOG-01</span>
+              </div>
+
+              <!-- ✨ Kyro AI Auto-Fill Assistant for Shift Log -->
+              <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1">
+                    <span>✨</span> Describe Shift to AI &amp; Auto-Fill:
+                  </span>
+                  <span class="text-[9px] bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-bold">KYRO AI</span>
+                </div>
+                <div class="flex gap-1.5">
+                  <input type="text" id="ai-shift-prompt-input" placeholder="Describe shift: e.g. Jordan on register with $50 float. Counted $114.50 exact, sold out of powerade..." class="flex-1 bg-slate-900 border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+                  <button type="button" onclick="dictateAiShiftPrompt()" id="btn-dictate-ai-shift" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0" title="Voice Dictate">
+                    <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" onclick="triggerAiFillShiftLogForm()" id="btn-run-ai-shift" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow">
+                    <span>Auto-Fill</span>
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
               </div>
 
               <div class="grid grid-cols-2 gap-2">

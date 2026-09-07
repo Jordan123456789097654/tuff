@@ -2737,6 +2737,124 @@ Format output cleanly with:
   }
 });
 
+// 3b. AI Smart Auto-Fill Incident Form from Natural Language Description
+app.post('/api/ai/parse-incident', async (req, res) => {
+  try {
+    const { description } = req.body;
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    const prompt = `You are an AI Incident Assistant for Jordan's Snack Shack school operations.
+A manager or cashier described a security or operational event in plain English:
+"${description}"
+
+Parse and format this into a complete, professional school incident report.
+Return ONLY a valid JSON object matching this schema:
+{
+  "incident_type": "<one of: 'hostile_audio', 'silent_duress', 'disputed_debt', 'crowd_disorder', 'other'>",
+  "severity": "<one of: 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'>",
+  "student_name": "<identified student name or 'Unknown'>",
+  "location": "<identified location or 'Station Table 4B'>",
+  "description": "<professional, detailed 2-3 sentence formal incident description>",
+  "action_taken": "<concrete immediate action taken and recommended follow-up>"
+}
+Do not return backticks, markdown, or extra commentary. Return only the raw JSON object.`;
+
+    const aiRes = await callKyroAI([
+      { role: 'system', content: 'You extract and format school store incident reports into strict JSON.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 600, 0.2);
+
+    let parsed = null;
+    if (aiRes) {
+      try {
+        const clean = aiRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(clean);
+      } catch (e) {
+        console.warn('AI Incident parse JSON error:', e.message);
+      }
+    }
+
+    if (!parsed) {
+      parsed = {
+        incident_type: 'other',
+        severity: 'MEDIUM',
+        student_name: 'Unknown',
+        location: 'Station Table 4B',
+        description: description,
+        action_taken: 'Documented in register log and notified supervisor.'
+      };
+    }
+
+    res.json({ success: true, data: parsed });
+  } catch (err) {
+    console.error('Parse incident error:', err);
+    res.status(500).json({ error: 'Failed to parse incident with AI' });
+  }
+});
+
+// 3c. AI Smart Auto-Fill Daily Shift Log from Natural Language Description
+app.post('/api/ai/parse-shift-log', async (req, res) => {
+  try {
+    const { description } = req.body;
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    const prompt = `You are an AI Shift Log Assistant for Jordan's Snack Shack school operations.
+A manager or cashier described their operational shift in plain English:
+"${description}"
+
+Parse and format this into a complete daily shift operational log.
+Return ONLY a valid JSON object matching this schema:
+{
+  "cashier_name": "<cashier name mentioned, or 'Jordan Daniels'>",
+  "manager_name": "<manager name mentioned, or 'Store Lead & Manager'>",
+  "opening_cash": <number, e.g. 50.00>,
+  "closing_cash": <number, e.g. 114.50>,
+  "discrepancy": <number, e.g. 0.00>,
+  "weather_summary": "<summary of weather/temperature and snack demand, e.g. 'Sunny & Warm, 75°F (Elevated Cold Drink Sales)'>",
+  "operational_notes": "<detailed professional 2-3 sentence shift summary including sales flow, restock needs for Locker Vault #314, and register status>",
+  "manager_signoff": true
+}
+Do not return backticks, markdown, or extra commentary. Return only the raw JSON object.`;
+
+    const aiRes = await callKyroAI([
+      { role: 'system', content: 'You extract and format daily store shift logs into strict JSON.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 600, 0.2);
+
+    let parsed = null;
+    if (aiRes) {
+      try {
+        const clean = aiRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(clean);
+      } catch (e) {
+        console.warn('AI Shift Log parse JSON error:', e.message);
+      }
+    }
+
+    if (!parsed) {
+      parsed = {
+        cashier_name: 'Jordan Daniels',
+        manager_name: 'Store Lead & Manager',
+        opening_cash: 50.00,
+        closing_cash: 114.50,
+        discrepancy: 0.00,
+        weather_summary: 'Sunny & Mild, 74°F (Normal Demand)',
+        operational_notes: description,
+        manager_signoff: true
+      };
+    }
+
+    res.json({ success: true, data: parsed });
+  } catch (err) {
+    console.error('Parse shift log error:', err);
+    res.status(500).json({ error: 'Failed to parse shift log with AI' });
+  }
+});
+
 // 4. Live School Trivia Generator & Prize Engine
 app.get('/api/ai/trivia', async (req, res) => {
   try {

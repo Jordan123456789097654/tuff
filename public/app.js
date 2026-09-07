@@ -6266,6 +6266,217 @@ async function saveManagerSopDocument() {
 }
 
 // --- TAB 6: DIGITAL INCIDENT FORMS & DAILY SHIFT LOGS ---
+
+// ==========================================
+// ✨ KYRO AI SMART AUTO-FILL FOR FORMS
+// ==========================================
+
+async function triggerAiFillIncidentForm() {
+  const promptInput = document.getElementById('ai-inc-prompt-input');
+  const btn = document.getElementById('btn-run-ai-inc');
+  const desc = promptInput ? promptInput.value.trim() : '';
+
+  if (!desc) {
+    showToast('Please type or dictate what happened in the AI prompt box first!', 'warning');
+    if (promptInput) promptInput.focus();
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>Thinking...</span> <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  try {
+    const res = await fetch('/api/ai/parse-incident', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: desc })
+    });
+    const result = await res.json();
+
+    if (result.success && result.data) {
+      const d = result.data;
+      if (d.incident_type && document.getElementById('form-inc-type')) {
+        document.getElementById('form-inc-type').value = d.incident_type;
+      }
+      if (d.severity && document.getElementById('form-inc-severity')) {
+        document.getElementById('form-inc-severity').value = d.severity;
+      }
+      if (d.student_name && document.getElementById('form-inc-student')) {
+        document.getElementById('form-inc-student').value = d.student_name;
+      }
+      if (d.location && document.getElementById('form-inc-loc')) {
+        document.getElementById('form-inc-loc').value = d.location;
+      }
+      if (d.description && document.getElementById('form-inc-desc')) {
+        document.getElementById('form-inc-desc').value = d.description;
+      }
+      if (d.action_taken && document.getElementById('form-inc-action')) {
+        document.getElementById('form-inc-action').value = d.action_taken;
+      }
+      showToast('✨ Kyro AI Auto-Filled Incident Form!', 'success');
+      playSound('chaching');
+    } else {
+      showToast('AI could not parse details. Please verify fields manually.', 'warning');
+    }
+  } catch (err) {
+    console.error('AI Incident Fill error:', err);
+    showToast('AI form fill failed', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Auto-Fill</span> <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+function dictateAiIncidentPrompt() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Voice dictation is not supported in this browser. Please type description.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-dictate-ai-inc');
+  const input = document.getElementById('ai-inc-prompt-input');
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  if (btn) btn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
+  showToast('🎙️ Listening... Describe the incident now.', 'info');
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    if (input) {
+      input.value = transcript;
+    }
+    showToast(`🎙️ Heard: "${transcript}"`, 'success');
+    triggerAiFillIncidentForm();
+  };
+
+  recognition.onerror = () => {
+    showToast('Microphone dictation ended or failed', 'warning');
+  };
+
+  recognition.onend = () => {
+    if (btn) btn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+  };
+
+  recognition.start();
+}
+
+async function triggerAiFillShiftLogForm() {
+  const promptInput = document.getElementById('ai-shift-prompt-input');
+  const btn = document.getElementById('btn-run-ai-shift');
+  const desc = promptInput ? promptInput.value.trim() : '';
+
+  if (!desc) {
+    showToast('Please type or dictate shift details in the AI prompt box first!', 'warning');
+    if (promptInput) promptInput.focus();
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>Thinking...</span> <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  try {
+    const res = await fetch('/api/ai/parse-shift-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: desc })
+    });
+    const result = await res.json();
+
+    if (result.success && result.data) {
+      const d = result.data;
+      if (d.cashier_name && document.getElementById('form-log-cashier')) {
+        document.getElementById('form-log-cashier').value = d.cashier_name;
+      }
+      if (d.manager_name && document.getElementById('form-log-manager')) {
+        document.getElementById('form-log-manager').value = d.manager_name;
+      }
+      if (d.opening_cash !== undefined && document.getElementById('form-log-open-cash')) {
+        document.getElementById('form-log-open-cash').value = parseFloat(d.opening_cash).toFixed(2);
+      }
+      if (d.closing_cash !== undefined && document.getElementById('form-log-close-cash')) {
+        document.getElementById('form-log-close-cash').value = parseFloat(d.closing_cash).toFixed(2);
+      }
+      if (d.discrepancy !== undefined && document.getElementById('form-log-diff')) {
+        document.getElementById('form-log-diff').value = parseFloat(d.discrepancy).toFixed(2);
+      }
+      if (d.weather_summary && document.getElementById('form-log-weather')) {
+        document.getElementById('form-log-weather').value = d.weather_summary;
+      }
+      if (d.operational_notes && document.getElementById('form-log-notes')) {
+        document.getElementById('form-log-notes').value = d.operational_notes;
+      }
+      if (d.manager_signoff !== undefined && document.getElementById('form-log-signoff')) {
+        document.getElementById('form-log-signoff').checked = !!d.manager_signoff;
+      }
+      showToast('✨ Kyro AI Auto-Filled Daily Shift Log!', 'success');
+      playSound('chaching');
+    } else {
+      showToast('AI could not parse shift log. Please fill manually.', 'warning');
+    }
+  } catch (err) {
+    console.error('AI Shift Log Fill error:', err);
+    showToast('AI shift log fill failed', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Auto-Fill</span> <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+function dictateAiShiftPrompt() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Voice dictation is not supported in this browser. Please type description.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-dictate-ai-shift');
+  const input = document.getElementById('ai-shift-prompt-input');
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  if (btn) btn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
+  showToast('🎙️ Listening... Describe your shift summary now.', 'info');
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    if (input) {
+      input.value = transcript;
+    }
+    showToast(`🎙️ Heard: "${transcript}"`, 'success');
+    triggerAiFillShiftLogForm();
+  };
+
+  recognition.onerror = () => {
+    showToast('Microphone dictation ended or failed', 'warning');
+  };
+
+  recognition.onend = () => {
+    if (btn) btn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+  };
+
+  recognition.start();
+}
+
 async function submitDigitalIncidentReport() {
   const type = document.getElementById('form-inc-type')?.value;
   const severity = document.getElementById('form-inc-severity')?.value;
