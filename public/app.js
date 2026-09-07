@@ -1455,6 +1455,8 @@ function openNewStudentModal() {
   document.getElementById('new-stu-rewards').value = '0';
   document.getElementById('new-stu-allergies').value = '';
   document.getElementById('new-stu-notes').value = '';
+  document.getElementById('new-stu-birthday').value = '';
+  document.getElementById('new-stu-streak').value = '0';
   document.getElementById('new-stu-photo-data').value = '';
   document.getElementById('new-stu-photo-preview').innerHTML = `👤`;
 
@@ -1479,6 +1481,8 @@ function openEditStudentModal(studentId) {
   document.getElementById('new-stu-rewards').value = student.free_rewards || 0;
   document.getElementById('new-stu-allergies').value = student.allergies || '';
   document.getElementById('new-stu-notes').value = student.notes || '';
+  document.getElementById('new-stu-birthday').value = student.birthday || '';
+  document.getElementById('new-stu-streak').value = student.streak_count || 0;
   document.getElementById('new-stu-photo-data').value = student.photo_data || '';
 
   if (student.photo_data) {
@@ -1540,6 +1544,8 @@ async function submitStudentForm() {
   const free_rewards = parseInt(document.getElementById('new-stu-rewards').value, 10) || 0;
   const allergies = document.getElementById('new-stu-allergies').value.trim();
   const notes = document.getElementById('new-stu-notes').value.trim();
+  const birthday = document.getElementById('new-stu-birthday').value;
+  const streak_count = parseInt(document.getElementById('new-stu-streak').value, 10) || 0;
   const photo_data = document.getElementById('new-stu-photo-data').value || '';
 
   if (!name || !student_id) {
@@ -1557,6 +1563,8 @@ async function submitStudentForm() {
     free_rewards,
     allergies,
     notes,
+    birthday,
+    streak_count,
     photo_data
   };
 
@@ -1787,11 +1795,15 @@ function openNewProductModal() {
   document.getElementById('prod-name').value = '';
   document.getElementById('prod-barcode').value = '';
   document.getElementById('prod-price').value = '1.50';
-  document.getElementById('prod-cost').value = '0.65';
   document.getElementById('prod-stock').value = '48';
   document.getElementById('prod-low').value = '10';
   document.getElementById('prod-emoji').value = '🍿';
   document.getElementById('prod-allergy').value = '';
+  document.getElementById('prod-calories').value = '150';
+  document.getElementById('prod-sugar').value = '6';
+  document.getElementById('prod-carbs').value = '22';
+  document.getElementById('prod-badges').value = '100% Peanut-Free';
+  document.getElementById('prod-ingredients').value = '';
   document.getElementById('prod-is-open-price').checked = false;
   toggleOpenPriceFields(false);
 
@@ -1816,6 +1828,11 @@ function openEditProductModal(productId) {
   document.getElementById('prod-low').value = product.low_stock_threshold || 10;
   document.getElementById('prod-emoji').value = product.emoji || '🍿';
   document.getElementById('prod-allergy').value = product.allergy_info || '';
+  document.getElementById('prod-calories').value = product.calories || 150;
+  document.getElementById('prod-sugar').value = product.sugar !== undefined && product.sugar !== null ? product.sugar : 6;
+  document.getElementById('prod-carbs').value = product.carbs !== undefined && product.carbs !== null ? product.carbs : 22;
+  document.getElementById('prod-badges').value = product.dietary_badges || '';
+  document.getElementById('prod-ingredients').value = product.ingredients || '';
   document.getElementById('prod-is-open-price').checked = Boolean(product.is_open_price);
   toggleOpenPriceFields(Boolean(product.is_open_price));
 
@@ -1843,6 +1860,11 @@ async function submitProductForm() {
   const stock_quantity = parseInt(document.getElementById('prod-stock').value, 10) || 0;
   const low_stock_threshold = parseInt(document.getElementById('prod-low').value, 10) || 10;
   const allergy_info = document.getElementById('prod-allergy').value.trim();
+  const calories = parseInt(document.getElementById('prod-calories').value, 10) || 0;
+  const sugar = parseFloat(document.getElementById('prod-sugar').value) || 0;
+  const carbs = parseFloat(document.getElementById('prod-carbs').value) || 0;
+  const dietary_badges = document.getElementById('prod-badges').value.trim();
+  const ingredients = document.getElementById('prod-ingredients').value.trim();
 
   if (!name) {
     showToast('Item name is required', 'error');
@@ -1859,7 +1881,12 @@ async function submitProductForm() {
     stock_quantity,
     low_stock_threshold,
     allergy_info,
-    is_open_price
+    is_open_price,
+    calories,
+    sugar,
+    carbs,
+    dietary_badges,
+    ingredients
   };
 
   try {

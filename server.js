@@ -636,6 +636,123 @@ app.post('/api/polls/vote', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// SNACK WISHLIST & SUGGESTIONS
+// ----------------------------------------------------
+
+app.get('/api/wishlist', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM snack_wishlist ORDER BY votes DESC, id ASC LIMIT 50');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching wishlist:', err);
+    res.status(500).json({ error: 'Failed to fetch wishlist' });
+  }
+});
+
+app.post('/api/wishlist', async (req, res) => {
+  try {
+    const { snack_name, category, requested_by } = req.body;
+    if (!snack_name) return res.status(400).json({ error: 'Snack name is required.' });
+
+    const result = await db.query(
+      `INSERT INTO snack_wishlist (snack_name, category, requested_by, votes)
+       VALUES ($1, $2, $3, 1) RETURNING *`,
+      [snack_name.trim(), category || 'Snack', requested_by ? requested_by.trim() : 'Customer']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding wishlist item:', err);
+    res.status(500).json({ error: 'Failed to add wishlist item' });
+  }
+});
+
+app.post('/api/wishlist/vote', async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Wishlist item ID is required.' });
+
+    const result = await db.query('UPDATE snack_wishlist SET votes = votes + 1 WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Wishlist item not found.' });
+    }
+    const allWish = await db.query('SELECT * FROM snack_wishlist ORDER BY votes DESC, id ASC LIMIT 50');
+    res.json({ success: true, updated: result.rows[0], items: allWish.rows });
+  } catch (err) {
+    console.error('Error voting wishlist item:', err);
+    res.status(500).json({ error: 'Failed to vote wishlist item' });
+  }
+});
+
+// ----------------------------------------------------
+// LIVE DISPLAY ANNOUNCEMENTS & TICKER
+// ----------------------------------------------------
+
+app.get('/api/announcements', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM display_announcements WHERE is_active = TRUE ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching announcements:', err);
+    res.status(500).json({ error: 'Failed to fetch announcements' });
+  }
+});
+
+app.post('/api/announcements', async (req, res) => {
+  try {
+    const { message, emoji } = req.body;
+    if (!message) return res.status(400).json({ error: 'Announcement message is required.' });
+
+    const result = await db.query(
+      'INSERT INTO display_announcements (message, emoji) VALUES ($1, $2) RETURNING *',
+      [message.trim(), emoji || '📢']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding announcement:', err);
+    res.status(500).json({ error: 'Failed to add announcement' });
+  }
+});
+
+app.delete('/api/announcements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query('DELETE FROM display_announcements WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting announcement:', err);
+    res.status(500).json({ error: 'Failed to delete announcement' });
+  }
+});
+
+// ----------------------------------------------------
+// TRENDING SNACKS (Live Best Sellers + Stock remaining)
+// ----------------------------------------------------
+
+app.get('/api/trending', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        p.id, 
+        p.name, 
+        p.emoji, 
+        p.price, 
+        p.stock_quantity,
+        COALESCE(SUM(oi.quantity), 0) as recent_sold
+      FROM products p
+      LEFT JOIN order_items oi ON p.id = oi.product_id
+      WHERE p.is_active = TRUE
+      GROUP BY p.id, p.name, p.emoji, p.price, p.stock_quantity
+      ORDER BY recent_sold DESC, p.stock_quantity ASC
+      LIMIT 3
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching trending snacks:', err);
+    res.status(500).json({ error: 'Failed to fetch trending snacks' });
+  }
+});
+
+// ----------------------------------------------------
 // CHECKOUT & ORDERS (Atomic Transaction)
 // ----------------------------------------------------
 

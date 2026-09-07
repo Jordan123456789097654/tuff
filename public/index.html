@@ -1285,6 +1285,31 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Calories:</label>
+            <input type="number" id="prod-calories" placeholder="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Sugar (g):</label>
+            <input type="number" id="prod-sugar" placeholder="8" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Carbs (g):</label>
+            <input type="number" id="prod-carbs" placeholder="24" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Dietary Badges (comma-separated):</label>
+          <input type="text" id="prod-badges" placeholder="e.g. 100% Peanut-Free, Gluten-Free, Halal" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Ingredients List (Optional):</label>
+          <input type="text" id="prod-ingredients" placeholder="e.g. Whole grain corn, canola oil, sea salt..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+        </div>
+
         <div>
           <label class="text-slate-400 font-semibold mb-1 block">Allergy Warning / Dietary Flag:</label>
           <input type="text" id="prod-allergy" placeholder="e.g. Contains Peanuts, Gluten-Free, Dairy" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
@@ -1330,6 +1355,17 @@
           <div>
             <label class="text-slate-400 font-semibold mb-1 block">Grade / Class:</label>
             <input type="text" id="new-stu-grade" placeholder="e.g. 7th Grade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Birthday (for Free Birthday Treat!):</label>
+            <input type="date" id="new-stu-birthday" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Daily Visit Streak:</label>
+            <input type="number" id="new-stu-streak" value="0" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
           </div>
         </div>
 

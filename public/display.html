@@ -36,6 +36,18 @@
     .float-anim {
       animation: float 4s infinite ease-in-out;
     }
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 28s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
     .scrollbar-none::-webkit-scrollbar {
       display: none;
     }
@@ -43,42 +55,75 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    .scratch-canvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased selection:bg-amber-500 selection:text-slate-950">
 
+  <!-- TOP LIVE ANNOUNCEMENTS & NEWS TICKER -->
+  <div id="display-ticker-bar" class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 text-slate-950 font-bold text-xs py-1.5 px-4 overflow-hidden shadow-inner flex items-center gap-3 shrink-0">
+    <div class="flex items-center gap-1.5 shrink-0 bg-slate-950/20 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider">
+      <span class="w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
+      <span>📢 NEWS TICKER</span>
+    </div>
+    <div class="overflow-hidden whitespace-nowrap flex-1 relative">
+      <div id="ticker-content" class="inline-block animate-marquee font-semibold text-slate-950">
+        🍿 Welcome to Jordan's Snack Shack! • 🏀 Basketball game tonight @ 4 PM! • 🎟️ Lucky Spin Wheel active! • 💡 Suggest a Snack on the digital wishlist board! • ⭐ 10 punches = 1 Free Snack!
+      </div>
+    </div>
+  </div>
+
   <!-- TOP HEADER BAR -->
   <header class="bg-slate-900/90 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between backdrop-blur-md z-20 shrink-0">
-    <div class="flex items-center gap-3.5">
-      <div class="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg float-anim">
+    <div class="flex items-center gap-3.5 cursor-pointer select-none" id="logo-easter-egg-zone" onclick="handleLogoTap()">
+      <div class="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg float-anim relative">
         🍿
+        <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+        </span>
       </div>
       <div>
         <h1 class="font-heading font-extrabold text-xl tracking-wide text-white flex items-center gap-2">
           JORDAN'S SNACK SHACK
           <span class="text-[10px] uppercase font-bold tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">School Store</span>
         </h1>
-        <p class="text-xs text-slate-400 font-medium">Official School Snack Bar & Fundraiser</p>
+        <p class="text-xs text-slate-400 font-medium">Official School Snack Bar & Fundraiser • <span class="text-amber-400/80 hover:text-amber-300 text-[10px]">✨ Tap logo 3x for Secret Menu</span></p>
       </div>
     </div>
 
-    <!-- Live Clock, Check Balance, Spin Wheel Button & Sync Status -->
+    <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
+      <!-- Nutrition & Menu Inspector Trigger -->
+      <button onclick="openNutritionModal()" class="flex items-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+        <span>🍎</span>
+        <span class="hidden lg:inline">Nutrition & Allergens</span>
+      </button>
+
+      <!-- Wishlist Suggestion Trigger -->
+      <button onclick="openWishlistModal()" class="flex items-center gap-1.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 hover:text-white border border-purple-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+        <span>💡</span>
+        <span class="hidden md:inline">Snack Wishlist</span>
+      </button>
+
       <!-- Student Balance Checker Trigger -->
       <button onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-white border border-blue-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>💳</span>
-        <span class="hidden sm:inline">Check Pass Balance</span>
+        <span class="hidden sm:inline">Pass Balance</span>
       </button>
 
       <!-- Lucky Spin Wheel Trigger -->
       <button onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>🎟️</span>
-        <span class="hidden sm:inline">Lucky Spin Wheel</span>
+        <span class="hidden sm:inline">Spin Wheel</span>
       </button>
 
       <div id="sync-status-badge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span class="hidden md:inline">Live Register Sync</span>
+        <span class="hidden xl:inline">Live Register Sync</span>
       </div>
       <div id="live-clock" class="text-xs sm:text-sm font-mono font-bold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
         --:-- --
@@ -157,10 +202,79 @@
         </div>
       </div>
 
-      <!-- Interactive Customer Zone: Snack Flavor Battle & Riddle of the Day -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full text-left">
+      <!-- LIVE "TRENDING RIGHT NOW" BEST SELLERS BAR -->
+      <div class="w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 rounded-3xl p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🔥</span>
+            <span class="font-heading font-extrabold text-sm sm:text-base text-white tracking-wide">TRENDING RIGHT NOW • LIVE BEST SELLERS</span>
+          </div>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 rounded-full">Selling Fast</span>
+        </div>
+        <div id="trending-snacks-container" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- Populated by JS -->
+          <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <span class="text-2xl">🍿</span>
+            <div>
+              <div class="font-bold text-xs text-white">Butter Popcorn</div>
+              <div class="text-[10px] text-amber-400 font-semibold">14 sold today</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Highlight Cards Grid (4 Cards) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full text-left">
+        <!-- Card 1: Combo Savings -->
+        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-amber-500/40 transition shadow-lg">
+          <div class="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-lg">
+            🥤
+          </div>
+          <h3 class="font-heading font-bold text-sm text-white">Auto-Combo Savings!</h3>
+          <p class="text-[11px] text-slate-400">Get <strong>50¢ OFF</strong> automatically when pairing any snack with a cold drink!</p>
+        </div>
+
+        <!-- Card 2: Student Punch Pass -->
+        <div onclick="openBalanceChecker()" class="bg-slate-900/80 border border-blue-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-blue-500 transition shadow-lg cursor-pointer">
+          <div class="w-9 h-9 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-lg">
+            ⭐
+          </div>
+          <h3 class="font-heading font-bold text-sm text-blue-300 flex items-center gap-1">
+            <span>Punch Pass</span>
+            <span class="text-[9px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-extrabold">CHECK</span>
+          </h3>
+          <p class="text-[11px] text-slate-400">10 punches earns <strong>1 FREE snack</strong>! Tap to check balance & punch card.</p>
+        </div>
+
+        <!-- Card 3: Interactive Nutrition Inspector -->
+        <div onclick="openNutritionModal()" class="bg-slate-900/80 border border-emerald-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-emerald-500 transition shadow-lg cursor-pointer">
+          <div class="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-lg">
+            🍎
+          </div>
+          <h3 class="font-heading font-bold text-sm text-emerald-300 flex items-center gap-1">
+            <span>Nutrition & Badges</span>
+            <span class="text-[9px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">INSPECT</span>
+          </h3>
+          <p class="text-[11px] text-slate-400">View calories, sugar, ingredients, and 100% peanut-free & gluten-free tags.</p>
+        </div>
+
+        <!-- Card 4: Interactive Wishlist -->
+        <div onclick="openWishlistModal()" class="bg-slate-900/80 border border-purple-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-purple-500 transition shadow-lg cursor-pointer">
+          <div class="w-9 h-9 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-lg">
+            💡
+          </div>
+          <h3 class="font-heading font-bold text-sm text-purple-300 flex items-center gap-1">
+            <span>Snack Wishlist</span>
+            <span class="text-[9px] bg-purple-500 text-white px-1.5 py-0.5 rounded font-extrabold">VOTE</span>
+          </h3>
+          <p class="text-[11px] text-slate-400">Request snacks you want stocked & upvote community ideas!</p>
+        </div>
+      </div>
+
+      <!-- Interactive Customer Zone: Snack Flavor Battle, Daily Secret Password & Weather Snack Forecast -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full text-left">
         
-        <!-- Flavor Battle / Snack Poll Widget -->
+        <!-- Column 1: Flavor Battle / Snack Poll Widget -->
         <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-pink-500/30 rounded-3xl p-5 space-y-3 shadow-xl relative overflow-hidden">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-extrabold uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/30 px-2.5 py-0.5 rounded-full">
@@ -176,35 +290,68 @@
           <p class="text-[10px] text-slate-500 text-center">Tap any snack above to cast your live vote! 🍿</p>
         </div>
 
-        <!-- Daily Snack Riddle & Vibe Selector -->
-        <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-purple-500/30 rounded-3xl p-5 space-y-3 shadow-xl">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-extrabold uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/30 px-2.5 py-0.5 rounded-full">
-              🧠 Brainteaser & Vibe
-            </span>
-            <span class="text-[10px] text-amber-300 font-bold">Daily Fun</span>
+        <!-- Column 2: Secret Daily Password & Compliment Generator -->
+        <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-amber-500/30 rounded-3xl p-5 space-y-3.5 shadow-xl flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+                🔑 Secret Daily Code
+              </span>
+              <span class="text-[10px] text-emerald-400 font-bold">10% Off Secret</span>
+            </div>
+            <div class="bg-slate-950/90 border border-amber-500/30 p-3 rounded-2xl text-center space-y-1">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Whisper to Cashier for 10% Off:</span>
+              <div id="secret-daily-password" class="font-heading font-extrabold text-lg text-amber-300 tracking-wider">
+                "CHOPPED CHEESE"
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily Uplifting Affirmation / Compliment Generator -->
+          <div class="bg-slate-950/90 border border-indigo-500/30 p-3 rounded-2xl space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-indigo-300 flex items-center gap-1">💌 Daily Boost</span>
+              <button onclick="drawDailyCompliment()" class="text-[10px] text-indigo-400 hover:text-white bg-indigo-500/20 px-2 py-0.5 rounded-lg border border-indigo-500/30 font-bold transition">
+                Tap to Draw 🎲
+              </button>
+            </div>
+            <p id="compliment-display-text" class="text-xs text-slate-300 italic text-center font-medium min-h-[32px] flex items-center justify-center">
+              "You have the courage to make today amazing!" ✨
+            </p>
+          </div>
+        </div>
+
+        <!-- Column 3: Weather & Snack Pairing Forecast + Brainteaser -->
+        <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-cyan-500/30 rounded-3xl p-5 space-y-3 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-0.5 rounded-full">
+                🌤️ Snack Forecast
+              </span>
+              <span id="weather-temp-badge" class="text-[11px] text-white font-bold font-mono bg-cyan-950 px-2 py-0.5 rounded-lg border border-cyan-700/50">72°F • Sunny</span>
+            </div>
+
+            <!-- Dynamic Weather Snack Pairing -->
+            <div class="bg-slate-950/90 border border-cyan-500/20 p-3 rounded-2xl space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl" id="weather-icon-emoji">☀️</span>
+                <div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Today's Perfect Pairing</div>
+                  <div id="weather-snack-recommendation" class="text-xs font-bold text-cyan-300">Ice-Cold Arizona Tea + Sour Patch Kids</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Snack Riddle Card -->
-          <div onclick="toggleRiddleAnswer()" class="bg-slate-950/80 border border-purple-500/20 p-3.5 rounded-2xl cursor-pointer hover:border-purple-400 transition space-y-1.5">
+          <div onclick="toggleRiddleAnswer()" class="bg-slate-950/80 border border-purple-500/20 p-3 rounded-2xl cursor-pointer hover:border-purple-400 transition space-y-1">
             <p id="riddle-question" class="text-xs font-semibold text-slate-200">
               🤔 "I have a peel, I'm packed with potassium, and I'm a monkey's favorite snack. What am I?"
             </p>
             <div id="riddle-answer-box" class="hidden text-xs font-bold text-amber-400 bg-purple-500/20 p-2 rounded-xl border border-purple-500/40 text-center">
-              🍌 Answer: A Banana! (And we have banana chips in stock!)
+              🍌 Answer: A Banana! (We have banana chips in stock!)
             </div>
-            <span id="riddle-tap-prompt" class="text-[10px] text-purple-300 font-medium block">👉 Tap to reveal the answer!</span>
-          </div>
-
-          <!-- Quick Vibe / Mood Selector -->
-          <div class="space-y-1">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Today's Snack Shack Vibe:</span>
-            <div class="grid grid-cols-4 gap-1.5 text-center">
-              <button onclick="setVibe('🔥 Hyped Up')" class="vibe-btn bg-slate-950 hover:bg-amber-500/20 border border-slate-800 hover:border-amber-500/40 py-1.5 rounded-xl text-xs font-bold transition">🔥 Hyped</button>
-              <button onclick="setVibe('🎧 Chill Beats')" class="vibe-btn bg-slate-950 hover:bg-blue-500/20 border border-slate-800 hover:border-blue-500/40 py-1.5 rounded-xl text-xs font-bold transition">🎧 Chill</button>
-              <button onclick="setVibe('🎮 Gaming Energy')" class="vibe-btn bg-slate-950 hover:bg-emerald-500/20 border border-slate-800 hover:border-emerald-500/40 py-1.5 rounded-xl text-xs font-bold transition">🎮 Arcade</button>
-              <button onclick="setVibe('💖 Good Vibes')" class="vibe-btn bg-slate-950 hover:bg-pink-500/20 border border-slate-800 hover:border-pink-500/40 py-1.5 rounded-xl text-xs font-bold transition">💖 Vibes</button>
-            </div>
+            <span id="riddle-tap-prompt" class="text-[10px] text-purple-300 font-medium block text-center">👉 Tap to reveal answer</span>
           </div>
         </div>
 
@@ -429,6 +576,29 @@
           </div>
         </div>
 
+        <!-- Digital Scratch-Off Card Interactive Game -->
+        <div id="celebrate-scratch-container" class="bg-gradient-to-br from-amber-500/10 via-slate-950 to-orange-500/10 border-2 border-amber-500/40 p-4 rounded-3xl text-center space-y-2 relative overflow-hidden shadow-2xl">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
+              🪙 Digital Scratch-Off Card
+            </span>
+            <span class="text-[10px] text-slate-400 font-semibold">Scratch with finger / mouse</span>
+          </div>
+
+          <div class="relative w-72 max-w-full h-24 mx-auto rounded-2xl overflow-hidden border border-amber-500/30 shadow-inner bg-slate-950 flex items-center justify-center">
+            <!-- Hidden Reward Layer Underneath -->
+            <div id="scratch-reward-underneath" class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 font-extrabold p-2 select-none">
+              <span class="text-xs uppercase tracking-wider">🎉 YOU REVEALED!</span>
+              <span id="scratch-reward-text" class="text-base font-heading font-black">🎁 +1 Bonus Punch Stamp!</span>
+              <span class="text-[9px] font-semibold text-slate-900">Show cashier to claim!</span>
+            </div>
+
+            <!-- Silver Canvas Scratch Layer -->
+            <canvas id="scratch-canvas" width="288" height="96" class="scratch-canvas absolute inset-0 z-10 w-full h-full rounded-2xl"></canvas>
+          </div>
+          <p id="scratch-status-hint" class="text-[10px] text-amber-300 font-semibold">👉 Swipe across silver coating above to reveal surprise prize!</p>
+        </div>
+
         <!-- Interactive Customer Smile Review / Rating -->
         <div id="celebrate-feedback-box" class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-center space-y-2">
           <span class="text-xs text-slate-300 font-bold block">How was your Snack Shack service today?</span>
@@ -583,7 +753,155 @@
     </div>
   </div>
 
-  <!-- FOOTER -->
+  <!-- ==================================================== -->
+  <!-- MODAL: INTERACTIVE NUTRITION & ALLERGEN INSPECTOR -->
+  <!-- ==================================================== -->
+  <div id="modal-nutrition" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-2xl p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[90vh] flex flex-col">
+      <button onclick="closeNutritionModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="space-y-1">
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-0.5 rounded-full">Snack Health & Allergy Guide</span>
+        <h3 class="font-heading font-extrabold text-2xl text-white flex items-center gap-2">
+          <span>🍎 Nutrition & Allergen Filter</span>
+        </h3>
+        <p class="text-xs text-slate-400">Tap any item below to inspect detailed calories, sugar, carbs, and certified allergen badges.</p>
+      </div>
+
+      <!-- Filter Badges -->
+      <div class="flex flex-wrap gap-1.5 text-xs font-bold pt-1">
+        <button onclick="filterNutritionList('all')" id="nutri-flt-all" class="nutri-pill bg-emerald-500 text-slate-950 px-3 py-1.5 rounded-xl transition">All Snacks</button>
+        <button onclick="filterNutritionList('peanut_free')" id="nutri-flt-peanut" class="nutri-pill bg-slate-950 hover:bg-emerald-500/20 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-xl transition">🥜 Peanut-Free</button>
+        <button onclick="filterNutritionList('gluten_free')" id="nutri-flt-gluten" class="nutri-pill bg-slate-950 hover:bg-emerald-500/20 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-xl transition">🌾 Gluten-Free</button>
+        <button onclick="filterNutritionList('dairy_free')" id="nutri-flt-dairy" class="nutri-pill bg-slate-950 hover:bg-emerald-500/20 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-xl transition">🥛 Dairy-Free</button>
+        <button onclick="filterNutritionList('low_sugar')" id="nutri-flt-sugar" class="nutri-pill bg-slate-950 hover:bg-emerald-500/20 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-xl transition">⚡ Low Sugar (&lt;10g)</button>
+      </div>
+
+      <!-- Items Grid -->
+      <div id="nutrition-items-grid" class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 pr-1 scrollbar-none max-h-[50vh]">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: "SUGGEST A SNACK" DIGITAL WISHLIST BOARD -->
+  <!-- ==================================================== -->
+  <div id="modal-wishlist" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-purple-500/50 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[90vh] flex flex-col">
+      <button onclick="closeWishlistModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="space-y-1">
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/30 px-3 py-0.5 rounded-full">Community Voice</span>
+        <h3 class="font-heading font-extrabold text-2xl text-white flex items-center gap-2">
+          <span>💡 "Suggest a Snack" Wishlist</span>
+        </h3>
+        <p class="text-xs text-slate-400">Vote for your favorite requested snacks or submit what you want us to stock next!</p>
+      </div>
+
+      <!-- Submit Wishlist Input -->
+      <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+        <span class="text-[11px] font-bold text-slate-300 block">Submit Your Dream Snack / Drink:</span>
+        <div class="flex gap-2">
+          <input type="text" id="wishlist-snack-name" placeholder="e.g. Takis Fuego or Blue Raspberry Slush..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" />
+          <button onclick="submitSnackWishlist()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition">
+            ✨ Submit
+          </button>
+        </div>
+      </div>
+
+      <!-- Wishlist Board List with Upvoting -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-none max-h-[45vh]" id="wishlist-items-container">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 🕵️‍♂️ SECRET MENU EASTER EGG -->
+  <!-- ==================================================== -->
+  <div id="modal-secret-menu" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 border-2 border-amber-400 rounded-3xl w-full max-w-md p-6 text-center space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+      <button onclick="closeSecretMenu()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="space-y-1">
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/20 border border-amber-500/40 px-3 py-0.5 rounded-full">
+          🕵️‍♂️ Top Secret Easter Egg
+        </span>
+        <h3 class="font-heading font-extrabold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-purple-400">
+          THE SECRET MENU
+        </h3>
+        <p class="text-xs text-slate-300">You discovered the hidden off-menu combos! Ask your cashier for these special blends:</p>
+      </div>
+
+      <div class="space-y-2.5 text-left text-xs">
+        <div class="bg-slate-950/90 border border-purple-500/40 p-3 rounded-2xl space-y-1">
+          <div class="flex justify-between items-center font-bold">
+            <span class="text-amber-300 font-heading text-sm">🔥 The "Jordan Supreme"</span>
+            <span class="text-emerald-400 font-mono">$2.75</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Doritos Nacho Cheese bag drizzled with Warm Cheese Sauce & topped with crushed Flamin' Hot dust!</p>
+        </div>
+
+        <div class="bg-slate-950/90 border border-cyan-500/40 p-3 rounded-2xl space-y-1">
+          <div class="flex justify-between items-center font-bold">
+            <span class="text-cyan-300 font-heading text-sm">🌌 "Galaxy Fizzy Punch"</span>
+            <span class="text-emerald-400 font-mono">$2.00</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Half Lemonade, half Blue Raspberry Fizz poured over gummy bears for a cosmic explosion!</p>
+        </div>
+
+        <div class="bg-slate-950/90 border border-pink-500/40 p-3 rounded-2xl space-y-1">
+          <div class="flex justify-between items-center font-bold">
+            <span class="text-pink-300 font-heading text-sm">🍿 "Carnival Caramel Swirl"</span>
+            <span class="text-emerald-400 font-mono">$2.50</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Fresh Butter Popcorn mixed with M&M minis and warm caramel drizzle.</p>
+        </div>
+      </div>
+
+      <button onclick="closeSecretMenu()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold py-3 rounded-xl text-xs transition">
+        🤫 Keep it Secret!
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 🎂 BIRTHDAY CELEBRATION SIREN & FANFARE -->
+  <!-- ==================================================== -->
+  <div id="modal-birthday-siren" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-gradient-to-br from-pink-950 via-purple-950 to-slate-950 border-4 border-pink-500 rounded-3xl w-full max-w-lg p-8 text-center space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-300">
+      <div class="w-24 h-24 mx-auto rounded-3xl bg-pink-500 text-slate-950 flex items-center justify-center text-6xl shadow-2xl float-anim">
+        🎂
+      </div>
+
+      <div class="space-y-2">
+        <span class="text-xs font-extrabold uppercase tracking-widest text-pink-300 bg-pink-500/20 border border-pink-500/40 px-4 py-1 rounded-full animate-pulse">
+          🚨 BIRTHDAY SIREN ALERT! 🚨
+        </span>
+        <h2 class="font-heading font-black text-3xl sm:text-4xl text-white">
+          HAPPY BIRTHDAY, <br>
+          <span id="birthday-student-name" class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-amber-300 to-yellow-400">ALEX!</span> 🎉
+        </h2>
+        <p class="text-slate-300 text-sm font-medium">Jordan's Snack Shack wishes you the happiest birthday! Claim your <strong>FREE Birthday Snack Treat</strong> at the window!</p>
+      </div>
+
+      <div class="bg-slate-950/80 border border-pink-500/40 p-4 rounded-2xl text-amber-300 font-bold text-xs space-y-1">
+        <div>🎁 SPECIAL BIRTHDAY REWARD ACTIVE</div>
+        <p class="text-[11px] text-slate-400">1 Free Candy / Snack Comp applied to your order today!</p>
+      </div>
+
+      <button onclick="closeBirthdaySiren()" class="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-400 hover:to-purple-400 text-white font-extrabold py-3.5 rounded-2xl text-base shadow-xl shadow-pink-900/40 transition">
+        🥳 Celebrate & Continue!
+      </button>
+    </div>
+  </div>
   <footer class="bg-slate-900/60 border-t border-slate-800/80 px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0">
     <div class="flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -1290,17 +1608,467 @@
       }
     }
 
-    // Initial Load
-    loadStoreSettings().then(() => {
-      fetch('/api/display/state')
-        .then(res => res.json())
-        .then(data => renderState(data))
-        .catch(err => console.warn('Initial state fetch error:', err));
-    });
+    // ==========================================
+    // LIVE ANNOUNCEMENTS & NEWS TICKER
+    // ==========================================
+    async function loadAnnouncements() {
+      try {
+        const res = await fetch('/api/announcements');
+        const items = await res.json();
+        const ticker = document.getElementById('ticker-content');
+        if (items && items.length > 0) {
+          ticker.innerHTML = items.map(a => `${a.emoji || a.icon || '📢'} ${a.message || a.content}`).join(' &nbsp;•&nbsp; ');
+        }
+      } catch (err) {
+        console.warn('Announcements fetch notice:', err);
+      }
+    }
 
-    loadPolls();
-    initSSE();
-    lucide.createIcons();
+    // ==========================================
+    // "TRENDING RIGHT NOW" LIVE FEED
+    // ==========================================
+    async function loadTrending() {
+      try {
+        const res = await fetch('/api/trending');
+        const trending = await res.json();
+        const container = document.getElementById('trending-snacks-container');
+        if (trending && trending.length > 0) {
+          container.innerHTML = trending.map((item, idx) => `
+            <div onclick="openNutritionModal()" class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/40 cursor-pointer flex items-center justify-between gap-3 shadow-md transition group">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="text-2xl group-hover:scale-110 transition">${item.emoji || '🍿'}</span>
+                <div class="min-w-0">
+                  <div class="font-bold text-xs text-white truncate flex items-center gap-1">
+                    <span>#${idx + 1} ${item.name}</span>
+                  </div>
+                  <div class="text-[10px] text-amber-400 font-semibold flex items-center gap-1.5">
+                    <span>🔥 ${item.recent_sold || item.recent_sales || 1} sold</span>
+                    <span class="text-slate-500">•</span>
+                    <span class="text-slate-400">${item.stock_quantity} left</span>
+                  </div>
+                </div>
+              </div>
+              <span class="text-xs font-mono font-bold text-emerald-400">$${parseFloat(item.price).toFixed(2)}</span>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.warn('Trending fetch notice:', err);
+      }
+    }
+
+    // ==========================================
+    // WEATHER & DYNAMIC SNACK FORECAST
+    // ==========================================
+    const WEATHER_PRESETS = [
+      { temp: "74°F • Sunny & Warm", icon: "☀️", snack: "Ice-Cold Lemonade + Sour Patch Kids" },
+      { temp: "62°F • Breezy Afternoon", icon: "🌤️", snack: "Hot Cheetos + Fresh Cold Juice" },
+      { temp: "55°F • Chilly Morning", icon: "🌧️", snack: "Warm Butter Popcorn + Hot Cocoa" },
+      { temp: "80°F • High Energy Day", icon: "⚡", snack: "Frozen Fruit Bar + Arizona Green Tea" }
+    ];
+
+    function loadWeatherForecast() {
+      const todayIdx = new Date().getDay() % WEATHER_PRESETS.length;
+      const cur = WEATHER_PRESETS[todayIdx] || WEATHER_PRESETS[0];
+      const tempBadge = document.getElementById('weather-temp-badge');
+      const iconEl = document.getElementById('weather-icon-emoji');
+      const snackEl = document.getElementById('weather-snack-recommendation');
+
+      if (tempBadge) tempBadge.textContent = cur.temp;
+      if (iconEl) iconEl.textContent = cur.icon;
+      if (snackEl) snackEl.textContent = cur.snack;
+    }
+
+    // ==========================================
+    // DAILY SECRET PASSWORD & AFFIRMATION GENERATOR
+    // ==========================================
+    const SECRET_PASSWORDS = ["CHOPPED CHEESE", "CRUNCH TIME", "GOLDEN POPCORN", "SNACK ATTACK", "GALAXY SLUSH", "SUPER STAR"];
+    const COMPLIMENTS = [
+      "You have the courage to make today amazing! ✨",
+      "Your smile lights up the whole hallway! 🌟",
+      "Kindness is your superpower — keep shining! 💫",
+      "You are capable of accomplishing great things! 🚀",
+      "Jordan's Snack Shack is happier because you're here! 🍿",
+      "Believe in yourself as much as we believe in you! 💖"
+    ];
+
+    function loadSecretDailyPassword() {
+      const dayIdx = new Date().getDay() % SECRET_PASSWORDS.length;
+      const pwd = SECRET_PASSWORDS[dayIdx];
+      const pwdEl = document.getElementById('secret-daily-password');
+      if (pwdEl) pwdEl.textContent = `"${pwd}"`;
+    }
+
+    function drawDailyCompliment() {
+      const rand = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
+      const textEl = document.getElementById('compliment-display-text');
+      if (textEl) {
+        textEl.textContent = `"${rand}"`;
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 20, spread: 40, origin: { y: 0.8 } });
+        }
+      }
+    }
+
+    // ==========================================
+    // 🍎 NUTRITION & ALLERGEN INSPECTION MODAL
+    // ==========================================
+    let allCatalogProducts = [];
+    let currentNutriFilter = 'all';
+
+    async function openNutritionModal() {
+      document.getElementById('modal-nutrition').classList.remove('hidden');
+      if (allCatalogProducts.length === 0) {
+        try {
+          const res = await fetch('/api/products');
+          allCatalogProducts = await res.json();
+        } catch (e) {
+          console.warn('Catalog load error:', e);
+        }
+      }
+      renderNutritionList();
+    }
+
+    function closeNutritionModal() {
+      document.getElementById('modal-nutrition').classList.add('hidden');
+    }
+
+    function filterNutritionList(filterType) {
+      currentNutriFilter = filterType;
+      document.querySelectorAll('.nutri-pill').forEach(btn => {
+        btn.className = 'nutri-pill bg-slate-950 hover:bg-emerald-500/20 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-xl transition';
+      });
+
+      const activeBtn = document.getElementById(`nutri-flt-${filterType === 'all' ? 'all' : filterType.replace('_free', '')}`);
+      if (activeBtn) {
+        activeBtn.className = 'nutri-pill bg-emerald-500 text-slate-950 px-3 py-1.5 rounded-xl font-bold transition';
+      }
+      renderNutritionList();
+    }
+
+    function renderNutritionList() {
+      const container = document.getElementById('nutrition-items-grid');
+      if (!container) return;
+
+      let filtered = allCatalogProducts;
+      if (currentNutriFilter === 'peanut_free') {
+        filtered = allCatalogProducts.filter(p => (p.dietary_badges || '').toLowerCase().includes('peanut-free') || !(p.allergy_info || '').toLowerCase().includes('peanut'));
+      } else if (currentNutriFilter === 'gluten_free') {
+        filtered = allCatalogProducts.filter(p => (p.dietary_badges || '').toLowerCase().includes('gluten-free'));
+      } else if (currentNutriFilter === 'dairy_free') {
+        filtered = allCatalogProducts.filter(p => (p.dietary_badges || '').toLowerCase().includes('dairy-free') || !(p.allergy_info || '').toLowerCase().includes('dairy'));
+      } else if (currentNutriFilter === 'low_sugar') {
+        filtered = allCatalogProducts.filter(p => (p.sugar || 0) <= 10);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center text-slate-500 py-8 text-xs">No items matching this filter.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(p => {
+        const cal = p.calories || (p.price > 1.5 ? 210 : 150);
+        const sugar = p.sugar !== null && p.sugar !== undefined ? p.sugar : (p.category_name === 'Drinks' ? 12 : 6);
+        const carbs = p.carbs !== null && p.carbs !== undefined ? p.carbs : 22;
+        const badges = p.dietary_badges ? p.dietary_badges.split(',').map(b => b.trim()) : ['100% Peanut-Free'];
+
+        return `
+          <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2 shadow-md">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">${p.emoji || '🍿'}</span>
+                <div>
+                  <h4 class="font-bold text-xs text-white">${p.name}</h4>
+                  <div class="text-[10px] text-slate-400 font-mono">$${parseFloat(p.price).toFixed(2)}</div>
+                </div>
+              </div>
+              <span class="text-xs font-heading font-extrabold text-amber-400">${cal} kcal</span>
+            </div>
+
+            <!-- Nutrient Stats -->
+            <div class="grid grid-cols-3 gap-1 text-center bg-slate-900/80 p-2 rounded-xl border border-slate-800/80 text-[10px]">
+              <div>
+                <span class="text-slate-500 block">Calories</span>
+                <span class="font-bold text-slate-200">${cal}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Sugar</span>
+                <span class="font-bold text-emerald-400">${sugar}g</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Carbs</span>
+                <span class="font-bold text-cyan-400">${carbs}g</span>
+              </div>
+            </div>
+
+            <!-- Badges -->
+            <div class="flex flex-wrap gap-1">
+              ${badges.map(b => `<span class="text-[9px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md">✓ ${b}</span>`).join('')}
+            </div>
+
+            ${p.ingredients ? `<p class="text-[9px] text-slate-500 italic truncate" title="${p.ingredients}">Ingredients: ${p.ingredients}</p>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // 💡 "SUGGEST A SNACK" DIGITAL WISHLIST
+    // ==========================================
+    let wishlistItems = [];
+
+    async function openWishlistModal() {
+      document.getElementById('modal-wishlist').classList.remove('hidden');
+      loadWishlist();
+    }
+
+    function closeWishlistModal() {
+      document.getElementById('modal-wishlist').classList.add('hidden');
+    }
+
+    async function loadWishlist() {
+      try {
+        const res = await fetch('/api/wishlist');
+        wishlistItems = await res.json();
+        renderWishlist();
+      } catch (err) {
+        console.warn('Wishlist load error:', err);
+      }
+    }
+
+    function renderWishlist() {
+      const container = document.getElementById('wishlist-items-container');
+      if (!container) return;
+
+      if (!wishlistItems || wishlistItems.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-500 py-6 text-xs">No snack requests yet. Be the first to submit above!</div>`;
+        return;
+      }
+
+      container.innerHTML = wishlistItems.map(item => `
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-md">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="text-xl">✨</span>
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs text-white truncate">${item.snack_name}</h4>
+              <div class="text-[10px] text-purple-300 font-medium">Requested by ${item.requested_by || 'Student'}</div>
+            </div>
+          </div>
+          <button onclick="voteWishlistItem(${item.id})" class="bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+            <span>👍</span>
+            <span class="font-mono font-bold">${item.votes || 0}</span>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function submitSnackWishlist() {
+      const input = document.getElementById('wishlist-snack-name');
+      const snack_name = input.value.trim();
+      if (!snack_name) return;
+
+      try {
+        const res = await fetch('/api/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ snack_name, requested_by: 'Student' })
+        });
+        const data = await res.json();
+        input.value = '';
+        loadWishlist();
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+        }
+      } catch (err) {
+        console.warn('Wishlist submit error:', err);
+      }
+    }
+
+    async function voteWishlistItem(id) {
+      try {
+        const res = await fetch('/api/wishlist/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.wishlist) {
+          wishlistItems = data.wishlist;
+          renderWishlist();
+        }
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 20, spread: 40, origin: { y: 0.75 } });
+        }
+      } catch (err) {
+        console.warn('Vote wishlist error:', err);
+      }
+    }
+
+    // ==========================================
+    // 🕵️‍♂️ TRIPLE-TAP SECRET MENU EASTER EGG
+    // ==========================================
+    let logoTapTimes = [];
+    function handleLogoTap() {
+      const now = Date.now();
+      logoTapTimes.push(now);
+      // Keep only taps in the last 1.5 seconds
+      logoTapTimes = logoTapTimes.filter(t => now - t < 1500);
+
+      if (logoTapTimes.length >= 3) {
+        logoTapTimes = [];
+        openSecretMenu();
+      }
+    }
+
+    function openSecretMenu() {
+      document.getElementById('modal-secret-menu').classList.remove('hidden');
+      if (typeof confetti !== 'undefined') {
+        confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 } });
+      }
+    }
+
+    function closeSecretMenu() {
+      document.getElementById('modal-secret-menu').classList.add('hidden');
+    }
+
+    // ==========================================
+    // 🎂 BIRTHDAY SIREN CELEBRATION
+    // ==========================================
+    function triggerBirthdaySiren(studentName = 'Alex') {
+      const modal = document.getElementById('modal-birthday-siren');
+      const nameEl = document.getElementById('birthday-student-name');
+      if (nameEl) nameEl.textContent = studentName.toUpperCase() + '!';
+      modal.classList.remove('hidden');
+
+      if (typeof confetti !== 'undefined') {
+        confetti({ particleCount: 120, spread: 90, origin: { y: 0.5 } });
+      }
+    }
+
+    function closeBirthdaySiren() {
+      document.getElementById('modal-birthday-siren').classList.add('hidden');
+    }
+
+    // ==========================================
+    // 🪙 DIGITAL SCRATCH-OFF CARD CANVAS GAME
+    // ==========================================
+    let isScratching = false;
+    let scratchCanvas, scratchCtx;
+    let scratchedPixels = 0;
+    let totalScratchPixels = 0;
+    let isScratchRevealed = false;
+
+    const SCRATCH_PRIZES = [
+      "🎁 +1 Bonus Punch Stamp!",
+      "🍬 Free Airhead Candy!",
+      "⭐ 25¢ Off Snack Bonus!",
+      "🏆 School Hero High-Five!"
+    ];
+
+    function initScratchCard() {
+      scratchCanvas = document.getElementById('scratch-canvas');
+      if (!scratchCanvas) return;
+      scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
+      
+      const prize = SCRATCH_PRIZES[Math.floor(Math.random() * SCRATCH_PRIZES.length)];
+      document.getElementById('scratch-reward-text').textContent = prize;
+      document.getElementById('scratch-status-hint').textContent = '👉 Swipe across silver coating above to reveal surprise prize!';
+      isScratchRevealed = false;
+
+      const w = scratchCanvas.width;
+      const h = scratchCanvas.height;
+      totalScratchPixels = w * h;
+
+      // Fill with silver metallic gradient
+      scratchCtx.globalCompositeOperation = 'source-over';
+      const grad = scratchCtx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#94a3b8');
+      grad.addColorStop(0.3, '#cbd5e1');
+      grad.addColorStop(0.6, '#94a3b8');
+      grad.addColorStop(1, '#64748b');
+      scratchCtx.fillStyle = grad;
+      scratchCtx.fillRect(0, 0, w, h);
+
+      // Add silver texture shimmer text
+      scratchCtx.fillStyle = '#334155';
+      scratchCtx.font = 'bold 12px Plus Jakarta Sans, sans-serif';
+      scratchCtx.textAlign = 'center';
+      scratchCtx.fillText('✨ SCRATCH HERE ✨', w / 2, h / 2 + 4);
+
+      // Event listeners for scratch
+      function getPos(e) {
+        const rect = scratchCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: (clientX - rect.left) * (scratchCanvas.width / rect.width),
+          y: (clientY - rect.top) * (scratchCanvas.height / rect.height)
+        };
+      }
+
+      function scratchAt(pos) {
+        if (!scratchCtx || isScratchRevealed) return;
+        scratchCtx.globalCompositeOperation = 'destination-out';
+        scratchCtx.beginPath();
+        scratchCtx.arc(pos.x, pos.y, 18, 0, Math.PI * 2);
+        scratchCtx.fill();
+
+        // Check if scratched enough to reveal completely
+        checkScratchProgress();
+      }
+
+      function checkScratchProgress() {
+        if (isScratchRevealed) return;
+        try {
+          const imgData = scratchCtx.getImageData(0, 0, scratchCanvas.width, scratchCanvas.height);
+          let transparentCount = 0;
+          for (let i = 3; i < imgData.data.length; i += 16) {
+            if (imgData.data[i] === 0) transparentCount++;
+          }
+          const pct = transparentCount / (imgData.data.length / 16);
+          if (pct > 0.45) {
+            isScratchRevealed = true;
+            scratchCtx.clearRect(0, 0, scratchCanvas.width, scratchCanvas.height);
+            document.getElementById('scratch-status-hint').textContent = '🎉 Reward Unlocked! Show to cashier!';
+            if (typeof confetti !== 'undefined') {
+              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+            }
+          }
+        } catch(e){}
+      }
+
+      scratchCanvas.onmousedown = (e) => { isScratching = true; scratchAt(getPos(e)); };
+      scratchCanvas.onmousemove = (e) => { if (isScratching) scratchAt(getPos(e)); };
+      window.onmouseup = () => { isScratching = false; };
+
+      scratchCanvas.ontouchstart = (e) => { isScratching = true; scratchAt(getPos(e)); e.preventDefault(); };
+      scratchCanvas.ontouchmove = (e) => { if (isScratching) scratchAt(getPos(e)); e.preventDefault(); };
+      scratchCanvas.ontouchend = () => { isScratching = false; };
+    }
+
+    // Call init scratch card whenever celebrate view is shown
+    const origRenderState = renderState;
+    renderState = function(data) {
+      origRenderState(data);
+      if (data && data.state === 'celebrate') {
+        setTimeout(initScratchCard, 100);
+      }
+      // Check student birthday
+      if (data && data.student && data.student.birthday) {
+        const todayStr = new Date().toISOString().slice(5, 10); // MM-DD
+        if (data.student.birthday.includes(todayStr)) {
+          triggerBirthdaySiren(data.student.name);
+        }
+      }
+    };
+
+    // Initial Load Calls
+    loadAnnouncements();
+    loadTrending();
+    loadWeatherForecast();
+    loadSecretDailyPassword();
+    setInterval(loadAnnouncements, 60000);
+    setInterval(loadTrending, 30000);
   </script>
 </body>
 </html>

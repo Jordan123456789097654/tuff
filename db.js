@@ -209,7 +209,64 @@ async function initDB() {
         emoji VARCHAR(10) DEFAULT '🍿',
         votes INT DEFAULT 0
       );
+
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS calories INT DEFAULT 150;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS sugar VARCHAR(20) DEFAULT '2g';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS carbs VARCHAR(20) DEFAULT '18g';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS ingredients TEXT DEFAULT 'Corn, vegetable oil, seasoning, sea salt.';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS dietary_badges TEXT DEFAULT 'Peanut-Free, Gluten-Free';
+
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS birthday VARCHAR(20) DEFAULT '';
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS streak_count INT DEFAULT 1;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS last_visit_date DATE DEFAULT CURRENT_DATE;
+
+      CREATE TABLE IF NOT EXISTS snack_wishlist (
+        id SERIAL PRIMARY KEY,
+        snack_name VARCHAR(150) NOT NULL,
+        category VARCHAR(50) DEFAULT 'Snack',
+        requested_by VARCHAR(100) DEFAULT 'Student',
+        votes INT DEFAULT 1,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS display_announcements (
+        id SERIAL PRIMARY KEY,
+        message TEXT NOT NULL,
+        emoji VARCHAR(10) DEFAULT '📢',
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
+
+    // Ensure default announcements exist
+    const annCheck = await client.query('SELECT COUNT(*) FROM display_announcements');
+    if (parseInt(annCheck.rows[0].count, 10) === 0) {
+      const defaultAnnouncements = [
+        { message: "Welcome to Jordan's Snack Shack! Fresh snacks & ice-cold drinks!", emoji: "🍿" },
+        { message: "Auto-Combo Deal: Pair any snack + cold drink for 50¢ OFF automatically!", emoji: "🥤" },
+        { message: "Punch Pass Reward: 10 stamps = 1 FREE Snack of your choice!", emoji: "⭐" },
+        { message: "Check out today's Secret Daily Password on the screen for bonus discounts!", emoji: "🔑" },
+      ];
+      for (const a of defaultAnnouncements) {
+        await client.query('INSERT INTO display_announcements (message, emoji) VALUES ($1, $2)', [a.message, a.emoji]);
+      }
+    }
+
+    // Ensure default wishlist items exist
+    const wishCheck = await client.query('SELECT COUNT(*) FROM snack_wishlist');
+    if (parseInt(wishCheck.rows[0].count, 10) === 0) {
+      const defaultWishlist = [
+        { snack_name: "Flamin' Hot Limon Cheetos", category: "Chips", requested_by: "Alex (8th)", votes: 24 },
+        { snack_name: "Choco Taco Ice Cream", category: "Ice Cream", requested_by: "Marcus (7th)", votes: 31 },
+        { snack_name: "Gatorade Cool Blue 20oz", category: "Drinks", requested_by: "Coach Dan", votes: 19 },
+        { snack_name: "Hi-Chew Strawberry Candy", category: "Candy", requested_by: "Maya (6th)", votes: 15 },
+      ];
+      for (const w of defaultWishlist) {
+        await client.query('INSERT INTO snack_wishlist (snack_name, category, requested_by, votes) VALUES ($1, $2, $3, $4)', [
+          w.snack_name, w.category, w.requested_by, w.votes
+        ]);
+      }
+    }
 
     // Ensure default staff members exist
     const staffCheck = await client.query('SELECT COUNT(*) FROM staff_members');
