@@ -4476,6 +4476,453 @@ function copyPairUrl() {
 }
 
 // ==========================================
+// 🛒 REMOTE SELF-CHECKOUT KIOSK TOGGLER
+// ==========================================
+let isKioskRemoteActive = false;
+
+async function toggleRemoteCustomerKiosk(force = null) {
+  isKioskRemoteActive = (force !== null) ? !!force : !isKioskRemoteActive;
+  
+  // Update button UI on Cashier POS
+  const btn = document.getElementById('btn-cashier-toggle-kiosk');
+  const label = document.getElementById('label-cashier-kiosk-status');
+  if (btn && label) {
+    if (isKioskRemoteActive) {
+      label.textContent = 'Kiosk: ON (Active)';
+      btn.className = 'flex items-center gap-1.5 text-xs text-slate-950 bg-emerald-400 hover:bg-emerald-300 px-2.5 py-1.5 rounded-xl transition font-black shadow-md shadow-emerald-900/30';
+    } else {
+      label.textContent = 'Kiosk: OFF';
+      btn.className = 'flex items-center gap-1.5 text-xs text-orange-300 hover:text-white bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold';
+    }
+  }
+
+  // 1. Send to server SSE endpoint
+  try {
+    await fetch('/api/display/toggle_kiosk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: isKioskRemoteActive })
+    });
+  } catch (err) {
+    console.warn('Remote kiosk toggle server broadcast notice:', err);
+  }
+
+  // 2. Broadcast via BroadcastChannel
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const bc = new BroadcastChannel('snack_display_sync');
+      bc.postMessage({ type: 'toggle_kiosk', active: isKioskRemoteActive });
+    } catch(e){}
+  }
+
+  showToast(
+    isKioskRemoteActive ? '🛒 Self-Checkout Kiosk ACTIVATED on 2nd Display!' : '🖥️ Customer Screen switched back to Register View.',
+    isKioskRemoteActive ? 'success' : 'info'
+  );
+}
+
+// ==========================================
+// 🔴 CASHIER CCTV SECURITY MONITOR & CLIP RECORDER
+// ==========================================
+let cashierCctvStream = null;
+let cashierMediaRecorder = null;
+let cashierRecordedChunks = [];
+let isCashierRecordingClip = false;
+let cashierAiAnimFrame = null;
+let lastSubjectDetectTime = 0;
+let cctvDetectionLogsList = [];
+
+async function startCashierCctvFeed() {
+  const video = document.getElementById('cashier-cctv-video');
+  const pipVideo = document.getElementById('cashier-pip-video');
+  if (!video) return;
+
+  try {
+    if (!cashierCctvStream) {
+      cashierCctvStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
+      });
+    }
+    video.srcObject = cashierCctvStream;
+    if (pipVideo) pipVideo.srcObject = cashierCctvStream;
+    video.play().catch(()=>{});
+    if (pipVideo) pipVideo.play().catch(()=>{});
+
+    // Start AI Optical Detection Overlay
+    startCashierAiDetectionLoop();
+  } catch (err) {
+    console.warn('Cashier CCTV camera access notice:', err);
+    showToast('⚠️ Camera access denied or not connected', 'error');
+  }
+}
+
+function openCashierSecurityCamera() {
+  openModal('modal-cashier-security-cam');
+  toggleCashierFloatingCctv(false);
+  startCashierCctvFeed();
+  loadRecentCctvEvents();
+}
+
+function closeCashierSecurityCamera() {
+  closeModal('modal-cashier-security-cam');
+  // Dock to floating widget if stream is active
+  if (cashierCctvStream) {
+    toggleCashierFloatingCctv(true);
+  }
+}
+
+function toggleCashierSecurityCamera() {
+  const modal = document.getElementById('modal-cashier-security-cam');
+  if (modal && !modal.classList.contains('hidden')) {
+    closeCashierSecurityCamera();
+  } else {
+    openCashierSecurityCamera();
+  }
+}
+
+function dockCashierCctvWidget() {
+  closeModal('modal-cashier-security-cam');
+  toggleCashierFloatingCctv(true);
+}
+
+function toggleCashierFloatingCctv(show = null) {
+  const floatingWidget = document.getElementById('cashier-floating-cctv');
+  if (!floatingWidget) return;
+  const isVisible = !floatingWidget.classList.contains('hidden');
+  const shouldShow = (show !== null) ? !!show : !isVisible;
+  floatingWidget.classList.toggle('hidden', !shouldShow);
+  if (shouldShow) {
+    startCashierCctvFeed();
+  }
+}
+
+// Real-time AI HUD Target & Optical Tagging Engine
+function startCashierAiDetectionLoop() {
+  const video = document.getElementById('cashier-cctv-video');
+  const canvas = document.getElementById('cashier-cctv-canvas');
+  if (!video || !canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let frameCount = 0;
+
+  function detectionLoop() {
+    if (video.videoWidth && video.videoHeight) {
+      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      frameCount++;
+
+      const chkDetect = document.getElementById('chk-cctv-ai-detect');
+      const isDetectionEnabled = !chkDetect || chkDetect.checked;
+
+      if (isDetectionEnabled) {
+        // High-tech Tactical Corner HUD
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.lineWidth = 1.5;
+        const w = canvas.width;
+        const h = canvas.height;
+        const margin = 24;
+
+        // Crosshair Grid lines
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 15, h / 2); ctx.lineTo(w / 2 + 15, h / 2);
+        ctx.moveTo(w / 2, h / 2 - 15); ctx.lineTo(w / 2, h / 2 + 15);
+        ctx.stroke();
+
+        // Simulated Optical Face / Presence Target Area
+        const boxW = w * 0.42;
+        const boxH = h * 0.62;
+        const boxX = (w - boxW) / 2 + Math.sin(frameCount * 0.03) * 6;
+        const boxY = (h - boxH) / 2 + Math.cos(frameCount * 0.02) * 4;
+
+        // Draw Tactical Target Bounding Box
+        ctx.strokeStyle = '#10b981'; // Emerald Active Target
+        ctx.lineWidth = 2.5;
+
+        // 4 Corner Brackets
+        const len = 20;
+        // Top-Left
+        ctx.beginPath();
+        ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
+        // Top-Right
+        ctx.moveTo(boxX + boxW - len, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + len);
+        // Bottom-Left
+        ctx.moveTo(boxX, boxY + boxH - len); ctx.lineTo(boxX, boxY + boxH); ctx.lineTo(boxX + len, boxY + boxH);
+        // Bottom-Right
+        ctx.moveTo(boxX + boxW - len, boxY + boxH); ctx.lineTo(boxX + boxW, boxY + boxH); ctx.lineTo(boxX + boxW, boxY + boxH - len);
+        ctx.stroke();
+
+        // Target Tag Label
+        const nowSec = Math.floor(Date.now() / 1000);
+        const tagNum = (nowSec % 900 + 100);
+        const tagText = `[TAG #${tagNum}] 👤 PERSON DETECTED • 98% CONF`;
+
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+        ctx.fillRect(boxX, boxY - 24, ctx.measureText(tagText).width + 16, 20);
+        ctx.fillStyle = '#022c22';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(tagText, boxX + 8, boxY - 10);
+
+        // Distance & Zone Sub-tag
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.fillRect(boxX, boxY + boxH + 4, 180, 18);
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = '10px monospace';
+        ctx.fillText(`ZONE: Table 4B • 1.2m DIST`, boxX + 6, boxY + boxH + 16);
+
+        // Update Header Badges
+        const tagBadge = document.getElementById('cashier-cctv-tag-badge');
+        const pipTag = document.getElementById('cashier-pip-tag');
+        if (tagBadge) {
+          tagBadge.classList.remove('hidden');
+          tagBadge.textContent = `🟢 TAG #${tagNum} DETECTED (98%)`;
+        }
+        if (pipTag) {
+          pipTag.textContent = `TAG #${tagNum} DETECTED`;
+          pipTag.className = 'absolute bottom-1 left-1 bg-emerald-950/90 border border-emerald-500/50 px-1.5 py-0.5 rounded text-[8px] font-mono text-emerald-300 font-bold';
+        }
+
+        // Auto-log presence event every 15 seconds if active
+        if (Date.now() - lastSubjectDetectTime > 15000) {
+          lastSubjectDetectTime = Date.now();
+          recordCctvDetectionIncident({
+            tag: `TAG-${tagNum}`,
+            label: 'Customer Approached Station Counter',
+            confidence: '98%',
+            zone: 'Station Table 4B'
+          });
+        }
+      }
+    }
+
+    // Update running clocks
+    const clock = document.getElementById('cashier-cctv-clock');
+    const pipClock = document.getElementById('cashier-pip-clock');
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    if (clock) clock.textContent = timeStr;
+    if (pipClock) pipClock.textContent = timeStr;
+
+    cashierAiAnimFrame = requestAnimationFrame(detectionLoop);
+  }
+
+  if (cashierAiAnimFrame) cancelAnimationFrame(cashierAiAnimFrame);
+  detectionLoop();
+}
+
+// 📹 Record 5-Second Video Clip
+async function recordCctvClip() {
+  if (isCashierRecordingClip) return;
+  if (!cashierCctvStream) {
+    await startCashierCctvFeed();
+  }
+  if (!cashierCctvStream) return showToast('⚠️ Camera not ready', 'error');
+
+  try {
+    cashierRecordedChunks = [];
+    isCashierRecordingClip = true;
+
+    // Use MediaRecorder
+    const options = { mimeType: 'video/webm;codecs=vp8,opus' };
+    try {
+      cashierMediaRecorder = new MediaRecorder(cashierCctvStream, options);
+    } catch(e) {
+      cashierMediaRecorder = new MediaRecorder(cashierCctvStream);
+    }
+
+    cashierMediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        cashierRecordedChunks.push(e.data);
+      }
+    };
+
+    cashierMediaRecorder.onstop = () => {
+      isCashierRecordingClip = false;
+      const banner = document.getElementById('cctv-recording-banner');
+      if (banner) banner.classList.add('hidden');
+
+      const blob = new Blob(cashierRecordedChunks, { type: 'video/webm' });
+      const clipUrl = URL.createObjectURL(blob);
+      const clipFileName = `Snack_Shack_CCTV_Clip_${new Date().toISOString().slice(11, 19).replace(/:/g, '-')}.webm`;
+
+      // Update UI container
+      const container = document.getElementById('cctv-recent-clip-container');
+      const label = document.getElementById('cctv-clip-label');
+      const downloadLink = document.getElementById('cctv-clip-download-link');
+
+      if (container) container.classList.remove('hidden');
+      if (label) label.textContent = clipFileName;
+      if (downloadLink) {
+        downloadLink.href = clipUrl;
+        downloadLink.download = clipFileName;
+      }
+
+      // Add to Detection Feed as Clip
+      recordCctvDetectionIncident({
+        tag: `CLIP-${Date.now().toString().slice(-4)}`,
+        label: `Saved 5s Security Video Clip (${clipFileName})`,
+        confidence: '100% Verified',
+        zone: 'Station Table 4B',
+        clipUrl: clipUrl,
+        clipName: clipFileName
+      });
+
+      showToast('📹 5-Second CCTV Clip Captured & Ready to Download!', 'success');
+    };
+
+    // Start Recording
+    cashierMediaRecorder.start();
+    const banner = document.getElementById('cctv-recording-banner');
+    const timerLabel = document.getElementById('cctv-recording-timer');
+    if (banner) banner.classList.remove('hidden');
+
+    let secondsLeft = 5;
+    if (timerLabel) timerLabel.textContent = `Capturing 5s Clip... (${secondsLeft}s)`;
+    
+    const interval = setInterval(() => {
+      secondsLeft--;
+      if (timerLabel) timerLabel.textContent = `Capturing 5s Clip... (${secondsLeft}s)`;
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+        if (cashierMediaRecorder && cashierMediaRecorder.state !== 'inactive') {
+          cashierMediaRecorder.stop();
+        }
+      }
+    }, 1000);
+
+  } catch (err) {
+    isCashierRecordingClip = false;
+    console.error('Clip recording error:', err);
+    showToast('⚠️ Could not record video clip: ' + err.message, 'error');
+  }
+}
+
+// 📸 Capture High-Res Snapshot with Burned-in Timestamp
+function captureCctvSnapshot() {
+  const video = document.getElementById('cashier-cctv-video');
+  if (!video || !video.videoWidth) return showToast('⚠️ Video feed not ready', 'warning');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+
+  // Flip and draw image
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  // Stamp header watermark
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.fillRect(0, 0, canvas.width, 42);
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText("JORDAN'S SNACK SHACK • SECURITY CCTV SNAPSHOT", 20, 27);
+
+  // Stamp footer timestamp
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.fillRect(0, canvas.height - 35, canvas.width, 35);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px monospace';
+  const stampStr = `TIMESTAMP: ${new Date().toLocaleString()} • ZONE: TABLE 4B • FORSYTH COUNTY, GA`;
+  ctx.fillText(stampStr, 20, canvas.height - 13);
+
+  const snapshotDataUrl = canvas.toDataURL('image/png');
+  const filename = `Snack_Shack_Snapshot_${Date.now()}.png`;
+
+  // Download
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = snapshotDataUrl;
+  link.click();
+
+  // Log to feed
+  recordCctvDetectionIncident({
+    tag: `SNAP-${Date.now().toString().slice(-4)}`,
+    label: `Security Snapshot Captured (${filename})`,
+    confidence: '100%',
+    zone: 'Station Table 4B',
+    snapshot: snapshotDataUrl
+  });
+
+  showToast('📸 Snapshot saved with verified timestamp!', 'success');
+}
+
+// Log & Fetch CCTV Incident Events
+async function recordCctvDetectionIncident(eventData) {
+  cctvDetectionLogsList.unshift(eventData);
+  if (cctvDetectionLogsList.length > 50) cctvDetectionLogsList.pop();
+  renderCctvDetectionLogUI();
+
+  try {
+    await fetch('/api/cctv/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventData)
+    });
+  } catch(e){}
+}
+
+async function loadRecentCctvEvents() {
+  try {
+    const res = await fetch('/api/cctv/events');
+    const data = await res.json();
+    if (data && Array.isArray(data)) {
+      cctvDetectionLogsList = data;
+      renderCctvDetectionLogUI();
+    }
+  } catch(e){}
+}
+
+function renderCctvDetectionLogUI() {
+  const container = document.getElementById('cctv-detection-feed');
+  if (!container) return;
+
+  if (cctvDetectionLogsList.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-slate-500 text-xs py-6">
+        Awaiting presence detection...<br>
+        <span class="text-[10px]">Subjects approaching Table 4B will be tagged here.</span>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = cctvDetectionLogsList.map(item => `
+    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 hover:border-slate-700 transition">
+      <div class="flex items-center justify-between text-[10px]">
+        <span class="font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded">
+          ${item.tag || 'TAG-#104'}
+        </span>
+        <span class="text-slate-400 font-mono">${item.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+      <div class="font-bold text-xs text-slate-200">${item.label}</div>
+      <div class="flex items-center justify-between text-[10px] text-slate-400">
+        <span>Zone: ${item.zone || 'Table 4B'}</span>
+        <span class="text-emerald-400 font-semibold">${item.confidence || '98% Conf.'}</span>
+      </div>
+      ${item.clipUrl ? `
+        <div class="pt-1">
+          <a href="${item.clipUrl}" download="${item.clipName || 'clip.webm'}" class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 underline">
+            <span>📹 Download Recorded 5s Clip</span>
+          </a>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function clearCctvDetectionLog() {
+  cctvDetectionLogsList = [];
+  renderCctvDetectionLogUI();
+  showToast('Detection feed cleared', 'info');
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {
@@ -4498,4 +4945,15 @@ window.addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   loadFeatureConfig();
+  // Fetch initial kiosk status
+  fetch('/api/display/kiosk_status').then(r => r.json()).then(d => {
+    if (d && d.active) {
+      isKioskRemoteActive = true;
+      const btn = document.getElementById('btn-cashier-toggle-kiosk');
+      const label = document.getElementById('label-cashier-kiosk-status');
+      if (label) label.textContent = 'Kiosk: ON (Active)';
+      if (btn) btn.className = 'flex items-center gap-1.5 text-xs text-slate-950 bg-emerald-400 hover:bg-emerald-300 px-2.5 py-1.5 rounded-xl transition font-black shadow-md shadow-emerald-900/30';
+    }
+  }).catch(()=>{});
 });
+

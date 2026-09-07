@@ -1801,6 +1801,50 @@ app.post('/api/display/scan_face_request', (req, res) => {
   res.json({ success: true, message: 'Face scan request sent to 2nd monitor' });
 });
 
+let isRemoteKioskActive = false;
+let cctvDetectionLogs = [];
+
+app.post('/api/display/toggle_kiosk', (req, res) => {
+  const { active } = req.body;
+  isRemoteKioskActive = (active !== undefined) ? !!active : !isRemoteKioskActive;
+  const payload = `data: ${JSON.stringify({ type: 'toggle_kiosk', active: isRemoteKioskActive })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+  res.json({ success: true, active: isRemoteKioskActive });
+});
+
+app.get('/api/display/kiosk_status', (req, res) => {
+  res.json({ active: isRemoteKioskActive });
+});
+
+app.post('/api/cctv/events', (req, res) => {
+  const { tag, label, confidence, zone, snapshot } = req.body;
+  const newEvent = {
+    id: `TAG-${Date.now().toString().slice(-4)}`,
+    tag: tag || `TAG-${Date.now().toString().slice(-4)}`,
+    label: label || 'Subject Detected',
+    confidence: confidence || '96%',
+    zone: zone || 'Station Table 4B',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    created_at: Date.now(),
+    snapshot: snapshot || null
+  };
+  cctvDetectionLogs.unshift(newEvent);
+  if (cctvDetectionLogs.length > 50) cctvDetectionLogs.pop();
+
+  const payload = `data: ${JSON.stringify({ type: 'cctv_detection', event: newEvent })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+
+  res.json({ success: true, event: newEvent });
+});
+
+app.get('/api/cctv/events', (req, res) => {
+  res.json(cctvDetectionLogs);
+});
+
 // Customer Service Feedback & Reviews
 app.post('/api/feedback', async (req, res) => {
   try {

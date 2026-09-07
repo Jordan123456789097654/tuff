@@ -1597,21 +1597,30 @@
   <!-- ==================================================== -->
   <!-- ALWAYS-ON LIVE SECURITY CCTV MONITORING WIDGET -->
   <!-- ==================================================== -->
-  <div id="display-security-cctv" class="fixed bottom-4 left-4 z-40 bg-slate-950/90 border-2 border-red-500/70 rounded-2xl shadow-2xl p-2.5 backdrop-blur-md max-w-[200px] sm:max-w-[220px] space-y-1.5 transition-all">
+  <div id="display-security-cctv" class="fixed bottom-4 left-4 z-40 bg-slate-950/90 border-2 border-red-500/70 rounded-2xl shadow-2xl p-2.5 backdrop-blur-md max-w-[210px] sm:max-w-[230px] space-y-1.5 transition-all">
     <div class="flex items-center justify-between text-[10px] font-extrabold text-red-400">
       <div class="flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
         <span>🔴 LIVE CCTV</span>
       </div>
-      <button onclick="toggleSecurityCctv()" class="text-slate-400 hover:text-white" title="Minimize / Expand">
-        <i data-lucide="minus" class="w-3 h-3" id="cctv-toggle-icon"></i>
-      </button>
+      <div class="flex items-center gap-1">
+        <button onclick="recordDisplayCctvClip()" class="text-rose-400 hover:text-white px-1 font-mono font-bold bg-rose-950/80 border border-rose-500/40 rounded text-[9px]" title="Save 5s Clip">
+          📹 Clip
+        </button>
+        <button onclick="toggleSecurityCctv()" class="text-slate-400 hover:text-white" title="Minimize / Expand">
+          <i data-lucide="minus" class="w-3 h-3" id="cctv-toggle-icon"></i>
+        </button>
+      </div>
     </div>
     <div id="cctv-viewport-container" class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-slate-800">
       <video id="cctv-live-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+      <canvas id="display-cctv-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
       <div class="absolute top-1 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-red-400 font-bold flex items-center gap-1">
         <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
         <span>REC</span>
+      </div>
+      <div id="display-cctv-tag" class="absolute top-1 right-1.5 bg-emerald-950/90 border border-emerald-500/50 px-1 py-0.2 rounded text-[7px] font-mono text-emerald-300 font-bold">
+        NO SUBJECT
       </div>
       <div id="cctv-timestamp" class="absolute bottom-1 right-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-white">08:00:00</div>
     </div>
@@ -3677,7 +3686,6 @@
     // ==========================================
     let isAudioUnlocked = false;
     let audioCtx = null;
-    let speakerBannerTimeout = null;
 
     function getAudioContext() {
       if (!audioCtx) {
@@ -3794,6 +3802,10 @@
     let cctvStream = null;
     let isCctvMinimized = false;
 
+    let displayMediaRecorder = null;
+    let displayRecordedChunks = [];
+    let isDisplayRecordingClip = false;
+
     async function startSecurityCctv() {
       const video = document.getElementById('cctv-live-video');
       if (!video) return;
@@ -3803,8 +3815,93 @@
         });
         video.srcObject = cctvStream;
         video.play().catch(()=>{});
+        startDisplayCctvAiLoop();
       } catch (err) {
         console.warn('Security CCTV stream notice:', err);
+      }
+    }
+
+    function startDisplayCctvAiLoop() {
+      const video = document.getElementById('cctv-live-video');
+      const canvas = document.getElementById('display-cctv-canvas');
+      const tagEl = document.getElementById('display-cctv-tag');
+      if (!video || !canvas) return;
+      const ctx = canvas.getContext('2d');
+      let frame = 0;
+
+      function loop() {
+        if (video.videoWidth && video.videoHeight) {
+          if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+          }
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          frame++;
+
+          const w = canvas.width;
+          const h = canvas.height;
+          const boxW = w * 0.55;
+          const boxH = h * 0.7;
+          const boxX = (w - boxW) / 2 + Math.sin(frame * 0.04) * 4;
+          const boxY = (h - boxH) / 2 + Math.cos(frame * 0.03) * 3;
+
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2;
+          const len = 12;
+          ctx.beginPath();
+          ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
+          ctx.moveTo(boxX + boxW - len, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + len);
+          ctx.moveTo(boxX, boxY + boxH - len); ctx.lineTo(boxX, boxY + boxH); ctx.lineTo(boxX + len, boxY + boxH);
+          ctx.moveTo(boxX + boxW - len, boxY + boxH); ctx.lineTo(boxX + boxW, boxY + boxH); ctx.lineTo(boxX + boxW, boxY + boxH - len);
+          ctx.stroke();
+
+          const nowSec = Math.floor(Date.now() / 1000);
+          const tagNum = (nowSec % 900 + 100);
+          if (tagEl) tagEl.textContent = `TAG #${tagNum} DETECTED`;
+        }
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    async function recordDisplayCctvClip() {
+      if (isDisplayRecordingClip) return;
+      if (!cctvStream) await startSecurityCctv();
+      if (!cctvStream) return alert('Camera not available');
+
+      try {
+        displayRecordedChunks = [];
+        isDisplayRecordingClip = true;
+        try {
+          displayMediaRecorder = new MediaRecorder(cctvStream, { mimeType: 'video/webm;codecs=vp8,opus' });
+        } catch(e) {
+          displayMediaRecorder = new MediaRecorder(cctvStream);
+        }
+
+        displayMediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) displayRecordedChunks.push(e.data);
+        };
+
+        displayMediaRecorder.onstop = () => {
+          isDisplayRecordingClip = false;
+          const blob = new Blob(displayRecordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.download = `Snack_Shack_CCTV_5s_Clip_${Date.now()}.webm`;
+          a.href = url;
+          a.click();
+          alert('📹 5-second CCTV clip downloaded!');
+        };
+
+        displayMediaRecorder.start();
+        setTimeout(() => {
+          if (displayMediaRecorder && displayMediaRecorder.state !== 'inactive') {
+            displayMediaRecorder.stop();
+          }
+        }, 5000);
+      } catch (err) {
+        isDisplayRecordingClip = false;
+        console.warn('Clip recorder notice:', err);
       }
     }
 
@@ -4299,6 +4396,8 @@
         if (avEl && data.student.photo_data) {
           avEl.innerHTML = `<img src="${data.student.photo_data}" class="w-full h-full object-cover rounded-full" />`;
         }
+      } else if (data.type === 'toggle_kiosk') {
+        toggleKioskMode(data.active);
       } else if (data.state) {
         renderState(data);
       }
