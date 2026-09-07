@@ -172,34 +172,10 @@
     <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
 
-      <!-- Two-Way Customer Intercom Push-to-Talk Button -->
-      <button id="btn-customer-intercom" onmousedown="startCustomerTalkback()" onmouseup="stopCustomerTalkback()" ontouchstart="startCustomerTalkback()" ontouchend="stopCustomerTalkback()" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow-lg transition active:scale-95 cursor-pointer" title="Hold down to talk directly to cashier speaker">
-        <i data-lucide="mic" class="w-3.5 h-3.5"></i>
-        <span id="intercom-talk-label">Talk to Cashier</span>
-      </button>
-
       <!-- Lofi Beats Synthesizer Button -->
       <button id="btn-toggle-lofi" onclick="toggleLofiBeats()" class="flex items-center gap-1.5 bg-purple-600/40 hover:bg-purple-600/60 text-purple-300 hover:text-white border border-purple-500/50 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Toggle Ambient Lofi Chill Beats Synthesizer">
         <span>🎧</span>
         <span class="hidden md:inline" id="label-lofi-status">Lofi Beats</span>
-      </button>
-
-      <!-- Apple Wallet & Digital ID Pass Generator -->
-      <button id="display-btn-apple-wallet" onclick="openAppleWalletPassModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Generate Apple Wallet / Printable ID Pass">
-        <span>💳</span>
-        <span class="hidden md:inline">Wallet Pass</span>
-      </button>
-
-      <!-- Always-On Security CCTV Toggle -->
-      <button id="display-btn-cctv" onclick="toggleSecurityCctv()" class="flex items-center gap-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Toggle Live Security CCTV Monitoring Feed">
-        <span class="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
-        <span class="hidden lg:inline">CCTV</span>
-      </button>
-
-      <!-- Full Live Menu Board Trigger -->
-      <button id="display-btn-menu" onclick="openDisplayMenu()" class="flex items-center gap-1.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-white border border-amber-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
-        <span>📋</span>
-        <span class="hidden md:inline">Menu</span>
       </button>
 
       <!-- Student Face ID Scanner Trigger -->
@@ -214,22 +190,10 @@
         <span class="hidden sm:inline">Register Pass</span>
       </button>
 
-      <!-- Student Balance Checker Trigger -->
-      <button id="display-btn-balance" onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
-        <span>💳</span>
-        <span class="hidden sm:inline">Pass Balance</span>
-      </button>
-
       <!-- AI School Trivia Quiz Trigger -->
       <button id="display-btn-trivia" onclick="openDisplayTriviaModal()" class="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Play quick AI trivia to win bonus punch stamps and discounts!">
         <span>🧠</span>
         <span class="hidden sm:inline">AI Trivia</span>
-      </button>
-
-      <!-- Lucky Spin Wheel Trigger -->
-      <button id="display-btn-spin" onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
-        <span>🎟️</span>
-        <span class="hidden sm:inline">Spin</span>
       </button>
 
       <div id="sync-status-badge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm">
