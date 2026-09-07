@@ -759,9 +759,34 @@ function detectComboSavings() {
   return { eligibleCombos, comboDiscount };
 }
 
+function getHappyHourDiscount(subtotal) {
+  if (!featureSettings || featureSettings.cfg_happy_hour_enabled === 'false') {
+    return { active: false, amount: 0, label: '' };
+  }
+  const start = featureSettings.cfg_happy_hour_start || '15:00';
+  const end = featureSettings.cfg_happy_hour_end || '15:30';
+  const discountVal = parseFloat(featureSettings.cfg_happy_hour_discount) || 0.25;
+  const label = featureSettings.cfg_happy_hour_label || '⚡ Happy Hour Deal';
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [sH, sM] = start.split(':').map(Number);
+  const [eH, eM] = end.split(':').map(Number);
+  const startMinutes = (sH || 15) * 60 + (sM || 0);
+  const endMinutes = (eH || 15) * 60 + (eM || 30);
+
+  if (currentMinutes >= startMinutes && currentMinutes <= endMinutes && subtotal > 0) {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const amount = Math.min(subtotal, totalItems * discountVal);
+    return { active: true, amount, label };
+  }
+  return { active: false, amount: 0, label: '' };
+}
+
 function calculateTotals() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const { eligibleCombos, comboDiscount } = detectComboSavings();
+  const happyHour = getHappyHourDiscount(subtotal);
 
   let discountAmount = 0;
   let discountLabel = '';
@@ -775,10 +800,11 @@ function calculateTotals() {
     }
   }
 
-  const totalDiscount = Math.min(comboDiscount + discountAmount, subtotal);
+  const combinedDiscount = comboDiscount + discountAmount + (happyHour.active ? happyHour.amount : 0);
+  const totalDiscount = Math.min(combinedDiscount, subtotal);
   const total = Math.max(0, subtotal - totalDiscount);
 
-  return { subtotal, comboDiscount, eligibleCombos, discountAmount, discountLabel, totalDiscount, total };
+  return { subtotal, comboDiscount, eligibleCombos, happyHour, discountAmount, discountLabel, totalDiscount, total };
 }
 
 function renderCart() {
@@ -1161,6 +1187,54 @@ function selectStudentForCheckout(studentId) {
     }
   }
 
+  // Birthday Detection
+  let isBirthdayToday = false;
+  if (student.birthday) {
+    const today = new Date();
+    const todayMonth = today.getMonth() + 1;
+    const todayDay = today.getDate();
+    const parts = student.birthday.split('-');
+    if (parts.length >= 3) {
+      const bMonth = parseInt(parts[1], 10);
+      const bDay = parseInt(parts[2], 10);
+      if (bMonth === todayMonth && bDay === todayDay) {
+        isBirthdayToday = true;
+      }
+    }
+  }
+
+  let birthdayBanner = '';
+  if (isBirthdayToday && featureSettings.cfg_pos_birthday_celebration !== 'false') {
+    birthdayBanner = `
+      <div class="mt-2 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-amber-500/20 border-2 border-pink-500/50 p-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-2 shadow-lg animate-pulse">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🎂</span>
+          <div>
+            <span class="font-heading font-black text-pink-300 text-xs block">IT'S ${student.name.toUpperCase()}'S BIRTHDAY TODAY! 🎉</span>
+            <span class="text-[10px] text-slate-300">100% Free Birthday Treat on the house!</span>
+          </div>
+        </div>
+        <button onclick="applyBirthdayFreeTreat('${student.name}')" class="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold px-3 py-1.5 rounded-xl text-xs shadow transition">
+          🎁 Apply Free Birthday Snack
+        </button>
+      </div>
+    `;
+
+    // Notify Customer Facing 2nd Screen to burst in confetti and celebration!
+    if (displayChannel) {
+      try {
+        displayChannel.postMessage({ type: 'birthday_alert', student });
+      } catch(e){}
+    }
+    fetch('/api/display/birthday', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student })
+    }).catch(()=>{});
+
+    playSound('fanfare');
+  }
+
   card.classList.remove('hidden');
   card.innerHTML = `
     <div class="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -1187,6 +1261,8 @@ function selectStudentForCheckout(studentId) {
       </div>
       <p class="text-[10px] text-slate-400 text-center pt-0.5">Every 10 orders = 1 FREE Snack Reward!</p>
     </div>
+
+    ${birthdayBanner}
   `;
 
   // Allergy Check
@@ -3430,12 +3506,253 @@ function selectActiveStaff(staffId) {
   showToast(`Active cashier switched to: ${staff.name} (${staff.role})! 🧑‍💼`, 'success');
 }
 
+// Birthday Treat Helper
+function applyBirthdayFreeTreat(studentName = 'Student') {
+  activeDiscount = {
+    name: `🎂 Birthday Free Treat (${studentName})`,
+    type: 'pct',
+    value: 100
+  };
+  playSound('chaching');
+  renderCart();
+  if (selectedStudentForCheckout) {
+    selectStudentForCheckout(selectedStudentForCheckout.id);
+  }
+  showToast(`🎂 Happy Birthday ${studentName}! 100% Free snack discount applied!`, 'success');
+}
+
+// ==========================================
+// VOICE ORDERING SYSTEM
+// ==========================================
+let voiceRecognition = null;
+let isVoiceListening = false;
+
+function toggleVoiceOrder() {
+  if (isVoiceListening) {
+    stopVoiceOrder();
+  } else {
+    startVoiceOrder();
+  }
+}
+
+function startVoiceOrder() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Speech recognition not supported in this browser.', 'error');
+    return;
+  }
+
+  try {
+    voiceRecognition = new SpeechRecognition();
+    voiceRecognition.continuous = false;
+    voiceRecognition.interimResults = false;
+    voiceRecognition.lang = 'en-US';
+
+    voiceRecognition.onstart = () => {
+      isVoiceListening = true;
+      const btn = document.getElementById('btn-voice-order');
+      const text = document.getElementById('voice-order-text');
+      if (btn) btn.className = 'px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white border border-rose-500/30 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition shadow-sm animate-pulse';
+      if (text) text.textContent = 'Listening... 🎙️';
+      showToast('Listening... Speak items (e.g. "Two Doritos and one Gatorade")', 'info');
+    };
+
+    voiceRecognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      parseVoiceOrder(transcript);
+    };
+
+    voiceRecognition.onerror = (event) => {
+      console.warn('Speech error:', event.error);
+      stopVoiceOrder();
+    };
+
+    voiceRecognition.onend = () => {
+      stopVoiceOrder();
+    };
+
+    voiceRecognition.start();
+  } catch (err) {
+    console.error('Failed to start voice recognition:', err);
+    stopVoiceOrder();
+  }
+}
+
+function stopVoiceOrder() {
+  isVoiceListening = false;
+  const btn = document.getElementById('btn-voice-order');
+  const text = document.getElementById('voice-order-text');
+  if (btn) btn.className = 'px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-500/30 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition shadow-sm';
+  if (text) text.textContent = 'Voice Order';
+
+  if (voiceRecognition) {
+    try { voiceRecognition.stop(); } catch(e){}
+    voiceRecognition = null;
+  }
+}
+
+function parseVoiceOrder(transcript) {
+  if (!transcript) return;
+  const clean = transcript.toLowerCase();
+  showToast(`Heard: "${transcript}" 🎙️`, 'info');
+
+  const numberMap = {
+    'a': 1, 'an': 1, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
+    'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+  };
+
+  // Split into clauses by 'and', comma, or 'plus'
+  const phrases = clean.split(/\band\b|,|\bplus\b/);
+  let addedCount = 0;
+
+  phrases.forEach(phrase => {
+    const tokens = phrase.trim().split(/\s+/);
+    if (tokens.length === 0) return;
+
+    let qty = 1;
+    let itemTokens = [...tokens];
+
+    if (tokens[0] in numberMap) {
+      qty = numberMap[tokens[0]];
+      itemTokens.shift();
+    } else if (!isNaN(parseInt(tokens[0], 10))) {
+      qty = parseInt(tokens[0], 10);
+      itemTokens.shift();
+    }
+
+    const searchItemName = itemTokens.join(' ').replace(/bags? of|bottles? of|cans? of/g, '').trim();
+    if (!searchItemName) return;
+
+    // Find closest matching product
+    const match = products.find(p => {
+      const pName = p.name.toLowerCase();
+      return pName.includes(searchItemName) || searchItemName.includes(pName) ||
+             (p.category_name && p.category_name.toLowerCase().includes(searchItemName));
+    });
+
+    if (match) {
+      for (let i = 0; i < qty; i++) {
+        addToCart(match.id);
+      }
+      addedCount += qty;
+    }
+  });
+
+  if (addedCount > 0) {
+    playSound('chaching');
+    showToast(`Voice added ${addedCount} item(s) to cart! 🎙️✨`, 'success');
+  } else {
+    showToast(`Could not recognize items in: "${transcript}"`, 'error');
+  }
+}
+
+// ==========================================
+// SPEAKER BROADCASTS
+// ==========================================
+function openSpeakerBroadcastModal() {
+  openModal('modal-speaker-broadcast');
+}
+
+async function broadcastToDisplaySpeaker(text, emoji = '📢') {
+  if (!text) return;
+  try {
+    playSound('fanfare');
+    // Local BroadcastChannel trigger
+    if (displayChannel) {
+      try {
+        displayChannel.postMessage({ type: 'speaker_broadcast', text, emoji });
+      } catch(e){}
+    }
+
+    // Backend SSE relay
+    await fetch('/api/display/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, emoji })
+    });
+
+    showToast(`Broadcasted aloud to customer monitor: "${text}" 📢`, 'success');
+    closeModal('modal-speaker-broadcast');
+  } catch (err) {
+    showToast('Broadcast notice: ' + err.message, 'error');
+  }
+}
+
+function submitCustomSpeakerBroadcast() {
+  const text = document.getElementById('speaker-custom-text')?.value.trim();
+  const emoji = document.getElementById('speaker-custom-emoji')?.value.trim() || '📢';
+  if (!text) {
+    showToast('Please type an announcement message.', 'error');
+    return;
+  }
+  broadcastToDisplaySpeaker(text, emoji);
+  document.getElementById('speaker-custom-text').value = '';
+}
+
+// ==========================================
+// CUSTOMER FEEDBACK DASHBOARD
+// ==========================================
+function openFeedbackDashboard() {
+  openModal('modal-feedback-dashboard');
+  loadFeedbackDashboard();
+}
+
+async function loadFeedbackDashboard() {
+  try {
+    const res = await fetch('/api/feedback/summary');
+    const data = await res.json();
+
+    const statPos = document.getElementById('fb-stat-positive');
+    const statTot = document.getElementById('fb-stat-total');
+    const statEmoji = document.getElementById('fb-stat-top-emoji');
+    const countAwesome = document.getElementById('fb-count-awesome');
+    const countGreat = document.getElementById('fb-count-great');
+    const countOkay = document.getElementById('fb-count-okay');
+    const recentList = document.getElementById('fb-recent-list');
+
+    if (statPos) statPos.textContent = `${data.positivePercent || 100}%`;
+    if (statTot) statTot.textContent = `${data.totalCount || 0}`;
+    if (countAwesome) countAwesome.textContent = data.breakdown?.awesome || 0;
+    if (countGreat) countGreat.textContent = data.breakdown?.great || 0;
+    if (countOkay) countOkay.textContent = data.breakdown?.okay || 0;
+
+    if (data.breakdown?.awesome >= data.breakdown?.great && data.breakdown?.awesome > 0) {
+      if (statEmoji) statEmoji.textContent = '🤩';
+    } else if (data.breakdown?.great > 0) {
+      if (statEmoji) statEmoji.textContent = '😊';
+    }
+
+    if (recentList) {
+      if (!data.recent || data.recent.length === 0) {
+        recentList.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No reviews recorded yet. Students can rate service on the 2nd screen!</p>`;
+      } else {
+        recentList.innerHTML = data.recent.map(r => `
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">${r.emoji || '😊'}</span>
+              <div>
+                <span class="font-bold text-white">${r.comment || 'Rating'}</span>
+                <span class="text-[10px] text-slate-400 block">${new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Order #${r.order_id || 'N/A'}</span>
+              </div>
+            </div>
+            <span class="text-amber-400 font-bold font-mono">${r.rating || 5}★</span>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (err) {
+    console.warn('Error loading feedback dashboard:', err);
+  }
+}
+
 // ==========================================
 // SCREEN & FEATURE CONFIGURATION
 // ==========================================
 let featureSettings = {};
 
 const FEATURE_KEYS = [
+  'cfg_pos_voice_order',
+  'cfg_pos_birthday_celebration',
   'cfg_pos_quick_cash',
   'cfg_pos_face_scan',
   'cfg_pos_camera_scan',
@@ -3444,6 +3761,18 @@ const FEATURE_KEYS = [
   'cfg_pos_shrinkage',
   'cfg_pos_fundraiser',
   'cfg_pos_auto_combo',
+  'cfg_display_menu_board',
+  'cfg_display_feedback_kiosk',
+  'cfg_display_charity_roundup',
+  'cfg_event_countdown_enabled',
+  'cfg_event_countdown_title',
+  'cfg_event_countdown_date',
+  'cfg_event_countdown_emoji',
+  'cfg_happy_hour_enabled',
+  'cfg_happy_hour_label',
+  'cfg_happy_hour_discount',
+  'cfg_happy_hour_start',
+  'cfg_happy_hour_end',
   'cfg_display_news_ticker',
   'cfg_display_trending',
   'cfg_display_weather',
@@ -3473,8 +3802,11 @@ function openConfigModal() {
     FEATURE_KEYS.forEach(key => {
       const input = document.getElementById(key.replace(/_/g, '-'));
       if (input) {
-        // Defaults to true if not explicitly set to 'false'
-        input.checked = featureSettings[key] !== 'false';
+        if (input.type === 'checkbox') {
+          input.checked = featureSettings[key] !== 'false';
+        } else {
+          input.value = featureSettings[key] || input.value || '';
+        }
       }
     });
   });
@@ -3485,12 +3817,12 @@ function openConfigModal() {
 function switchConfigTab(tabName) {
   document.querySelectorAll('.cfg-panel').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.cfg-tab-btn').forEach(b => {
-    b.className = 'cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition';
+    b.className = 'cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap';
   });
 
   const activeBtn = document.getElementById(`cfg-tab-btn-${tabName}`);
   const activePanel = document.getElementById(`cfg-panel-${tabName}`);
-  if (activeBtn) activeBtn.className = 'cfg-tab-btn bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl font-bold transition';
+  if (activeBtn) activeBtn.className = 'cfg-tab-btn bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap';
   if (activePanel) activePanel.classList.remove('hidden');
 
   if (tabName === 'announcements') loadAnnouncementsManager();
@@ -3503,7 +3835,11 @@ async function saveFeatureConfig() {
   FEATURE_KEYS.forEach(key => {
     const input = document.getElementById(key.replace(/_/g, '-'));
     if (input) {
-      payload[key] = input.checked ? 'true' : 'false';
+      if (input.type === 'checkbox') {
+        payload[key] = input.checked ? 'true' : 'false';
+      } else {
+        payload[key] = input.value;
+      }
       featureSettings[key] = payload[key];
     }
   });
@@ -3586,7 +3922,13 @@ function applyPOSFeatureConfig(settings) {
     fundBar.classList.toggle('hidden', settings.cfg_pos_fundraiser === 'false');
   }
 
-  // 8. Auto-Combo computation & banner update
+  // 8. Voice Ordering Button
+  const btnVoice = document.getElementById('btn-voice-order');
+  if (btnVoice) {
+    btnVoice.classList.toggle('hidden', settings.cfg_pos_voice_order === 'false');
+  }
+
+  // 9. Auto-Combo computation & banner update
   renderCart();
 
   lucide.createIcons();

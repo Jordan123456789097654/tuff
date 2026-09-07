@@ -124,6 +124,18 @@
         <span>Portal</span>
       </a>
 
+      <!-- Instant Speaker Broadcasts -->
+      <button onclick="openSpeakerBroadcastModal()" class="flex items-center gap-1.5 text-xs text-cyan-300 hover:text-white bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Instant Speaker Broadcasts to Customer Display">
+        <i data-lucide="megaphone" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span class="hidden md:inline">Speaker</span>
+      </button>
+
+      <!-- Customer Feedback Dashboard -->
+      <button onclick="openFeedbackDashboard()" class="flex items-center gap-1.5 text-xs text-yellow-300 hover:text-white bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Customer Rating & Emoji Feedback Dashboard">
+        <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400"></i>
+        <span class="hidden md:inline">Feedback</span>
+      </button>
+
       <!-- Screen & Feature Config Toggle Button -->
       <button onclick="openConfigModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Configure POS & Customer Display Feature Toggles">
         <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
@@ -175,6 +187,12 @@
               <i data-lucide="x" class="w-4 h-4"></i>
             </button>
           </div>
+
+          <!-- Voice Ordering Mic Button -->
+          <button id="btn-voice-order" onclick="toggleVoiceOrder()" class="px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-500/30 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition shadow-sm" title="Voice Ordering (Speak items: 'Two Doritos and one Gatorade')">
+            <i data-lucide="mic" id="voice-order-icon" class="w-4 h-4"></i>
+            <span id="voice-order-text">Voice Order</span>
+          </button>
 
           <button onclick="openCameraScanner()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
             <i data-lucide="camera" class="w-4 h-4"></i>
@@ -1898,17 +1916,20 @@
       </div>
 
       <!-- Config Navigation Tabs -->
-      <div class="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold">
-        <button onclick="switchConfigTab('pos')" id="cfg-tab-btn-pos" class="cfg-tab-btn bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl transition">
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold overflow-x-auto scrollbar-none">
+        <button onclick="switchConfigTab('pos')" id="cfg-tab-btn-pos" class="cfg-tab-btn bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
           🖥️ POS Register Layout
         </button>
-        <button onclick="switchConfigTab('display')" id="cfg-tab-btn-display" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition">
+        <button onclick="switchConfigTab('display')" id="cfg-tab-btn-display" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
           📺 Customer Display (`/display`)
         </button>
-        <button onclick="switchConfigTab('announcements')" id="cfg-tab-btn-announcements" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition">
+        <button onclick="switchConfigTab('events')" id="cfg-tab-btn-events" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
+          🏈 Event & Happy Hour
+        </button>
+        <button onclick="switchConfigTab('announcements')" id="cfg-tab-btn-announcements" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
           📢 News Ticker Manager
         </button>
-        <button onclick="switchConfigTab('wishlist')" id="cfg-tab-btn-wishlist" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition">
+        <button onclick="switchConfigTab('wishlist')" id="cfg-tab-btn-wishlist" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
           💡 Wishlist Requests
         </button>
       </div>
@@ -1921,6 +1942,22 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🎙️ Voice Ordering Mic</span>
+              <span class="text-[11px] text-slate-400">Speak item names & quantities directly to cart</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-voice-order" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🎂 Birthday Free Treat Alert</span>
+              <span class="text-[11px] text-slate-400">Detect birthday on scan with confetti & free snack</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-birthday-celebration" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
           <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
             <div>
               <span class="font-bold text-white block">💵 Quick Cash Tender Buttons</span>
@@ -1995,6 +2032,46 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">📋 Live Menu Catalog Browser</span>
+              <span class="text-[11px] text-slate-400">Searchable menu modal with calories & stock</span>
+            </div>
+            <input type="checkbox" id="cfg-display-menu-board" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">⭐ Emoji Feedback & Rating Kiosk</span>
+              <span class="text-[11px] text-slate-400">Post-checkout smiley rating on customer screen</span>
+            </div>
+            <input type="checkbox" id="cfg-display-feedback-kiosk" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🪙 Animated Charity Coin Jar</span>
+              <span class="text-[11px] text-slate-400">Interactive round-up change donation jar</span>
+            </div>
+            <input type="checkbox" id="cfg-display-charity-roundup" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🏈 School Event Countdown Bar</span>
+              <span class="text-[11px] text-slate-400">Live ticking countdown for games and rallies</span>
+            </div>
+            <input type="checkbox" id="cfg-event-countdown-enabled" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">⚡ After-School Happy Hour Banner</span>
+              <span class="text-[11px] text-slate-400">Promotional flash discount bar</span>
+            </div>
+            <input type="checkbox" id="cfg-happy-hour-enabled" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
           <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
             <div>
               <span class="font-bold text-white block">📢 News & Announcements Ticker</span>
@@ -2093,7 +2170,68 @@
         </div>
       </div>
 
-      <!-- TAB 3: LIVE NEWS TICKER ANNOUNCEMENTS MANAGER -->
+      <!-- TAB 3: EVENT COUNTDOWN & HAPPY HOUR CONFIG -->
+      <div id="cfg-panel-events" class="cfg-panel hidden flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+        <!-- Event Countdown Section -->
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🏈</span>
+            <div>
+              <h4 class="font-bold text-white text-sm">School Event Live Countdown</h4>
+              <p class="text-[11px] text-slate-400">Displays a real-time ticking banner on customer display</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="space-y-1">
+              <label class="text-slate-400 font-semibold block text-[11px]">Event Emoji</label>
+              <input type="text" id="cfg-event-countdown-emoji" value="🏈" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-base text-white" />
+            </div>
+            <div class="sm:col-span-2 space-y-1">
+              <label class="text-slate-400 font-semibold block text-[11px]">Event Title / Name</label>
+              <input type="text" id="cfg-event-countdown-title" value="Homecoming Game" placeholder="e.g. Homecoming Football Game" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-slate-400 font-semibold block text-[11px]">Event Date & Kickoff Time</label>
+            <input type="datetime-local" id="cfg-event-countdown-date" value="2026-09-12T16:00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+
+        <!-- Happy Hour / Flash Sale Section -->
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚡</span>
+            <div>
+              <h4 class="font-bold text-white text-sm">After-School Happy Hour & Flash Deals</h4>
+              <p class="text-[11px] text-slate-400">Automated discounts during specific hours of the day</p>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-slate-400 font-semibold block text-[11px]">Deal Label / Promo Banner</label>
+            <input type="text" id="cfg-happy-hour-label" value="25¢ Off All Cold Drinks & Snacks" placeholder="e.g. 25¢ Off All Cold Drinks & Snacks" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="space-y-1">
+              <label class="text-slate-400 font-semibold block text-[11px]">Discount ($)</label>
+              <input type="number" step="0.05" id="cfg-happy-hour-discount" value="0.25" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-slate-400 font-semibold block text-[11px]">Start Time</label>
+              <input type="time" id="cfg-happy-hour-start" value="15:00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-slate-400 font-semibold block text-[11px]">End Time</label>
+              <input type="time" id="cfg-happy-hour-end" value="15:30" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: LIVE NEWS TICKER ANNOUNCEMENTS MANAGER -->
       <div id="cfg-panel-announcements" class="cfg-panel hidden flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
         <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
           <span class="font-bold text-white block">Post New Live Announcement to Ticker:</span>
@@ -2111,7 +2249,7 @@
         </div>
       </div>
 
-      <!-- TAB 4: CUSTOMER WISHLIST SUBMISSIONS -->
+      <!-- TAB 5: CUSTOMER WISHLIST SUBMISSIONS -->
       <div id="cfg-panel-wishlist" class="cfg-panel hidden flex-1 overflow-y-auto space-y-2 pr-1 text-xs" id="wishlist-manage-container">
         <!-- Populated by JS -->
       </div>
@@ -2123,6 +2261,170 @@
         </button>
         <button onclick="closeModal('modal-feature-config')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-2xl text-xs transition">
           Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: INSTANT SPEAKER BROADCASTS -->
+  <!-- ==================================================== -->
+  <div id="modal-speaker-broadcast" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-speaker-broadcast')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-2xl font-bold">
+          📢
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white">Instant Speaker Broadcasts</h3>
+          <p class="text-xs text-slate-400">Speak aloud through the customer display speakers via Web Speech.</p>
+        </div>
+      </div>
+
+      <!-- Quick 1-Tap Preset Broadcasts -->
+      <div class="space-y-2">
+        <span class="text-xs font-bold text-slate-300 block">1-Tap Preset Announcements:</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button onclick="broadcastToDisplaySpeaker('Fresh hot popcorn just popped! Come grab a warm bag for 1 dollar and 50 cents!', '🍿')" class="p-3 rounded-2xl bg-slate-950 hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-500/40 text-left transition flex items-start gap-2.5">
+            <span class="text-2xl">🍿</span>
+            <div>
+              <span class="font-bold text-white text-xs block">Fresh Popcorn Ready!</span>
+              <span class="text-[10px] text-slate-400">"Fresh hot popcorn just popped..."</span>
+            </div>
+          </button>
+
+          <button onclick="broadcastToDisplaySpeaker('Attention students: Jordan\'s Snack Shack will be closing in 5 minutes! Please finalize your orders now.', '⏰')" class="p-3 rounded-2xl bg-slate-950 hover:bg-rose-500/20 border border-slate-800 hover:border-rose-500/40 text-left transition flex items-start gap-2.5">
+            <span class="text-2xl">⏰</span>
+            <div>
+              <span class="font-bold text-white text-xs block">5 Min Closing Warning</span>
+              <span class="text-[10px] text-slate-400">"Snack Shack closing in 5 minutes..."</span>
+            </div>
+          </button>
+
+          <button onclick="broadcastToDisplaySpeaker('Special deal: Pair any snack with a cold drink and save 50 cents automatically!', '🎉')" class="p-3 rounded-2xl bg-slate-950 hover:bg-amber-500/20 border border-slate-800 hover:border-amber-500/40 text-left transition flex items-start gap-2.5">
+            <span class="text-2xl">🎉</span>
+            <div>
+              <span class="font-bold text-white text-xs block">50¢ Combo Savings Deal</span>
+              <span class="text-[10px] text-slate-400">"Pair snack + drink for 50¢ off..."</span>
+            </div>
+          </button>
+
+          <button onclick="broadcastToDisplaySpeaker('Cold drinks and Gatorade are freshly restocked in the ice cooler! Beat the heat!', '🥤')" class="p-3 rounded-2xl bg-slate-950 hover:bg-blue-500/20 border border-slate-800 hover:border-blue-500/40 text-left transition flex items-start gap-2.5">
+            <span class="text-2xl">🥤</span>
+            <div>
+              <span class="font-bold text-white text-xs block">Cold Drinks Restocked</span>
+              <span class="text-[10px] text-slate-400">"Ice cold drinks freshly restocked..."</span>
+            </div>
+          </button>
+
+          <button onclick="broadcastToDisplaySpeaker('Happy Birthday to all students celebrating their birthday today! Stop by for your free birthday snack on us!', '🎂')" class="p-3 rounded-2xl bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-500/40 text-left transition flex items-start gap-2.5">
+            <span class="text-2xl">🎂</span>
+            <div>
+              <span class="font-bold text-white text-xs block">Birthday Celebration Shoutout</span>
+              <span class="text-[10px] text-slate-400">"Happy birthday! Free snack on us..."</span>
+            </div>
+          </button>
+
+          <button onclick="broadcastToDisplaySpeaker('Good luck to our varsity athletic team in today\'s game! Go Tigers!', '🏆')" class="p-3 rounded-2xl bg-slate-950 hover:bg-emerald-500/20 border border-slate-800 hover:border-emerald-500/40 text-left transition flex items-start gap-2.5">
+            <span class="text-2xl">🏆</span>
+            <div>
+              <span class="font-bold text-white text-xs block">School Spirit Shoutout</span>
+              <span class="text-[10px] text-slate-400">"Good luck to our team in today's game..."</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Speech Broadcast Box -->
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+        <span class="text-xs font-bold text-white block">Custom Spoken Announcement:</span>
+        <div class="flex gap-2">
+          <input type="text" id="speaker-custom-emoji" value="📢" class="w-12 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-center text-base text-white" />
+          <input type="text" id="speaker-custom-text" placeholder="Type message to speak aloud on second screen..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 text-xs" />
+        </div>
+        <button onclick="submitCustomSpeakerBroadcast()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg">
+          <i data-lucide="volume-2" class="w-4 h-4"></i>
+          <span>Broadcast Aloud Over 2nd Screen Speakers</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: CUSTOMER SERVICE & FEEDBACK DASHBOARD -->
+  <!-- ==================================================== -->
+  <div id="modal-feedback-dashboard" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[90vh] flex flex-col">
+      <button onclick="closeModal('modal-feedback-dashboard')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-12 h-12 rounded-2xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 flex items-center justify-center text-2xl font-bold">
+          ⭐
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white">Customer Feedback & Rating Dashboard</h3>
+          <p class="text-xs text-slate-400">Live sentiment and volunteer service ratings from the 2nd monitor smiley kiosk.</p>
+        </div>
+      </div>
+
+      <!-- Stat Overview Cards -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-center">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Satisfaction Rate</span>
+          <div id="fb-stat-positive" class="font-heading font-extrabold text-2xl text-emerald-400 mt-0.5">100%</div>
+          <span class="text-[10px] text-emerald-300 font-semibold">Positive Sentiment</span>
+        </div>
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-center">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Total Reviews</span>
+          <div id="fb-stat-total" class="font-heading font-extrabold text-2xl text-white mt-0.5">0</div>
+          <span class="text-[10px] text-slate-400 font-semibold">Kiosk Taps</span>
+        </div>
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-center">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Top Emoji</span>
+          <div id="fb-stat-top-emoji" class="font-heading font-extrabold text-2xl text-amber-400 mt-0.5">🤩</div>
+          <span class="text-[10px] text-amber-300 font-semibold">Most Selected</span>
+        </div>
+      </div>
+
+      <!-- Sentiment Breakdown Bar -->
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+        <span class="text-xs font-bold text-white block">Emoji Breakdown:</span>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+            <span class="text-xl block">🤩 🔥</span>
+            <span class="font-bold text-white text-xs block mt-1" id="fb-count-awesome">0</span>
+            <span class="text-[10px] text-slate-400">Awesome (5★)</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+            <span class="text-xl block">😊 ⚡ 🍿</span>
+            <span class="font-bold text-white text-xs block mt-1" id="fb-count-great">0</span>
+            <span class="text-[10px] text-slate-400">Great (4★)</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+            <span class="text-xl block">😐</span>
+            <span class="font-bold text-white text-xs block mt-1" id="fb-count-okay">0</span>
+            <span class="text-[10px] text-slate-400">Okay (3★)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Feedback Log List -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+        <span class="text-xs font-bold text-slate-300 block">Recent Customer Submissions:</span>
+        <div id="fb-recent-list" class="space-y-1.5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="closeModal('modal-feedback-dashboard')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Close Dashboard
         </button>
       </div>
     </div>

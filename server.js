@@ -1728,6 +1728,93 @@ app.post('/api/display/celebrate', (req, res) => {
   res.json({ success: true, displayState });
 });
 
+app.post('/api/display/broadcast', (req, res) => {
+  const { text, emoji } = req.body;
+  if (!text) return res.status(400).json({ error: 'Announcement text is required' });
+
+  const payload = `data: ${JSON.stringify({ type: 'speaker_broadcast', text, emoji: emoji || '📢' })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+
+  res.json({ success: true, message: 'Broadcast sent to all display screens' });
+});
+
+app.post('/api/display/birthday', (req, res) => {
+  const { student } = req.body;
+  const payload = `data: ${JSON.stringify({ type: 'birthday_alert', student })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+  res.json({ success: true, message: 'Birthday alert broadcasted to 2nd screen' });
+});
+
+// Customer Service Feedback & Reviews
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { rating, emoji, comment, order_id } = req.body;
+    const result = await db.query(
+      `INSERT INTO feedback_reviews (order_id, rating, emoji, comment)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [order_id || null, parseInt(rating, 10) || 5, emoji || '😊', comment || 'Great service']
+    );
+    res.json({ success: true, feedback: result.rows[0] });
+  } catch (err) {
+    console.error('Error recording feedback:', err);
+    res.status(500).json({ error: 'Failed to record feedback' });
+  }
+});
+
+app.get('/api/feedback/summary', async (req, res) => {
+  try {
+    const totalResult = await db.query('SELECT COUNT(*) as count FROM feedback_reviews');
+    const breakdownResult = await db.query(`
+      SELECT emoji, rating, COUNT(*) as count 
+      FROM feedback_reviews 
+      GROUP BY emoji, rating 
+      ORDER BY count DESC
+    `);
+    const recentResult = await db.query(`
+      SELECT * FROM feedback_reviews 
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `);
+
+    const totalCount = parseInt(totalResult.rows[0].count, 10) || 0;
+    
+    let awesomeCount = 0;
+    let greatCount = 0;
+    let okayCount = 0;
+
+    breakdownResult.rows.forEach(r => {
+      const cnt = parseInt(r.count, 10) || 0;
+      if (r.emoji === '🤩' || r.emoji === '🔥' || (r.rating && r.rating >= 5)) {
+        awesomeCount += cnt;
+      } else if (r.emoji === '😊' || r.emoji === '⚡' || r.emoji === '🍿' || (r.rating && r.rating >= 4)) {
+        greatCount += cnt;
+      } else {
+        okayCount += cnt;
+      }
+    });
+
+    const positivePercent = totalCount > 0 ? Math.round(((awesomeCount + greatCount) / totalCount) * 100) : 100;
+
+    res.json({
+      totalCount,
+      positivePercent,
+      breakdown: {
+        awesome: awesomeCount,
+        great: greatCount,
+        okay: okayCount
+      },
+      recent: recentResult.rows
+    });
+  } catch (err) {
+    console.error('Error fetching feedback summary:', err);
+    res.status(500).json({ error: 'Failed to fetch feedback summary' });
+  }
+});
+
 app.get('/api/display/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -1756,6 +1843,7 @@ const DEFAULT_SETTINGS = {
   cfg_pos_shrinkage: 'true',
   cfg_pos_fundraiser: 'true',
   cfg_pos_auto_combo: 'true',
+  cfg_pos_voice_order: 'true',
   cfg_display_news_ticker: 'true',
   cfg_display_trending: 'true',
   cfg_display_weather: 'true',
@@ -1767,7 +1855,19 @@ const DEFAULT_SETTINGS = {
   cfg_display_spin_wheel: 'true',
   cfg_display_balance_check: 'true',
   cfg_display_scratch_card: 'true',
-  cfg_display_tip_jar: 'true'
+  cfg_display_tip_jar: 'true',
+  cfg_display_menu_board: 'true',
+  cfg_display_feedback_kiosk: 'true',
+  cfg_display_charity_roundup: 'true',
+  cfg_event_countdown_enabled: 'true',
+  cfg_event_countdown_title: 'Homecoming Game',
+  cfg_event_countdown_date: '2026-09-12T16:00',
+  cfg_event_countdown_emoji: '🏈',
+  cfg_happy_hour_enabled: 'false',
+  cfg_happy_hour_start: '15:00',
+  cfg_happy_hour_end: '15:30',
+  cfg_happy_hour_discount: '0.25',
+  cfg_happy_hour_label: '25¢ Off All Cold Drinks & Snacks'
 };
 
 app.get('/api/settings', async (req, res) => {

@@ -63,6 +63,34 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased selection:bg-amber-500 selection:text-slate-950">
 
+  <!-- LIVE SCHOOL EVENT COUNTDOWN BANNER -->
+  <div id="display-event-countdown-bar" class="hidden bg-gradient-to-r from-blue-950 via-indigo-950 to-purple-950 text-white font-bold text-xs py-2 px-4 overflow-hidden shadow-lg flex items-center justify-between gap-3 shrink-0 border-b border-indigo-500/40">
+    <div class="flex items-center gap-2">
+      <span id="countdown-emoji" class="text-lg">🏈</span>
+      <span class="font-extrabold tracking-wider uppercase text-blue-200" id="countdown-title">Upcoming School Event:</span>
+    </div>
+    <div class="font-mono font-extrabold text-amber-300 tracking-wider text-xs sm:text-sm bg-slate-950/80 px-3 py-1 rounded-xl border border-indigo-500/40 shadow-inner" id="countdown-timer-display">
+      --d --h --m --s
+    </div>
+  </div>
+
+  <!-- HAPPY HOUR FLASH DEALS BANNER -->
+  <div id="display-happy-hour-bar" class="hidden bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-slate-950 font-extrabold text-xs py-2 px-4 shadow-xl flex items-center justify-between gap-3 shrink-0 animate-pulse">
+    <div class="flex items-center gap-2">
+      <span class="text-lg">🔥</span>
+      <span class="tracking-wider uppercase font-heading text-sm">HAPPY HOUR FLASH DEALS ACTIVE!</span>
+    </div>
+    <span id="happy-hour-label-display" class="font-bold text-xs bg-slate-950 text-amber-300 px-3 py-0.5 rounded-full border border-amber-400/40">
+      25¢ Off All Cold Drinks & Snacks
+    </span>
+  </div>
+
+  <!-- LIVE SPEAKER BROADCAST POPUP BANNER -->
+  <div id="display-speaker-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-3xl shadow-2xl border-2 border-white/50 flex items-center gap-3 animate-in fade-in slide-in-from-top duration-300 max-w-xl text-center backdrop-blur-md">
+    <span id="speaker-banner-emoji" class="text-3xl animate-bounce">📢</span>
+    <span id="speaker-banner-text" class="flex-1 font-heading tracking-wide">Live Announcement</span>
+  </div>
+
   <!-- TOP LIVE ANNOUNCEMENTS & NEWS TICKER -->
   <div id="display-ticker-bar" class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 text-slate-950 font-bold text-xs py-1.5 px-4 overflow-hidden shadow-inner flex items-center gap-3 shrink-0">
     <div class="flex items-center gap-1.5 shrink-0 bg-slate-950/20 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider">
@@ -93,6 +121,12 @@
 
     <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
+      <!-- Full Live Menu Board Trigger -->
+      <button id="display-btn-menu" onclick="openDisplayMenu()" class="flex items-center gap-1.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-white border border-amber-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+        <span>📋</span>
+        <span class="hidden md:inline">Full Menu</span>
+      </button>
+
       <!-- Nutrition & Menu Inspector Trigger -->
       <button id="display-btn-nutrition" onclick="openNutritionModal()" class="flex items-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>🍎</span>
@@ -790,6 +824,44 @@
   </div>
 
   <!-- ==================================================== -->
+  <!-- MODAL: LIVE MENU BOARD BROWSER -->
+  <!-- ==================================================== -->
+  <div id="modal-display-menu" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl w-full max-w-4xl p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[92vh] flex flex-col">
+      <button onclick="closeDisplayMenu()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-3xl shadow-lg">
+            📋
+          </div>
+          <div>
+            <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">School Store Catalog</span>
+            <h3 class="font-heading font-extrabold text-2xl text-white">Full Snack Shack Menu</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-1.5 text-xs font-bold" id="display-menu-categories-container">
+          <button onclick="filterDisplayMenu(null)" class="display-menu-cat-btn active bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl transition">✨ All Items</button>
+        </div>
+        <div class="relative w-full sm:w-64">
+          <input type="text" id="display-menu-search" placeholder="Search snacks, drinks..." oninput="renderDisplayMenuGrid(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+        </div>
+      </div>
+
+      <!-- Menu Items Grid -->
+      <div id="display-menu-items-grid" class="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pr-1 scrollbar-none max-h-[60vh]">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
   <!-- MODAL: "SUGGEST A SNACK" DIGITAL WISHLIST BOARD -->
   <!-- ==================================================== -->
   <div id="modal-wishlist" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -1392,17 +1464,34 @@
         btnSpin.classList.toggle('hidden', settings.cfg_display_spin_wheel === 'false');
       }
 
-      // 11. Scratch Card (in celebrate view)
+      // 11. Full Menu Board Button
+      const btnMenu = document.getElementById('display-btn-menu');
+      if (btnMenu) {
+        btnMenu.classList.toggle('hidden', settings.cfg_display_menu_board === 'false');
+      }
+
+      // 12. Scratch Card (in celebrate view)
       const scratchCard = document.getElementById('celebrate-scratch-container');
       if (scratchCard) {
         scratchCard.classList.toggle('hidden', settings.cfg_display_scratch_card === 'false');
       }
 
-      // 12. Tip Jar Selector (in active cart view)
+      // 13. Tip Jar Selector (in active cart view)
       const tipJar = document.getElementById('display-tip-jar-container');
       if (tipJar) {
         tipJar.classList.toggle('hidden', settings.cfg_display_tip_jar === 'false');
       }
+
+      // 14. Event Countdown Bar
+      const countdownBar = document.getElementById('display-event-countdown-bar');
+      if (countdownBar) {
+        countdownBar.classList.toggle('hidden', settings.cfg_event_countdown_enabled === 'false');
+        document.getElementById('countdown-emoji').textContent = settings.cfg_event_countdown_emoji || '🏈';
+        document.getElementById('countdown-title').textContent = (settings.cfg_event_countdown_title || 'Upcoming Event') + ':';
+      }
+
+      // 15. Happy Hour Bar
+      checkHappyHourStatus();
 
       lucide.createIcons();
     }
@@ -1413,14 +1502,7 @@
       evtSource.onmessage = function(event) {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'settings_update') {
-            applyDisplaySettings(data.settings);
-          } else if (data.type === 'shift_status') {
-            isShiftActive = !!data.active;
-            updateDisplayShiftUI();
-          } else {
-            renderState(data);
-          }
+          handleIncomingSyncMessage(data);
         } catch(e) {
           console.error('SSE parse error:', e);
         }
@@ -1435,16 +1517,220 @@
       const channel = new BroadcastChannel('snack_display_sync');
       channel.onmessage = function(event) {
         if (event.data) {
-          if (event.data.type === 'settings_update') {
-            applyDisplaySettings(event.data.settings);
-          } else if (event.data.type === 'shift_status') {
-            isShiftActive = !!event.data.active;
-            updateDisplayShiftUI();
-          } else {
-            renderState(event.data);
-          }
+          handleIncomingSyncMessage(event.data);
         }
       };
+    }
+
+    function handleIncomingSyncMessage(data) {
+      if (!data) return;
+
+      if (data.type === 'settings_update') {
+        applyDisplaySettings(data.settings);
+      } else if (data.type === 'shift_status') {
+        isShiftActive = !!data.active;
+        updateDisplayShiftUI();
+      } else if (data.type === 'speaker_broadcast') {
+        playSpeakerBroadcast(data.text, data.emoji);
+      } else if (data.type === 'birthday_alert') {
+        triggerBirthdaySiren(data.student ? data.student.name : 'Student');
+      } else {
+        renderState(data);
+      }
+    }
+
+    // Instant Speaker Broadcast Audio (Web Speech Synthesis + Banner)
+    let speakerBannerTimeout = null;
+    function playSpeakerBroadcast(text, emoji = '📢') {
+      if (!text) return;
+
+      // 1. Show Pop-up Banner
+      const banner = document.getElementById('display-speaker-banner');
+      const emojiEl = document.getElementById('speaker-banner-emoji');
+      const textEl = document.getElementById('speaker-banner-text');
+
+      if (banner && textEl) {
+        emojiEl.textContent = emoji;
+        textEl.textContent = text;
+        banner.classList.remove('hidden');
+
+        if (speakerBannerTimeout) clearTimeout(speakerBannerTimeout);
+        speakerBannerTimeout = setTimeout(() => {
+          banner.classList.add('hidden');
+        }, 8000);
+      }
+
+      // 2. Play Audio Speech Synthesis Aloud
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel(); // Cancel any ongoing utterance
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.1;
+          utterance.volume = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch(e) {
+        console.warn('Speech synthesis error:', e);
+      }
+
+      if (typeof confetti !== 'undefined') {
+        confetti({ particleCount: 40, spread: 50, origin: { y: 0.2 } });
+      }
+    }
+
+    // Live School Event Countdown Timer
+    function updateEventCountdown() {
+      if (!currentDisplaySettings || currentDisplaySettings.cfg_event_countdown_enabled === 'false') return;
+
+      const targetStr = currentDisplaySettings.cfg_event_countdown_date;
+      if (!targetStr) return;
+
+      const targetDate = new Date(targetStr).getTime();
+      const now = Date.now();
+      const diff = targetDate - now;
+
+      const display = document.getElementById('countdown-timer-display');
+      if (!display) return;
+
+      if (isNaN(diff) || diff <= 0) {
+        display.textContent = '🎉 EVENT TODAY!';
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+      display.textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
+    }
+    setInterval(updateEventCountdown, 1000);
+
+    // Automated Happy Hour Checker
+    function checkHappyHourStatus() {
+      const happyHourBar = document.getElementById('display-happy-hour-bar');
+      if (!happyHourBar) return;
+
+      if (!currentDisplaySettings || currentDisplaySettings.cfg_happy_hour_enabled !== 'true') {
+        happyHourBar.classList.add('hidden');
+        return;
+      }
+
+      const now = new Date();
+      const curHours = now.getHours();
+      const curMins = now.getMinutes();
+      const curTimeVal = curHours * 60 + curMins;
+
+      const [startH, startM] = (currentDisplaySettings.cfg_happy_hour_start || '15:00').split(':').map(Number);
+      const [endH, endM] = (currentDisplaySettings.cfg_happy_hour_end || '15:30').split(':').map(Number);
+
+      const startTimeVal = (startH || 15) * 60 + (startM || 0);
+      const endTimeVal = (endH || 15) * 60 + (endM || 30);
+
+      const isActive = curTimeVal >= startTimeVal && curTimeVal <= endTimeVal;
+
+      happyHourBar.classList.toggle('hidden', !isActive);
+      const labelEl = document.getElementById('happy-hour-label-display');
+      if (labelEl) {
+        labelEl.textContent = currentDisplaySettings.cfg_happy_hour_label || 'Special Flash Discounts Active!';
+      }
+    }
+    setInterval(checkHappyHourStatus, 15000);
+
+    // Full Menu Board Catalog Browser
+    let displayCatalogProducts = [];
+    let displayCatalogCategories = [];
+    let activeDisplayMenuCategory = null;
+
+    async function loadDisplayMenuCatalog() {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/categories')
+        ]);
+        displayCatalogProducts = await prodRes.json();
+        displayCatalogCategories = await catRes.json();
+        renderDisplayMenuCategories();
+        renderDisplayMenuGrid();
+      } catch(e) {
+        console.warn('Error loading display menu catalog:', e);
+      }
+    }
+
+    function openDisplayMenu() {
+      loadDisplayMenuCatalog();
+      document.getElementById('modal-display-menu').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDisplayMenu() {
+      document.getElementById('modal-display-menu').classList.add('hidden');
+    }
+
+    function renderDisplayMenuCategories() {
+      const container = document.getElementById('display-menu-categories-container');
+      if (!container) return;
+
+      let html = `<button onclick="filterDisplayMenu(null)" class="display-menu-cat-btn ${activeDisplayMenuCategory === null ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-950 text-slate-300 border border-slate-800'} px-3 py-1.5 rounded-xl transition">✨ All Items</button>`;
+      
+      displayCatalogCategories.forEach(c => {
+        html += `
+          <button onclick="filterDisplayMenu(${c.id})" class="display-menu-cat-btn ${activeDisplayMenuCategory === c.id ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-950 text-slate-300 border border-slate-800'} px-3 py-1.5 rounded-xl transition">
+            <span>${c.icon || '🍿'}</span> ${c.name}
+          </button>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function filterDisplayMenu(catId) {
+      activeDisplayMenuCategory = catId;
+      renderDisplayMenuCategories();
+      const q = document.getElementById('display-menu-search')?.value || '';
+      renderDisplayMenuGrid(q);
+    }
+
+    function renderDisplayMenuGrid(query = '') {
+      const grid = document.getElementById('display-menu-items-grid');
+      if (!grid) return;
+
+      const q = (query || '').toLowerCase().trim();
+      const filtered = displayCatalogProducts.filter(p => {
+        const matchesCat = activeDisplayMenuCategory === null || p.category_id === activeDisplayMenuCategory;
+        const matchesQuery = !q || p.name.toLowerCase().includes(q) || (p.allergy_info && p.allergy_info.toLowerCase().includes(q));
+        return matchesCat && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">No matching snacks found.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => {
+        const isSoldOut = p.stock_quantity <= 0 && !p.is_open_price;
+        const priceStr = p.is_open_price ? 'Open Price' : `$${parseFloat(p.price).toFixed(2)}`;
+
+        return `
+          <div class="bg-slate-950 p-3 rounded-2xl border ${isSoldOut ? 'border-slate-800/40 opacity-50' : 'border-slate-800 hover:border-amber-500/50'} flex flex-col justify-between shadow-md transition space-y-2">
+            <div>
+              <div class="flex items-start justify-between">
+                <span class="text-3xl p-1 bg-slate-900 rounded-xl border border-slate-800">${p.emoji || '🍿'}</span>
+                ${isSoldOut 
+                  ? `<span class="text-[9px] font-extrabold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded">SOLD OUT</span>`
+                  : `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">${p.stock_quantity} in stock</span>`
+                }
+              </div>
+              <h4 class="font-heading font-bold text-xs text-white mt-1.5 line-clamp-1">${p.name}</h4>
+              ${p.calories ? `<span class="text-[10px] text-slate-400">${p.calories} cal</span>` : ''}
+              ${p.allergy_info ? `<div class="text-[9px] text-amber-300 truncate">⚠️ ${p.allergy_info}</div>` : ''}
+            </div>
+            <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between font-mono font-bold text-xs text-amber-400">
+              <span>${priceStr}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     // ==========================================
