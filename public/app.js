@@ -4837,6 +4837,7 @@ function initCashierCustomerCctvSync() {
   cashierCctvPollingInterval = setInterval(async () => {
     try {
       const res = await fetch('/api/display/cctv_status');
+      if (!res.ok) return;
       const data = await res.json();
       if (data && data.online) {
         lastCustomerFrameTime = data.lastHeartbeat || Date.now();
