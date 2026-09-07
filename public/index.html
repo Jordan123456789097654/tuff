@@ -8,7 +8,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Google Fonts: Inter & Outfit -->
+  <!-- Html5-QRCode for In-Browser Camera Scanner -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <!-- JsBarcode for Printable Student ID Barcodes -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,18 +24,6 @@
           fontFamily: {
             sans: ['Plus Jakarta Sans', 'sans-serif'],
             heading: ['Outfit', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#fffbeb',
-              100: '#fef3c7',
-              200: '#fde68a',
-              500: '#f59e0b',
-              600: '#d97706',
-              700: '#b45309',
-              800: '#92400e',
-              900: '#78350f',
-            }
           }
         }
       }
@@ -41,7 +33,8 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
 
   <!-- Top App Navigation Bar -->
-  <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+  <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3 md:px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+    <!-- Brand Logo -->
     <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('register')">
       <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/20">
         🍿
@@ -51,57 +44,79 @@
           Jordan's Snack Shack
           <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">POS</span>
         </h1>
-        <p class="text-xs text-slate-400 font-medium">School Snack Register & Discount Hub</p>
+        <p class="text-xs text-slate-400 font-medium">School Register & Scanner</p>
       </div>
     </div>
 
     <!-- Navigation Tabs -->
     <nav class="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm overflow-x-auto max-w-full">
-      <button onclick="switchTab('register')" id="tab-btn-register" class="nav-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all">
+      <button onclick="switchTab('register')" id="tab-btn-register" class="nav-btn active flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all">
         <i data-lucide="shopping-cart" class="w-4 h-4"></i>
         <span>Register</span>
       </button>
-      <button onclick="switchTab('students')" id="tab-btn-students" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
-        <span>Student Passes & Punches</span>
+
+      <!-- Pre-Orders Queue Tab with live badge -->
+      <button onclick="switchTab('preorders')" id="tab-btn-preorders" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+        <span>Pre-Order Queue</span>
+        <span id="nav-preorder-badge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-extrabold px-1.5 rounded-full">0</span>
       </button>
-      <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+
+      <button onclick="switchTab('students')" id="tab-btn-students" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="award" class="w-4 h-4 text-blue-400"></i>
+        <span>Students & Badges</span>
+      </button>
+
+      <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="package" class="w-4 h-4"></i>
-        <span>Inventory & Stock</span>
+        <span>Inventory</span>
       </button>
-      <button onclick="switchTab('orders')" id="tab-btn-orders" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+
+      <button onclick="switchTab('orders')" id="tab-btn-orders" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="receipt" class="w-4 h-4"></i>
-        <span>Orders</span>
+        <span>Sales History</span>
       </button>
-      <button onclick="switchTab('shifts')" id="tab-btn-shifts" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+
+      <button onclick="switchTab('shifts')" id="tab-btn-shifts" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="wallet" class="w-4 h-4"></i>
-        <span>Shift Drawer</span>
+        <span>Drawer</span>
       </button>
-      <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+
+      <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
         <span>Analytics</span>
       </button>
-      <a href="/portal" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all">
-        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-        <span>Student / Parent Portal</span>
-      </a>
     </nav>
 
-    <!-- Top Right Status & Controls -->
+    <!-- Top Right Action Hub -->
     <div class="flex items-center space-x-2">
-      <button onclick="switchTab('shifts')" id="top-shift-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="top-shift-text">Shift Open</span>
+      <!-- Live Camera Scanner Button -->
+      <button onclick="openCameraScanner()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md shadow-orange-500/20 transition">
+        <i data-lucide="camera" class="w-4 h-4"></i>
+        <span>Scan Barcode</span>
       </button>
 
-      <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition" title="Toggle Sound FX">
+      <!-- Venmo / CashApp QR Code Modal -->
+      <button onclick="openQRPayModal()" class="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/50 text-emerald-400 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Show/Upload Payment QR">
+        <i data-lucide="qr-code" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Pay QR</span>
+      </button>
+
+      <!-- External Links Dropdown / Buttons -->
+      <a href="/order" target="_blank" class="hidden lg:flex items-center gap-1 text-xs text-slate-300 hover:text-white bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl transition">
+        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>Pre-Order Menu</span>
+      </a>
+
+      <a href="/portal" target="_blank" class="hidden lg:flex items-center gap-1 text-xs text-blue-300 hover:text-white bg-blue-500/10 border border-blue-500/30 px-2.5 py-1.5 rounded-xl transition">
+        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        <span>Portal</span>
+      </a>
+
+      <!-- Sound FX Toggle -->
+      <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition" title="Toggle Sound FX">
         <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>
       </button>
-
-      <div class="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300">
-        <i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-400"></i>
-        <span id="top-cashier-name">Cashier Volunteer</span>
-      </div>
     </div>
   </header>
 
@@ -122,7 +137,7 @@
             <input
               type="text"
               id="product-search-input"
-              placeholder="Search snack, drink, or scan barcode..."
+              placeholder="Search snack or scan barcode with camera..."
               class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-8 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
               oninput="handleSearch(this.value)"
             />
@@ -131,7 +146,11 @@
             </button>
           </div>
 
-          <!-- Fast Add / Open Price Item Button -->
+          <button onclick="openCameraScanner()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
+            <i data-lucide="camera" class="w-4 h-4"></i>
+            <span>Camera Scan</span>
+          </button>
+
           <button onclick="openCustomItemModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
             <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
             <span>Add Item</span>
@@ -150,7 +169,6 @@
           <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3">
             <!-- Dynamic Product Cards inserted by JS -->
           </div>
-          <!-- Empty State -->
           <div id="no-products-msg" class="hidden flex flex-col items-center justify-center h-64 text-center text-slate-400">
             <i data-lucide="search-x" class="w-12 h-12 mb-2 text-slate-600"></i>
             <p class="font-bold text-slate-300">No snacks found</p>
@@ -192,13 +210,12 @@
           <div id="cart-empty-placeholder" class="flex flex-col items-center justify-center h-48 text-center text-slate-500">
             <span class="text-4xl mb-2">🛒</span>
             <p class="font-medium text-slate-400 text-sm">Cart is empty</p>
-            <p class="text-xs text-slate-600 mt-0.5">Click snack items on the left to add</p>
+            <p class="text-xs text-slate-600 mt-0.5">Click snack items or scan barcode with camera</p>
           </div>
         </div>
 
         <!-- Cart Summary & Discount Center -->
-        <div class="p-4 bg-slate-900/80 border-t border-slate-800 space-y-2.5 text-xs">
-          <!-- Discount Trigger / Management Bar -->
+        <div class="p-4 bg-slate-900/80 border-t border-slate-800 space-y-2 text-xs">
           <div class="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
             <div class="flex items-center gap-1.5">
               <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
@@ -214,7 +231,6 @@
             </div>
           </div>
 
-          <!-- Subtotal & Math -->
           <div class="flex justify-between text-slate-300 pt-1">
             <span>Subtotal:</span>
             <span id="summary-subtotal" class="font-bold text-white">$0.00</span>
@@ -228,7 +244,6 @@
             <span id="summary-discount" class="font-bold">-$0.00</span>
           </div>
 
-          <!-- Big Total -->
           <div class="pt-2 border-t border-slate-800 flex justify-between items-baseline">
             <span class="text-sm font-bold text-slate-300">Total Due:</span>
             <span id="summary-total" class="font-heading font-extrabold text-2xl text-amber-400">$0.00</span>
@@ -261,18 +276,56 @@
             <i data-lucide="chevron-right" class="w-4 h-4 text-blue-300"></i>
           </button>
 
-          <!-- Other / Free Token -->
-          <button onclick="quickOtherCheckout('School Reward Token')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold py-2 px-3 rounded-xl border border-slate-700 text-xs flex items-center justify-center gap-2 transition disabled:opacity-50">
-            <i data-lucide="ticket" class="w-3.5 h-3.5 text-amber-400"></i>
-            <span>Other / Card / Teacher Reward Token</span>
-          </button>
+          <!-- Digital QR Pay / Other -->
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="openQRPayModal()" class="bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+              <span>Venmo / CashApp</span>
+            </button>
+            <button onclick="quickOtherCheckout('School Reward Token')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="ticket" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Reward Token</span>
+            </button>
+          </div>
         </div>
       </div>
 
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 2: STUDENT PASSES & PUNCH REWARDS -->
+    <!-- TAB 2: RECESS PRE-ORDER QUEUE ("SKIP THE LINE") -->
+    <!-- ==================================================== -->
+    <section id="tab-preorders" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
+      <div class="max-w-6xl mx-auto space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <i data-lucide="clock" class="w-6 h-6 text-amber-400"></i>
+              Recess Pre-Order Prep Queue
+            </h2>
+            <p class="text-xs text-slate-400">Bag orders submitted online by students & teachers before the bell rings.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/order" target="_blank" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold px-3.5 py-2 rounded-xl shadow-md transition flex items-center gap-1.5">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Open Student Menu (`/order`)</span>
+            </a>
+            <button onclick="loadPreorders()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              <span>Refresh Queue</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Preorder Cards Container -->
+        <div id="preorders-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 3: STUDENT PASSES & BARCODE BADGES -->
     <!-- ==================================================== -->
     <section id="tab-students" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
@@ -280,9 +333,9 @@
           <div>
             <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
               <i data-lucide="award" class="w-6 h-6 text-amber-400"></i>
-              Student Accounts & Digital Punch Cards
+              Student Accounts, Punch Cards & Printable Badges
             </h2>
-            <p class="text-xs text-slate-400">Students earn 1 punch stamp per order. 10 punches = 1 FREE Snack reward! Track balances, allergies, and cash visits.</p>
+            <p class="text-xs text-slate-400">Manage student accounts, track punches, and print scannable barcode ID passes for lanyards.</p>
           </div>
           <button onclick="openNewStudentModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-900/30 flex items-center gap-2 transition">
             <i data-lucide="user-plus" class="w-4 h-4"></i>
@@ -322,7 +375,7 @@
           </div>
         </div>
 
-        <!-- Students Table -->
+        <!-- Students Table with Badge Generator Button -->
         <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-300">
@@ -331,9 +384,9 @@
                   <th class="p-3.5">Student ID</th>
                   <th class="p-3.5">Name & Grade</th>
                   <th class="p-3.5">Prepaid Balance</th>
-                  <th class="p-3.5">Punch Card Progress (10 for Free Snack)</th>
-                  <th class="p-3.5">Allergies / Flags</th>
-                  <th class="p-3.5 text-right">Actions</th>
+                  <th class="p-3.5">Punch Card (10 for Free Snack)</th>
+                  <th class="p-3.5">Allergies</th>
+                  <th class="p-3.5 text-right">Actions & Badges</th>
                 </tr>
               </thead>
               <tbody id="students-table-body" class="divide-y divide-slate-800/60">
@@ -346,7 +399,7 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 3: INVENTORY & RESTOCK -->
+    <!-- TAB 4: INVENTORY & RESTOCK -->
     <!-- ==================================================== -->
     <section id="tab-inventory" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
@@ -356,7 +409,7 @@
               <i data-lucide="boxes" class="w-6 h-6 text-amber-400"></i>
               Snack Shack Inventory & Restock Hub
             </h2>
-            <p class="text-xs text-slate-400">Track real-time snack counts, wholesale costs, profit margins, and open-price / variable items.</p>
+            <p class="text-xs text-slate-400">Track real-time snack counts, barcodes, wholesale costs, and open-price items.</p>
           </div>
           <button onclick="openNewProductModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/30 flex items-center gap-2 transition">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -364,14 +417,13 @@
           </button>
         </div>
 
-        <!-- Inventory Filter & Alerts -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="md:col-span-2 relative">
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
             <input
               type="text"
               id="inventory-search-input"
-              placeholder="Search products in stock..."
+              placeholder="Search products or barcodes in stock..."
               class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition"
               oninput="renderInventoryTable(this.value)"
             />
@@ -396,13 +448,13 @@
           </div>
         </div>
 
-        <!-- Inventory Table -->
         <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-300">
               <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
                 <tr>
                   <th class="p-3.5">Snack Item</th>
+                  <th class="p-3.5">Barcode / SKU</th>
                   <th class="p-3.5">Category</th>
                   <th class="p-3.5">Pricing Mode</th>
                   <th class="p-3.5">Retail Price</th>
@@ -421,7 +473,7 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 4: ORDERS & RECEIPTS -->
+    <!-- TAB 5: ORDERS & RECEIPTS -->
     <!-- ==================================================== -->
     <section id="tab-orders" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
@@ -463,7 +515,7 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 5: SHIFT DRAWER AUDIT -->
+    <!-- TAB 6: SHIFT DRAWER AUDIT -->
     <!-- ==================================================== -->
     <section id="tab-shifts" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-4xl mx-auto space-y-5">
@@ -482,7 +534,7 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 6: ANALYTICS & REPORTS -->
+    <!-- TAB 7: ANALYTICS & REPORTS -->
     <!-- ==================================================== -->
     <section id="tab-analytics" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-5">
@@ -543,7 +595,6 @@
           </div>
         </div>
 
-        <!-- Top Selling Snacks & Payment Methods -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
             <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
@@ -571,7 +622,151 @@
   </main>
 
   <!-- ==================================================== -->
-  <!-- MODAL: OPEN PRICE / VARIABLE PRICE KEYPAD -->
+  <!-- MODAL 1: LIVE IN-BROWSER CAMERA SCANNER -->
+  <!-- ==================================================== -->
+  <div id="modal-camera-scanner" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeCameraScanner()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold">
+          📷
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Live Camera Scanner</h3>
+          <p class="text-xs text-slate-400">Scan snack barcodes (UPC) or Student ID cards</p>
+        </div>
+      </div>
+
+      <!-- Camera Viewport -->
+      <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-700 min-h-[260px] flex items-center justify-center">
+        <div id="camera-reader-viewport" class="w-full"></div>
+        <div class="absolute inset-0 border-2 border-amber-400/50 rounded-2xl pointer-events-none animate-pulse"></div>
+      </div>
+
+      <!-- Last Scanned Info Display -->
+      <div id="scan-feedback-box" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 text-center">
+        Point camera at any snack barcode or student pass...
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL 2: VENMO / CASHAPP / SCHOOLPAY QR CODE MODAL -->
+  <!-- ==================================================== -->
+  <div id="modal-qr-pay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-qr-pay')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl font-bold">
+          📱
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Venmo / CashApp / SchoolPay QR</h3>
+          <p class="text-xs text-slate-400">Scan to pay from smartphone</p>
+        </div>
+      </div>
+
+      <!-- QR Display & Total -->
+      <div class="bg-white p-5 rounded-2xl text-center space-y-3 shadow-inner">
+        <div id="qr-image-display" class="flex items-center justify-center min-h-[160px]">
+          <img id="qr-code-img" src="" alt="Payment QR" class="max-h-48 max-w-full object-contain mx-auto rounded-lg hidden" />
+          <div id="qr-placeholder" class="text-slate-400 text-xs flex flex-col items-center justify-center py-6">
+            <span class="text-4xl mb-2">📸</span>
+            <p class="font-bold text-slate-700">No payment QR uploaded yet</p>
+            <p class="text-[10px] text-slate-500">Cashier can upload your school Venmo/CashApp QR below</p>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-200 text-slate-900">
+          <span class="text-xs text-slate-600 font-semibold block">Total Due:</span>
+          <span id="qr-modal-total" class="font-heading font-extrabold text-2xl text-emerald-700">$0.00</span>
+          <p id="qr-handle-text" class="text-xs text-slate-600 font-mono mt-0.5">@JordansSnackShack</p>
+        </div>
+      </div>
+
+      <!-- Cashier QR Upload / Settings Toggle -->
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
+        <span class="font-bold text-white block">Cashier Settings (Upload School QR Image):</span>
+        <div class="flex gap-2">
+          <input type="file" id="qr-file-input" accept="image/*" class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer" onchange="handleQRUpload(event)" />
+        </div>
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-0.5">Payment Handle / Note:</label>
+          <div class="flex gap-2">
+            <input type="text" id="qr-handle-input" placeholder="e.g. Venmo: @JordanSnacks / CashApp: $JordanShop" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white" />
+            <button onclick="saveQRHandle()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="quickOtherCheckout('Venmo / CashApp QR'); closeModal('modal-qr-pay')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span>Confirm Payment Received & Complete</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL 3: PRINTABLE STUDENT ID BARCODE PASS GENERATOR -->
+  <!-- ==================================================== -->
+  <div id="modal-print-pass" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-print-pass')" class="absolute right-4 top-4 text-slate-400 hover:text-white print:hidden">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Printable Badge Card -->
+      <div id="printable-badge-card" class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 p-5 rounded-2xl shadow-xl text-center space-y-3 relative overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-1.5 text-left">
+            <span class="text-xl">🍿</span>
+            <div>
+              <div class="font-heading font-extrabold text-xs text-white">JORDAN'S SNACK SHACK</div>
+              <div class="text-[9px] text-amber-400 font-bold uppercase">Official Student Snack Pass</div>
+            </div>
+          </div>
+          <span class="text-2xl">🎒</span>
+        </div>
+
+        <div class="py-1">
+          <h3 class="font-heading font-extrabold text-lg text-white" id="badge-name">Student Name</h3>
+          <p class="text-xs text-slate-400" id="badge-grade">7th Grade</p>
+        </div>
+
+        <!-- Scannable Barcode SVG -->
+        <div class="bg-white p-2.5 rounded-xl flex flex-col items-center justify-center">
+          <svg id="badge-barcode-svg" class="max-w-full h-16"></svg>
+        </div>
+
+        <div id="badge-allergy-row" class="text-[10px] text-rose-300 bg-rose-500/10 border border-rose-500/30 p-1.5 rounded-lg font-bold">
+          ⚠️ Allergy: Peanut
+        </div>
+
+        <div class="text-[9px] text-slate-500 pt-1">
+          Scan barcode at the window to pay & earn punch rewards!
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-2 print:hidden">
+        <button onclick="window.print()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Print Pass Badge</span>
+        </button>
+        <button onclick="closeModal('modal-print-pass')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center transition">
+          <span>Close</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: OPEN PRICE KEYPAD -->
   <!-- ==================================================== -->
   <div id="modal-open-price" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
@@ -591,7 +786,6 @@
 
       <input type="hidden" id="open-price-product-id" />
 
-      <!-- Quick Price Presets -->
       <div class="space-y-1.5">
         <span class="text-xs text-slate-400 font-semibold">Quick Amounts:</span>
         <div class="grid grid-cols-3 gap-2">
@@ -604,7 +798,6 @@
         </div>
       </div>
 
-      <!-- Custom Amount Input -->
       <div>
         <label class="text-xs text-slate-400 font-semibold mb-1 block">Price for this item ($):</label>
         <div class="relative">
@@ -646,7 +839,6 @@
         </div>
       </div>
 
-      <!-- Quick Preset Discounts -->
       <div class="space-y-2">
         <span class="text-xs text-slate-400 font-semibold">Quick Presets:</span>
         <div class="grid grid-cols-2 gap-2 text-xs">
@@ -677,7 +869,6 @@
         </div>
       </div>
 
-      <!-- Custom Discount -->
       <div class="space-y-2 pt-2 border-t border-slate-800">
         <span class="text-xs text-slate-400 font-semibold">Custom Discount Amount:</span>
         <div class="flex gap-2">
@@ -698,7 +889,6 @@
         </div>
       </div>
 
-      <!-- Coupon Promo Code -->
       <div class="space-y-2 pt-2 border-t border-slate-800">
         <span class="text-xs text-slate-400 font-semibold">Promo Code (e.g. HONORROLL, TEACHER, FRIDAY):</span>
         <div class="flex gap-2">
@@ -805,7 +995,12 @@
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-xs text-slate-400 font-semibold block">Find Student by Name or ID:</label>
+        <div class="flex justify-between items-center">
+          <label class="text-xs text-slate-400 font-semibold block">Find Student by Name or ID:</label>
+          <button onclick="openCameraScanner()" class="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-bold">
+            <i data-lucide="camera" class="w-3.5 h-3.5"></i> Scan Student Card
+          </button>
+        </div>
         <div class="relative">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
           <input
@@ -960,7 +1155,7 @@
       <div class="space-y-3 text-xs">
         <div>
           <label class="text-slate-400 font-semibold mb-1 block">Item Name:</label>
-          <input type="text" id="prod-name" placeholder="e.g. Doritos or Fresh Bake Sale Brownie" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+          <input type="text" id="prod-name" placeholder="e.g. Doritos or Fresh Brownie" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -976,11 +1171,16 @@
           </div>
         </div>
 
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Barcode / UPC Number (Optional):</label>
+          <input type="text" id="prod-barcode" placeholder="Scan or type UPC code (e.g. 028400040012)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500" />
+        </div>
+
         <!-- Open Price Toggle -->
         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
           <div>
             <span class="font-bold text-white block">Open / Variable Price?</span>
-            <span class="text-[11px] text-slate-400">Cashier enters custom price at register (e.g. Bake sale)</span>
+            <span class="text-[11px] text-slate-400">Cashier enters custom price at register</span>
           </div>
           <input
             type="checkbox"
@@ -1055,7 +1255,7 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-slate-400 font-semibold mb-1 block">Prepaid Balance ($) (Optional - can be 0.00):</label>
+            <label class="text-slate-400 font-semibold mb-1 block">Prepaid Balance ($):</label>
             <input type="number" step="1.00" id="new-stu-balance" value="0.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
           </div>
           <div>

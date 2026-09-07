@@ -63,11 +63,31 @@ async function initDB() {
       ALTER TABLE students ADD COLUMN IF NOT EXISTS punch_card INT NOT NULL DEFAULT 0;
       ALTER TABLE students ADD COLUMN IF NOT EXISTS free_rewards INT NOT NULL DEFAULT 0;
 
+      CREATE TABLE IF NOT EXISTS preorders (
+        id SERIAL PRIMARY KEY,
+        order_number VARCHAR(50) NOT NULL UNIQUE,
+        customer_name VARCHAR(150) NOT NULL,
+        student_id VARCHAR(50),
+        pickup_period VARCHAR(50) NOT NULL DEFAULT 'Lunch Period',
+        status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'ready', 'completed', 'cancelled'
+        items JSONB NOT NULL,
+        subtotal NUMERIC(10, 2) NOT NULL,
+        total NUMERIC(10, 2) NOT NULL,
+        payment_method VARCHAR(50) DEFAULT 'pay_at_pickup',
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS store_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS discounts (
         id SERIAL PRIMARY KEY,
         code VARCHAR(50) NOT NULL UNIQUE,
         name VARCHAR(100) NOT NULL,
-        discount_type VARCHAR(20) NOT NULL DEFAULT 'percentage', -- 'percentage' or 'fixed'
+        discount_type VARCHAR(20) NOT NULL DEFAULT 'percentage',
         discount_value NUMERIC(10, 2) NOT NULL,
         min_order NUMERIC(10, 2) DEFAULT 0.00,
         is_active BOOLEAN DEFAULT TRUE
@@ -151,7 +171,7 @@ async function initDB() {
       }
     }
 
-    console.log('🎉 Database initialized with open pricing & discount system.');
+    console.log('🎉 Database initialized with preorders, store settings, barcodes & QR support.');
   } catch (err) {
     console.error('❌ Error initializing database:', err);
     throw err;

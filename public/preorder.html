@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Recess Pre-Order Menu - Jordan's Snack Shack</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
+
+  <!-- Pre-Order Header -->
+  <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 py-3.5 px-4 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/20">
+          🍿
+        </div>
+        <div>
+          <h1 class="font-heading font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+            Jordan's Snack Shack
+            <span class="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 uppercase">Skip The Line Pre-Order</span>
+          </h1>
+          <p class="text-xs text-slate-400">Order snacks before the bell rings & pick up bagged at the window</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="/portal" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition">
+          <i data-lucide="id-card" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span>Check Balance</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Pre-Order View -->
+  <main class="flex-1 p-4 md:p-6 max-w-4xl mx-auto w-full space-y-6">
+
+    <!-- Active Menu & Bag Container -->
+    <div id="preorder-main-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left 2 Cols: Snack Menu -->
+      <div class="lg:col-span-2 space-y-4">
+        <!-- Categories Bar -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="preorder-categories">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Product Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="preorder-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Right 1 Col: Pre-Order Bag & Pickup Form -->
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col justify-between space-y-4">
+        <div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
+              <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i>
+              Your Snack Bag
+            </h3>
+            <span id="bag-count" class="text-xs text-slate-400">0 items</span>
+          </div>
+
+          <!-- Bag Items -->
+          <div id="bag-items-list" class="divide-y divide-slate-800/80 max-h-48 overflow-y-auto my-2 space-y-2">
+            <p class="text-xs text-slate-500 text-center py-6">Your bag is empty. Tap items on the left to add!</p>
+          </div>
+
+          <!-- Pickup Form Details -->
+          <div class="space-y-3 pt-3 border-t border-slate-800 text-xs">
+            <div>
+              <label class="text-slate-400 font-semibold mb-1 block">Your Name / Teacher Room #:</label>
+              <input
+                type="text"
+                id="preorder-name"
+                placeholder="e.g. Jordan M. or Room 204"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-medium focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label class="text-slate-400 font-semibold mb-1 block">Student ID (Optional):</label>
+              <input
+                type="text"
+                id="preorder-stu-id"
+                placeholder="e.g. STU101"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label class="text-slate-400 font-semibold mb-1 block">Pickup Recess / Period:</label>
+              <select id="preorder-period" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                <option value="Morning Recess (10:15 AM)">Morning Recess (10:15 AM)</option>
+                <option value="Lunch Period A (11:45 AM)">Lunch Period A (11:45 AM)</option>
+                <option value="Lunch Period B (12:30 PM)">Lunch Period B (12:30 PM)</option>
+                <option value="After School (3:15 PM)">After School (3:15 PM)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-slate-400 font-semibold mb-1 block">Special Requests / Allergies:</label>
+              <input
+                type="text"
+                id="preorder-notes"
+                placeholder="e.g. Nut allergy / extra napkins"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Total & Submit -->
+        <div class="space-y-3 pt-3 border-t border-slate-800">
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs text-slate-400 font-semibold">Total Due at Pickup:</span>
+            <span id="bag-total" class="font-heading font-extrabold text-2xl text-amber-400">$0.00</span>
+          </div>
+
+          <button
+            onclick="submitPreOrder()"
+            id="btn-submit-preorder"
+            disabled
+            class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:pointer-events-none active:scale-98"
+          >
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            <span>Send Pre-Order to Snack Shack</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Confirmation Screen (Shown after order placed) -->
+    <div id="preorder-confirmation-view" class="hidden bg-slate-900 border border-emerald-500/40 rounded-3xl p-8 max-w-lg mx-auto text-center space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div class="w-16 h-16 rounded-3xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto">
+        🎉
+      </div>
+
+      <div>
+        <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Pre-Order Received!</span>
+        <h3 class="font-heading font-extrabold text-2xl text-white mt-1" id="conf-order-num"># PRE-260906-1234</h3>
+        <p class="text-xs text-slate-300 mt-2" id="conf-msg">Your snack bag is in the prep queue! Pick it up at the window.</p>
+      </div>
+
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left space-y-2 text-xs">
+        <div class="flex justify-between text-slate-400">
+          <span>Customer:</span>
+          <span class="font-bold text-white" id="conf-name">Jordan</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Pickup Period:</span>
+          <span class="font-bold text-amber-300" id="conf-period">Lunch Period A</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Total Amount:</span>
+          <span class="font-bold text-emerald-400 text-sm" id="conf-total">$0.00</span>
+        </div>
+        <div class="pt-2 border-t border-slate-800 text-[11px] text-slate-500">
+          Payment method: Pay with cash, student pass, or reward token when picking up your bag!
+        </div>
+      </div>
+
+      <button onclick="startNewPreorder()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl text-xs transition">
+        Place Another Pre-Order
+      </button>
+    </div>
+
+  </main>
+
+  <script>
+    let products = [];
+    let categories = [];
+    let bag = [];
+    let currentCat = null;
+
+    async function initPreorder() {
+      try {
+        const [pRes, cRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/categories')
+        ]);
+        products = await pRes.json();
+        categories = await cRes.json();
+        renderCategories();
+        renderProducts();
+      } catch (err) {
+        console.error('Preorder load error:', err);
+      }
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('preorder-categories');
+      container.innerHTML = `
+        <button onclick="filterCat(null)" class="category-pill ${currentCat === null ? 'active' : ''} px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap">
+          ✨ All Snacks
+        </button>
+        ${categories.map(c => `
+          <button onclick="filterCat(${c.id})" class="category-pill ${currentCat === c.id ? 'active' : ''} px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap">
+            ${c.icon} ${c.name}
+          </button>
+        `).join('')}
+      `;
+    }
+
+    function filterCat(id) {
+      currentCat = id;
+      renderCategories();
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('preorder-grid');
+      const filtered = products.filter(p => currentCat === null || p.category_id === currentCat);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<p class="col-span-full text-xs text-slate-500 text-center py-8">No snacks available in this category.</p>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col justify-between hover:border-amber-500/40 transition">
+          <div>
+            <div class="text-3xl mb-1.5">${item.emoji || '🍿'}</div>
+            <h4 class="font-heading font-bold text-xs text-white line-clamp-2">${item.name}</h4>
+            ${item.allergy_info ? `<span class="text-[9px] text-amber-300 block mt-0.5">⚠️ ${item.allergy_info}</span>` : ''}
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="font-bold text-xs text-amber-400">$${parseFloat(item.price).toFixed(2)}</span>
+            <button onclick="addToBag(${item.id})" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition">
+              + Add
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToBag(id) {
+      const prod = products.find(p => p.id === id);
+      if (!prod) return;
+
+      const existing = bag.find(b => b.id === id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        bag.push({
+          id: prod.id,
+          name: prod.name,
+          price: parseFloat(prod.price),
+          emoji: prod.emoji,
+          quantity: 1
+        });
+      }
+      renderBag();
+    }
+
+    function updateBagQty(id, delta) {
+      const item = bag.find(b => b.id === id);
+      if (!item) return;
+
+      item.quantity += delta;
+      if (item.quantity <= 0) {
+        bag = bag.filter(b => b.id !== id);
+      }
+      renderBag();
+    }
+
+    function renderBag() {
+      const list = document.getElementById('bag-items-list');
+      const countEl = document.getElementById('bag-count');
+      const totalEl = document.getElementById('bag-total');
+      const submitBtn = document.getElementById('btn-submit-preorder');
+
+      const totalItems = bag.reduce((sum, i) => sum + i.quantity, 0);
+      const totalCost = bag.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+      countEl.textContent = `${totalItems} items`;
+      totalEl.textContent = `$${totalCost.toFixed(2)}`;
+
+      if (bag.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Your bag is empty. Tap items on the left to add!</p>`;
+        submitBtn.disabled = true;
+      } else {
+        submitBtn.disabled = false;
+        list.innerHTML = bag.map(item => `
+          <div class="py-2 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-white truncate">${item.emoji || '🍪'} ${item.name}</div>
+              <div class="text-[10px] text-slate-400">$${item.price.toFixed(2)} each</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="updateBagQty(${item.id}, -1)" class="w-5 h-5 rounded bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">-</button>
+              <span class="text-xs font-bold text-white w-4 text-center">${item.quantity}</span>
+              <button onclick="updateBagQty(${item.id}, 1)" class="w-5 h-5 rounded bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function submitPreOrder() {
+      const name = document.getElementById('preorder-name').value.trim();
+      const student_id = document.getElementById('preorder-stu-id').value.trim();
+      const pickup_period = document.getElementById('preorder-period').value;
+      const notes = document.getElementById('preorder-notes').value.trim();
+
+      if (!name) {
+        alert('Please enter your name or classroom room #.');
+        return;
+      }
+
+      if (bag.length === 0) {
+        alert('Please add snacks to your bag before submitting.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/preorders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_name: name,
+            student_id,
+            pickup_period,
+            items: bag,
+            notes
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to place pre-order');
+
+        showConfirmation(data.preorder);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function showConfirmation(preorder) {
+      document.getElementById('preorder-main-view').classList.add('hidden');
+      document.getElementById('preorder-confirmation-view').classList.remove('hidden');
+
+      document.getElementById('conf-order-num').textContent `# ${preorder.order_number}`;
+      document.getElementById('conf-name').textContent = preorder.customer_name;
+      document.getElementById('conf-period').textContent = preorder.pickup_period;
+      document.getElementById('conf-total').textContent = `$${parseFloat(preorder.total).toFixed(2)}`;
+    }
+
+    function startNewPreorder() {
+      bag = [];
+      document.getElementById('preorder-name').value = '';
+      document.getElementById('preorder-stu-id').value = '';
+      document.getElementById('preorder-notes').value = '';
+      renderBag();
+      document.getElementById('preorder-confirmation-view').classList.add('hidden');
+      document.getElementById('preorder-main-view').classList.remove('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initPreorder();
+    });
+  </script>
+</body>
+</html>

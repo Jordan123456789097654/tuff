@@ -8,13 +8,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Support base64 image uploads for QR code
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-function generateOrderNumber() {
+function generateOrderNumber(prefix = 'ORD') {
   const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
   const rand = Math.floor(1000 + Math.random() * 9000);
-  return `ORD-${dateStr}-${rand}`;
+  return `${prefix}-${dateStr}-${rand}`;
 }
 
 // ----------------------------------------------------
@@ -40,17 +41,18 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { name, category_id, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price } = req.body;
+    const { name, category_id, barcode, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Product name is required.' });
     }
 
     const result = await db.query(
-      `INSERT INTO products (name, category_id, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      `INSERT INTO products (name, category_id, barcode, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         name,
         category_id || null,
+        barcode || null,
         parseFloat(price) || 0.00,
         parseFloat(cost_price) || 0.00,
         parseInt(stock_quantity, 10) || 0,
@@ -70,21 +72,22 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category_id, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active } = req.body;
+    const { name, category_id, barcode, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active } = req.body;
 
     const result = await db.query(
       `UPDATE products
        SET name = COALESCE($1, name),
            category_id = COALESCE($2, category_id),
-           price = COALESCE($3, price),
-           cost_price = COALESCE($4, cost_price),
-           low_stock_threshold = COALESCE($5, low_stock_threshold),
-           emoji = COALESCE($6, emoji),
-           allergy_info = COALESCE($7, allergy_info),
-           is_open_price = COALESCE($8, is_open_price),
-           is_active = COALESCE($9, is_active)
-       WHERE id = $10 RETURNING *`,
-      [name, category_id, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active, id]
+           barcode = COALESCE($3, barcode),
+           price = COALESCE($4, price),
+           cost_price = COALESCE($5, cost_price),
+           low_stock_threshold = COALESCE($6, low_stock_threshold),
+           emoji = COALESCE($7, emoji),
+           allergy_info = COALESCE($8, allergy_info),
+           is_open_price = COALESCE($9, is_open_price),
+           is_active = COALESCE($10, is_active)
+       WHERE id = $11 RETURNING *`,
+      [name, category_id, barcode, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active, id]
     );
 
     if (result.rows.length === 0) {
@@ -148,6 +151,133 @@ app.get('/api/categories', async (req, res) => {
   } catch (err) {
     console.error('Error fetching categories:', err);
     res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
+// ----------------------------------------------------
+// STORE SETTINGS & VENMO/CASHAPP QR UPLOAD
+// ----------------------------------------------------
+
+app.get('/api/settings', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM store_settings');
+    const settings = {};
+    result.rows.forEach(r => { settings[r.key] = r.value; });
+    res.json(settings);
+  } catch (err) {
+    console.error('Error fetching settings:', err);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+app.post('/api/settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    for (const [key, value] of Object.entries(settings)) {
+      await db.query(
+        `INSERT INTO store_settings (key, value)
+         VALUES ($1, $2)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+        [key, value]
+      );
+    }
+    res.json({ success: true, message: 'Settings saved successfully' });
+  } catch (err) {
+    console.error('Error saving settings:', err);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
+// ----------------------------------------------------
+// RECESS PRE-ORDERS ("SKIP THE LINE" QUEUE)
+// ----------------------------------------------------
+
+app.get('/api/preorders', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT * FROM preorders 
+      ORDER BY 
+        CASE 
+          WHEN status = 'pending' THEN 1 
+          WHEN status = 'ready' THEN 2 
+          ELSE 3 
+        END ASC, 
+        created_at DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching preorders:', err);
+    res.status(500).json({ error: 'Failed to fetch preorders' });
+  }
+});
+
+app.post('/api/preorders', async (req, res) => {
+  try {
+    const { customer_name, student_id, pickup_period, items, notes } = req.body;
+
+    if (!customer_name || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Name and items in cart are required for pre-order.' });
+    }
+
+    const subtotal = items.reduce((sum, i) => sum + (parseFloat(i.price) * parseInt(i.quantity, 10)), 0);
+    const orderNumber = generateOrderNumber('PRE');
+
+    const result = await db.query(
+      `INSERT INTO preorders (order_number, customer_name, student_id, pickup_period, status, items, subtotal, total, notes)
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6, $6, $7) RETURNING *`,
+      [orderNumber, customer_name.trim(), student_id ? student_id.trim() : null, pickup_period || 'Lunch', JSON.stringify(items), subtotal, notes || '']
+    );
+
+    res.status(201).json({ success: true, preorder: result.rows[0] });
+  } catch (err) {
+    console.error('Error placing preorder:', err);
+    res.status(500).json({ error: 'Failed to place preorder' });
+  }
+});
+
+app.put('/api/preorders/:id/status', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'ready', 'completed', 'cancelled'
+
+    if (!['pending', 'ready', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status.' });
+    }
+
+    await client.query('BEGIN');
+
+    const cur = await client.query('SELECT * FROM preorders WHERE id = $1 FOR UPDATE', [id]);
+    if (cur.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Preorder not found.' });
+    }
+
+    const preorder = cur.rows[0];
+
+    // If marking completed and was not completed before, deduct stock & record order
+    if (status === 'completed' && preorder.status !== 'completed') {
+      const items = typeof preorder.items === 'string' ? JSON.parse(preorder.items) : preorder.items;
+
+      for (const item of items) {
+        await client.query('UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2', [item.quantity, item.id]);
+      }
+    }
+
+    const updated = await client.query(
+      'UPDATE preorders SET status = $1 WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+
+    await client.query('COMMIT');
+    res.json(updated.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error updating preorder status:', err);
+    res.status(500).json({ error: 'Failed to update preorder' });
+  } finally {
+    client.release();
   }
 });
 
@@ -743,9 +873,13 @@ app.get('/api/analytics/export', async (req, res) => {
   }
 });
 
-// View-Only Portal Routes
+// Routing
 app.get(['/portal', '/balance', '/student'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'portal.html'));
+});
+
+app.get(['/order', '/preorder'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'preorder.html'));
 });
 
 app.get('*', (req, res) => {

@@ -152,6 +152,7 @@ function switchTab(tabId) {
   const btn = document.getElementById(`tab-btn-${tabId}`);
   if (btn) btn.classList.add('active');
 
+  if (tabId === 'preorders') loadPreorders();
   if (tabId === 'students') loadStudents();
   if (tabId === 'inventory') loadProducts();
   if (tabId === 'orders') loadOrders();
@@ -1186,7 +1187,10 @@ function renderStudentsTable(filterText = '') {
             ? `<span class="bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full text-[10px] font-semibold">⚠️ ${s.allergies}</span>`
             : `<span class="text-slate-500 text-[11px]">None</span>`}
         </td>
-        <td class="p-3.5 text-right space-x-1">
+        <td class="p-3.5 text-right space-x-1 whitespace-nowrap">
+          <button onclick="openPrintBadgeModal(${s.id})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 px-2.5 py-1.5 rounded-lg border border-amber-500/30 text-xs font-semibold transition" title="Print Barcode Badge Pass">
+            🏷️ Badge
+          </button>
           <button onclick="openRechargeModal(${s.id})" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-emerald-500/30 text-xs font-semibold transition">
             + Reload $
           </button>
@@ -1738,6 +1742,329 @@ async function loadAnalytics() {
     }
   } catch (err) {
     console.error('Analytics load error:', err);
+  }
+}
+
+// ==========================================
+// LIVE IN-BROWSER CAMERA SCANNER (HTML5-QRCODE)
+// ==========================================
+let html5QrScanner = null;
+
+async function openCameraScanner() {
+  openModal('modal-camera-scanner');
+  const feedback = document.getElementById('scan-feedback-box');
+  if (feedback) feedback.textContent = 'Starting camera... Point lens at any snack barcode or student pass.';
+
+  if (typeof Html5Qrcode === 'undefined') {
+    if (feedback) feedback.textContent = 'Camera scanner library not available.';
+    return;
+  }
+
+  try {
+    if (html5QrScanner) {
+      try { await html5QrScanner.stop(); } catch(e){}
+    }
+    html5QrScanner = new Html5Qrcode("camera-reader-viewport");
+    
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+      handleCameraBarcodeScanned(decodedText);
+    };
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    await html5QrScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback, (errorMessage) => {
+      // Ignore background frame misses
+    });
+  } catch (err) {
+    console.error('Camera start error:', err);
+    if (feedback) feedback.textContent = `Camera access notice: ${err.message || err}. Ensure camera permissions are allowed in browser.`;
+  }
+}
+
+async function closeCameraScanner() {
+  if (html5QrScanner) {
+    try {
+      await html5QrScanner.stop();
+      html5QrScanner.clear();
+    } catch(e) {
+      console.warn('Camera stop note:', e);
+    }
+    html5QrScanner = null;
+  }
+  closeModal('modal-camera-scanner');
+}
+
+function handleCameraBarcodeScanned(code) {
+  if (!code) return;
+  const raw = code.trim();
+  const lower = raw.toLowerCase();
+
+  playSound('beep');
+  const feedback = document.getElementById('scan-feedback-box');
+  if (feedback) feedback.innerHTML = `<span class="text-emerald-400 font-bold">Scanned: ${raw}</span>`;
+
+  // 1. Check if product barcode or ID matches
+  const product = products.find(p => (p.barcode && p.barcode.trim() === raw) || p.id.toString() === raw);
+  if (product) {
+    closeCameraScanner();
+    handleProductClick(product.id);
+    showToast(`Scanned & Added: ${product.name}! 🍿`, 'success');
+    return;
+  }
+
+  // 2. Check if student ID matches
+  const student = students.find(s => (s.student_id && s.student_id.toLowerCase() === lower) || s.id.toString() === raw || s.name.toLowerCase() === lower);
+  if (student) {
+    closeCameraScanner();
+    openStudentCheckoutModal();
+    selectStudentForCheckout(student.id);
+    showToast(`Scanned Student Pass: ${student.name}! 🎒`, 'success');
+    return;
+  }
+
+  showToast(`Scanned code: ${raw} (No matching snack or student found)`, 'info');
+}
+
+// ==========================================
+// VENMO / CASHAPP / SCHOOLPAY QR MODAL
+// ==========================================
+async function openQRPayModal() {
+  if (cart.length === 0) {
+    showToast('Add items to cart before opening QR pay.', 'error');
+    return;
+  }
+  const { total } = calculateTotals();
+  document.getElementById('qr-modal-total').textContent = `$${total.toFixed(2)}`;
+
+  try {
+    const res = await fetch('/api/settings');
+    const settings = await res.json();
+    
+    const qrImg = document.getElementById('qr-code-img');
+    const placeholder = document.getElementById('qr-placeholder');
+    const handleText = document.getElementById('qr-handle-text');
+    const handleInput = document.getElementById('qr-handle-input');
+
+    if (settings.payment_qr_image) {
+      qrImg.src = settings.payment_qr_image;
+      qrImg.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    } else {
+      qrImg.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+    }
+
+    if (settings.payment_handle) {
+      handleText.textContent = settings.payment_handle;
+      handleInput.value = settings.payment_handle;
+    }
+  } catch (err) {
+    console.warn('Settings load error:', err);
+  }
+
+  openModal('modal-qr-pay');
+}
+
+function handleQRUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    document.getElementById('qr-code-img').src = dataUrl;
+    document.getElementById('qr-code-img').classList.remove('hidden');
+    document.getElementById('qr-placeholder').classList.add('hidden');
+
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_qr_image: dataUrl })
+      });
+      showToast('Payment QR saved successfully! 📱', 'success');
+    } catch (err) {
+      showToast('Failed to save QR image: ' + err.message, 'error');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveQRHandle() {
+  const handle = document.getElementById('qr-handle-input').value.trim();
+  if (!handle) return;
+
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_handle: handle })
+    });
+    document.getElementById('qr-handle-text').textContent = handle;
+    showToast('Payment handle updated! ✅', 'success');
+  } catch (err) {
+    showToast('Failed to save handle: ' + err.message, 'error');
+  }
+}
+
+// ==========================================
+// PRINTABLE STUDENT BADGE / PASS GENERATOR
+// ==========================================
+function openPrintBadgeModal(studentId) {
+  const student = students.find(s => s.id === studentId);
+  if (!student) return;
+
+  document.getElementById('badge-name').textContent = student.name;
+  document.getElementById('badge-grade').textContent = `${student.grade || 'Student'} • ID: ${student.student_id}`;
+
+  const allergyBox = document.getElementById('badge-allergy-row');
+  if (student.allergies && student.allergies.toLowerCase() !== 'none' && student.allergies.trim() !== '') {
+    allergyBox.textContent = `⚠️ Allergy: ${student.allergies}`;
+    allergyBox.classList.remove('hidden');
+  } else {
+    allergyBox.classList.add('hidden');
+  }
+
+  if (typeof JsBarcode !== 'undefined') {
+    try {
+      JsBarcode("#badge-barcode-svg", student.student_id, {
+        format: "CODE128",
+        lineColor: "#0f172a",
+        width: 2,
+        height: 50,
+        displayValue: true,
+        font: "monospace",
+        fontSize: 14,
+        textMargin: 4
+      });
+    } catch (e) {
+      console.error('Barcode render error:', e);
+    }
+  }
+
+  openModal('modal-print-pass');
+}
+
+// ==========================================
+// RECESS PRE-ORDER QUEUE ("SKIP THE LINE" MODE)
+// ==========================================
+let preorders = [];
+
+async function loadPreorders() {
+  const container = document.getElementById('preorders-cards-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/preorders');
+    preorders = await res.json();
+    renderPreorders();
+  } catch (err) {
+    console.error('Failed to load preorders:', err);
+    container.innerHTML = `<div class="col-span-full p-8 text-center text-rose-400">Failed to load pre-orders</div>`;
+  }
+}
+
+function renderPreorders() {
+  const container = document.getElementById('preorders-cards-container');
+  if (!container) return;
+
+  if (preorders.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full bg-slate-950 p-12 rounded-3xl border border-slate-800 text-center space-y-3">
+        <span class="text-4xl">⏰</span>
+        <h3 class="font-heading font-bold text-base text-white">No Pre-Orders in Queue</h3>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">Students and teachers can submit pre-orders ahead of recess at <a href="/order" target="_blank" class="text-amber-400 underline font-semibold">/order</a></p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = preorders.map(po => {
+    const items = typeof po.items === 'string' ? JSON.parse(po.items) : po.items;
+    const timeStr = new Date(po.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let statusBadge = '';
+    let actionBtn = '';
+
+    if (po.status === 'pending') {
+      statusBadge = `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Bagging Pending</span>`;
+      actionBtn = `
+        <button onclick="updatePreorderStatus(${po.id}, 'ready')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition">
+          <i data-lucide="package-check" class="w-4 h-4"></i>
+          <span>Mark Bagged & Ready for Pickup</span>
+        </button>
+      `;
+    } else if (po.status === 'ready') {
+      statusBadge = `<span class="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Ready at Window</span>`;
+      actionBtn = `
+        <button onclick="updatePreorderStatus(${po.id}, 'completed')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Handed Out & Complete</span>
+        </button>
+      `;
+    } else {
+      statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-xs font-bold">✅ Completed</span>`;
+      actionBtn = `
+        <div class="text-center py-1 text-xs text-slate-500 font-semibold">Order Finished</div>
+      `;
+    }
+
+    return `
+      <div class="bg-slate-950 border ${po.status === 'pending' ? 'border-amber-500/40' : po.status === 'ready' ? 'border-blue-500/40' : 'border-slate-800'} rounded-2xl p-4 flex flex-col justify-between space-y-4 shadow-xl">
+        <div class="space-y-3">
+          <div class="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-3">
+            <div>
+              <span class="font-mono text-xs text-amber-400 font-bold">${po.order_number}</span>
+              <h4 class="font-heading font-bold text-base text-white">${po.customer_name}</h4>
+              <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>🕒 ${po.pickup_period}</span>
+                <span>•</span>
+                <span>${timeStr}</span>
+              </div>
+            </div>
+            ${statusBadge}
+          </div>
+
+          <div class="space-y-1.5 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Items to Bag:</span>
+            ${items.map(it => `
+              <div class="flex justify-between items-center text-slate-200">
+                <span class="font-semibold">${it.quantity}x ${it.name}</span>
+                <span class="font-mono text-amber-300">$${(parseFloat(it.price) * it.quantity).toFixed(2)}</span>
+              </div>
+            `).join('')}
+            ${po.notes ? `<div class="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">📝 Note: ${po.notes}</div>` : ''}
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-800/80">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400 font-semibold">Total:</span>
+            <span class="font-heading font-extrabold text-base text-amber-400">$${parseFloat(po.total).toFixed(2)}</span>
+          </div>
+          ${actionBtn}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+async function updatePreorderStatus(id, newStatus) {
+  try {
+    const res = await fetch(`/api/preorders/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update status');
+
+    playSound(newStatus === 'completed' ? 'chaching' : 'beep');
+    loadPreorders();
+    showToast(`Order status updated to "${newStatus}"!`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }
 
