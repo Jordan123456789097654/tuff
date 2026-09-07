@@ -205,40 +205,6 @@
         <p class="text-slate-400 text-xs sm:text-base max-w-xl mx-auto">
           Order snacks, cold drinks & treats at the register window.
         </p>
-      </div>
-
-      <!-- Feature Highlight Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-        <!-- Card 1: Combo Savings -->
-        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-amber-500/40 transition shadow-lg">
-          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl">
-            🥤
-          </div>
-          <h3 class="font-heading font-bold text-base text-white">Auto-Combo Savings!</h3>
-          <p class="text-xs text-slate-400">Get <strong>50¢ OFF</strong> automatically whenever you pair any snack with a cold drink!</p>
-        </div>
-
-        <!-- Card 2: Student Punch Pass -->
-        <div onclick="openBalanceChecker()" class="bg-slate-900/80 border border-blue-500/30 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-blue-500 transition shadow-lg cursor-pointer">
-          <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xl">
-            ⭐
-          </div>
-          <h3 class="font-heading font-bold text-base text-blue-300 flex items-center gap-1.5">
-            <span>Pass & Punch Card</span>
-            <span class="text-[9px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-extrabold">CHECK BALANCE</span>
-          </h3>
-          <p class="text-xs text-slate-400">Give your Student ID at checkout. Every 10 orders earns <strong>1 FREE snack reward</strong>!</p>
-        </div>
-
-        <!-- Card 3: Interactive Lucky Wheel -->
-        <div onclick="openSpinWheel()" class="bg-slate-900/80 border border-amber-500/30 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-amber-500 transition shadow-lg cursor-pointer">
-          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl">
-            🎟️
-          </div>
-          <h3 class="font-heading font-bold text-base text-amber-400 flex items-center gap-1.5">
-            <span>Lucky Prize Wheel</span>
-            <span class="text-[9px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">TAP TO PLAY</span>
-          </h3>
       <!-- LIVE "TRENDING RIGHT NOW" BEST SELLERS BAR -->
       <div id="display-trending-container" class="w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 rounded-3xl p-4 shadow-xl">
         <div class="flex items-center justify-between mb-2.5">
@@ -2324,7 +2290,21 @@
       }
     };
 
+    async function loadInitialDisplayState() {
+      try {
+        const res = await fetch('/api/display/state');
+        const data = await res.json();
+        if (data) {
+          renderState(data);
+        }
+      } catch (err) {
+        console.warn('Display state load notice:', err);
+      }
+    }
+
     // Initial Load Calls
+    initSSE();
+    loadInitialDisplayState();
     loadStoreSettings();
     loadDisplayShiftStatus();
     loadAnnouncements();

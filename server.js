@@ -12,6 +12,8 @@ app.use(express.json({ limit: '10mb' })); // Support base64 image uploads for QR
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+let displaySseClients = [];
+
 function generateOrderNumber(prefix = 'ORD') {
   const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
   const rand = Math.floor(1000 + Math.random() * 9000);
@@ -1676,8 +1678,6 @@ let displayState = {
   order: null,
   updatedAt: Date.now()
 };
-
-let displaySseClients = [];
 
 function notifyDisplayClients() {
   const payload = `data: ${JSON.stringify(displayState)}\n\n`;
