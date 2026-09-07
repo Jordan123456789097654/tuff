@@ -227,7 +227,7 @@
         </div>
 
         <!-- Cashier Fundraiser Allocator Bar -->
-        <div class="px-3.5 py-2 bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border-b border-blue-800/40 flex items-center justify-between gap-2 text-xs">
+        <div id="cart-fundraiser-bar" class="px-3.5 py-2 bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border-b border-blue-800/40 flex items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-1.5 min-w-0">
             <span class="text-sm">🎯</span>
             <span class="text-blue-300 font-semibold truncate">Raising For:</span>
@@ -262,13 +262,13 @@
 
         <!-- Cart Summary & Discount Center -->
         <div class="p-4 bg-slate-900/80 border-t border-slate-800 space-y-2 text-xs">
-          <div class="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+          <div id="cart-discount-bar" class="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
             <div class="flex items-center gap-1.5">
               <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
               <span id="active-discount-label" class="font-semibold text-slate-300">No Discount</span>
             </div>
             <div class="flex items-center gap-1">
-              <button onclick="openDiscountModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg font-bold text-[11px] border border-slate-700 transition">
+              <button id="btn-add-discount" onclick="openDiscountModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg font-bold text-[11px] border border-slate-700 transition">
                 🏷️ Add Discount
               </button>
               <button onclick="removeDiscount()" id="btn-remove-discount" class="hidden text-slate-400 hover:text-rose-400 p-1">
@@ -470,7 +470,7 @@
             <p class="text-xs text-slate-400">Track real-time snack counts, barcodes, wholesale costs, loss/spoilage write-offs, and open-price items.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button onclick="openShrinkageModal()" class="bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-rose-800/60 flex items-center gap-1.5 transition">
+            <button id="btn-inventory-spoilage" onclick="openShrinkageModal()" class="bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-rose-800/60 flex items-center gap-1.5 transition">
               <i data-lucide="trash-2" class="w-4 h-4 text-rose-400"></i>
               <span>Log Spoilage / Loss</span>
             </button>
@@ -1033,7 +1033,7 @@
         <span id="cash-modal-total-due" class="font-heading font-extrabold text-3xl text-amber-400">$0.00</span>
       </div>
 
-      <div class="space-y-2">
+      <div id="pos-quick-cash-container" class="space-y-2">
         <span class="text-xs text-slate-400 font-semibold">Quick Cash Tendered:</span>
         <div class="grid grid-cols-4 gap-2">
           <button onclick="setCashTendered('exact')" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">Exact</button>

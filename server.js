@@ -1732,6 +1732,70 @@ app.get('/api/display/events', (req, res) => {
   });
 });
 
+// ----------------------------------------------------
+// FEATURE CONFIGURATION & STORE SETTINGS
+// ----------------------------------------------------
+const DEFAULT_SETTINGS = {
+  cfg_pos_quick_cash: 'true',
+  cfg_pos_face_scan: 'true',
+  cfg_pos_camera_scan: 'true',
+  cfg_pos_sound_effects: 'true',
+  cfg_pos_discounts: 'true',
+  cfg_pos_shrinkage: 'true',
+  cfg_pos_fundraiser: 'true',
+  cfg_pos_auto_combo: 'true',
+  cfg_display_news_ticker: 'true',
+  cfg_display_trending: 'true',
+  cfg_display_weather: 'true',
+  cfg_display_secret_code: 'true',
+  cfg_display_compliment: 'true',
+  cfg_display_polls: 'true',
+  cfg_display_nutrition: 'true',
+  cfg_display_wishlist: 'true',
+  cfg_display_spin_wheel: 'true',
+  cfg_display_balance_check: 'true',
+  cfg_display_scratch_card: 'true',
+  cfg_display_tip_jar: 'true'
+};
+
+app.get('/api/settings', async (req, res) => {
+  try {
+    const result = await db.query('SELECT key, value FROM store_settings');
+    const settings = { ...DEFAULT_SETTINGS };
+    result.rows.forEach(r => {
+      settings[r.key] = r.value;
+    });
+    res.json(settings);
+  } catch (err) {
+    console.error('Error loading settings:', err);
+    res.json(DEFAULT_SETTINGS);
+  }
+});
+
+app.post('/api/settings', async (req, res) => {
+  try {
+    const newSettings = req.body;
+    for (const [key, val] of Object.entries(newSettings)) {
+      await db.query(`
+        INSERT INTO store_settings (key, value)
+        VALUES ($1, $2)
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+      `, [key, String(val)]);
+    }
+
+    // Broadcast settings update to all connected SSE clients (/display)
+    const broadcastPayload = `data: ${JSON.stringify({ type: 'settings_update', settings: newSettings })}\n\n`;
+    displaySseClients.forEach(client => {
+      try { client.write(broadcastPayload); } catch(e) {}
+    });
+
+    res.json({ success: true, message: 'Settings saved successfully' });
+  } catch (err) {
+    console.error('Error saving settings:', err);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
 // Routing
 app.get(['/display', '/customer-display', '/screen'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'display.html'));

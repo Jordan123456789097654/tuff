@@ -94,25 +94,25 @@
     <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
       <!-- Nutrition & Menu Inspector Trigger -->
-      <button onclick="openNutritionModal()" class="flex items-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+      <button id="display-btn-nutrition" onclick="openNutritionModal()" class="flex items-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>🍎</span>
         <span class="hidden lg:inline">Nutrition & Allergens</span>
       </button>
 
       <!-- Wishlist Suggestion Trigger -->
-      <button onclick="openWishlistModal()" class="flex items-center gap-1.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 hover:text-white border border-purple-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+      <button id="display-btn-wishlist" onclick="openWishlistModal()" class="flex items-center gap-1.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 hover:text-white border border-purple-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>💡</span>
         <span class="hidden md:inline">Snack Wishlist</span>
       </button>
 
       <!-- Student Balance Checker Trigger -->
-      <button onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-white border border-blue-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+      <button id="display-btn-balance" onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-white border border-blue-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>💳</span>
         <span class="hidden sm:inline">Pass Balance</span>
       </button>
 
       <!-- Lucky Spin Wheel Trigger -->
-      <button onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+      <button id="display-btn-spin" onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>🎟️</span>
         <span class="hidden sm:inline">Spin Wheel</span>
       </button>
@@ -194,12 +194,8 @@
             <span>Lucky Prize Wheel</span>
             <span class="text-[9px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">TAP TO PLAY</span>
           </h3>
-          <p class="text-xs text-slate-400">Spin the wheel to win bonus candy, extra stamps, or mystery snack passes!</p>
-        </div>
-      </div>
-
       <!-- LIVE "TRENDING RIGHT NOW" BEST SELLERS BAR -->
-      <div class="w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 rounded-3xl p-4 shadow-xl">
+      <div id="display-trending-container" class="w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 rounded-3xl p-4 shadow-xl">
         <div class="flex items-center justify-between mb-2.5">
           <div class="flex items-center gap-2">
             <span class="text-xl">🔥</span>
@@ -235,35 +231,35 @@
           <div class="w-9 h-9 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-lg">
             ⭐
           </div>
-          <h3 class="font-heading font-bold text-sm text-blue-300 flex items-center gap-1">
-            <span>Punch Pass</span>
-            <span class="text-[9px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-extrabold">CHECK</span>
+          <h3 class="font-heading font-bold text-sm text-blue-300 flex items-center gap-1.5">
+            <span>Pass & Punch</span>
+            <span class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-extrabold">LOOKUP</span>
           </h3>
-          <p class="text-[11px] text-slate-400">10 punches earns <strong>1 FREE snack</strong>! Tap to check balance & punch card.</p>
+          <p class="text-[11px] text-slate-400">Scan ID at window. Every 10 orders = <strong>1 FREE snack</strong>!</p>
         </div>
 
-        <!-- Card 3: Interactive Nutrition Inspector -->
-        <div onclick="openNutritionModal()" class="bg-slate-900/80 border border-emerald-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-emerald-500 transition shadow-lg cursor-pointer">
+        <!-- Card 3: Interactive Lucky Wheel -->
+        <div onclick="openSpinWheel()" class="bg-slate-900/80 border border-amber-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-amber-500 transition shadow-lg cursor-pointer">
+          <div class="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-lg">
+            🎟️
+          </div>
+          <h3 class="font-heading font-bold text-sm text-amber-400 flex items-center gap-1.5">
+            <span>Prize Wheel</span>
+            <span class="text-[8px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">PLAY</span>
+          </h3>
+          <p class="text-[11px] text-slate-400">Spin the wheel to win bonus candy, stamps, or mystery snack passes!</p>
+        </div>
+
+        <!-- Card 4: Daily Secret Password Card -->
+        <div class="bg-slate-900/80 border border-emerald-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-emerald-500 transition shadow-lg">
           <div class="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-lg">
-            🍎
+            🔑
           </div>
-          <h3 class="font-heading font-bold text-sm text-emerald-300 flex items-center gap-1">
-            <span>Nutrition & Badges</span>
-            <span class="text-[9px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">INSPECT</span>
+          <h3 class="font-heading font-bold text-sm text-emerald-300 flex items-center gap-1.5">
+            <span>Daily Secret</span>
+            <span class="text-[8px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">10% OFF</span>
           </h3>
-          <p class="text-[11px] text-slate-400">View calories, sugar, ingredients, and 100% peanut-free & gluten-free tags.</p>
-        </div>
-
-        <!-- Card 4: Interactive Wishlist -->
-        <div onclick="openWishlistModal()" class="bg-slate-900/80 border border-purple-500/30 p-4 rounded-3xl space-y-2 relative overflow-hidden group hover:border-purple-500 transition shadow-lg cursor-pointer">
-          <div class="w-9 h-9 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-lg">
-            💡
-          </div>
-          <h3 class="font-heading font-bold text-sm text-purple-300 flex items-center gap-1">
-            <span>Snack Wishlist</span>
-            <span class="text-[9px] bg-purple-500 text-white px-1.5 py-0.5 rounded font-extrabold">VOTE</span>
-          </h3>
-          <p class="text-[11px] text-slate-400">Request snacks you want stocked & upvote community ideas!</p>
+          <p class="text-[11px] text-slate-400">Whisper the secret code below to the cashier for 10% off today!</p>
         </div>
       </div>
 
@@ -271,7 +267,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full text-left">
         
         <!-- Column 1: Flavor Battle / Snack Poll Widget -->
-        <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-pink-500/30 rounded-3xl p-5 space-y-3 shadow-xl relative overflow-hidden">
+        <div id="display-polls-widget" class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-pink-500/30 rounded-3xl p-5 space-y-3 shadow-xl relative overflow-hidden">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-extrabold uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/30 px-2.5 py-0.5 rounded-full">
               🗳️ Live Snack Battle
@@ -287,7 +283,7 @@
         </div>
 
         <!-- Column 2: Secret Daily Password & Compliment Generator -->
-        <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-amber-500/30 rounded-3xl p-5 space-y-3.5 shadow-xl flex flex-col justify-between">
+        <div id="display-secret-code-widget" class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-amber-500/30 rounded-3xl p-5 space-y-3.5 shadow-xl flex flex-col justify-between">
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
@@ -304,7 +300,7 @@
           </div>
 
           <!-- Daily Uplifting Affirmation / Compliment Generator -->
-          <div class="bg-slate-950/90 border border-indigo-500/30 p-3 rounded-2xl space-y-2">
+          <div id="display-compliment-widget" class="bg-slate-950/90 border border-indigo-500/30 p-3 rounded-2xl space-y-2">
             <div class="flex items-center justify-between text-xs">
               <span class="font-bold text-indigo-300 flex items-center gap-1">💌 Daily Boost</span>
               <button onclick="drawDailyCompliment()" class="text-[10px] text-indigo-400 hover:text-white bg-indigo-500/20 px-2 py-0.5 rounded-lg border border-indigo-500/30 font-bold transition">
@@ -318,7 +314,7 @@
         </div>
 
         <!-- Column 3: Weather & Snack Pairing Forecast + Brainteaser -->
-        <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-cyan-500/30 rounded-3xl p-5 space-y-3 shadow-xl flex flex-col justify-between">
+        <div id="display-weather-widget" class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-cyan-500/30 rounded-3xl p-5 space-y-3 shadow-xl flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-2">
               <span class="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-0.5 rounded-full">
@@ -461,7 +457,7 @@
           </div>
 
           <!-- Interactive Tip / Donation Selector with CUSTOM TIP BUTTON -->
-          <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+          <div id="display-tip-jar-container" class="space-y-1.5 pt-1 border-t border-slate-800/80">
             <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold">
               <span>Snack Shack Tip Jar 🍯:</span>
               <span id="tip-selected-label" class="text-pink-400 font-bold">Optional</span>
@@ -1252,14 +1248,111 @@
       lucide.createIcons();
     }
 
+    // ==========================================
+    // STORE SETTINGS & DISPLAY FEATURE TOGGLES
+    // ==========================================
+    let currentDisplaySettings = {};
+
+    async function loadStoreSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const settings = await res.json();
+        applyDisplaySettings(settings);
+      } catch (err) {
+        console.warn('Settings load notice:', err);
+      }
+    }
+
+    function applyDisplaySettings(settings) {
+      if (!settings) return;
+      currentDisplaySettings = settings;
+
+      // 1. News Ticker
+      const tickerBar = document.getElementById('display-ticker-bar');
+      if (tickerBar) {
+        tickerBar.classList.toggle('hidden', settings.cfg_display_news_ticker === 'false');
+      }
+
+      // 2. Trending Bar
+      const trendingContainer = document.getElementById('display-trending-container');
+      if (trendingContainer) {
+        trendingContainer.classList.toggle('hidden', settings.cfg_display_trending === 'false');
+      }
+
+      // 3. Weather Forecast
+      const weatherWidget = document.getElementById('display-weather-widget');
+      if (weatherWidget) {
+        weatherWidget.classList.toggle('hidden', settings.cfg_display_weather === 'false');
+      }
+
+      // 4. Secret Daily Code
+      const secretCodeWidget = document.getElementById('display-secret-code-widget');
+      if (secretCodeWidget) {
+        secretCodeWidget.classList.toggle('hidden', settings.cfg_display_secret_code === 'false');
+      }
+
+      // 5. Daily Compliment
+      const complimentWidget = document.getElementById('display-compliment-widget');
+      if (complimentWidget) {
+        complimentWidget.classList.toggle('hidden', settings.cfg_display_compliment === 'false');
+      }
+
+      // 6. Live Snack Battle / Polls
+      const pollsWidget = document.getElementById('display-polls-widget');
+      if (pollsWidget) {
+        pollsWidget.classList.toggle('hidden', settings.cfg_display_polls === 'false');
+      }
+
+      // 7. Nutrition & Allergens Button
+      const btnNutrition = document.getElementById('display-btn-nutrition');
+      if (btnNutrition) {
+        btnNutrition.classList.toggle('hidden', settings.cfg_display_nutrition === 'false');
+      }
+
+      // 8. Snack Wishlist Button
+      const btnWishlist = document.getElementById('display-btn-wishlist');
+      if (btnWishlist) {
+        btnWishlist.classList.toggle('hidden', settings.cfg_display_wishlist === 'false');
+      }
+
+      // 9. Balance Check Button
+      const btnBalance = document.getElementById('display-btn-balance');
+      if (btnBalance) {
+        btnBalance.classList.toggle('hidden', settings.cfg_display_balance_check === 'false');
+      }
+
+      // 10. Spin Wheel Button
+      const btnSpin = document.getElementById('display-btn-spin');
+      if (btnSpin) {
+        btnSpin.classList.toggle('hidden', settings.cfg_display_spin_wheel === 'false');
+      }
+
+      // 11. Scratch Card (in celebrate view)
+      const scratchCard = document.getElementById('celebrate-scratch-container');
+      if (scratchCard) {
+        scratchCard.classList.toggle('hidden', settings.cfg_display_scratch_card === 'false');
+      }
+
+      // 12. Tip Jar Selector (in active cart view)
+      const tipJar = document.getElementById('display-tip-jar-container');
+      if (tipJar) {
+        tipJar.classList.toggle('hidden', settings.cfg_display_tip_jar === 'false');
+      }
+
+      lucide.createIcons();
+    }
+
     // Connect Server-Sent Events (SSE) for Real-Time Remote iPad Sync
     function initSSE() {
       const evtSource = new EventSource('/api/display/events');
       evtSource.onmessage = function(event) {
         try {
           const data = JSON.parse(event.data);
-          renderState(data);
-          loadStoreSettings();
+          if (data.type === 'settings_update') {
+            applyDisplaySettings(data.settings);
+          } else {
+            renderState(data);
+          }
         } catch(e) {
           console.error('SSE parse error:', e);
         }
@@ -1274,8 +1367,11 @@
       const channel = new BroadcastChannel('snack_display_sync');
       channel.onmessage = function(event) {
         if (event.data) {
-          renderState(event.data);
-          loadStoreSettings();
+          if (event.data.type === 'settings_update') {
+            applyDisplaySettings(event.data.settings);
+          } else {
+            renderState(event.data);
+          }
         }
       };
     }
@@ -2124,6 +2220,7 @@
     };
 
     // Initial Load Calls
+    loadStoreSettings();
     loadAnnouncements();
     loadTrending();
     loadWeatherForecast();

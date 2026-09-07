@@ -725,6 +725,10 @@ function editCartItemPrice(idx) {
 
 // Auto-Combo detection (Snack + Drink)
 function detectComboSavings() {
+  if (featureSettings && featureSettings.cfg_pos_auto_combo === 'false') {
+    return { eligibleCombos: 0, comboDiscount: 0 };
+  }
+
   let drinksCount = 0;
   let snacksCount = 0;
 
@@ -3506,6 +3510,13 @@ async function saveFeatureConfig() {
     applyPOSFeatureConfig(featureSettings);
     syncCartToDisplay();
 
+    // Broadcast settings update to 2nd screen via BroadcastChannel
+    if (displayChannel) {
+      try {
+        displayChannel.postMessage({ type: 'settings_update', settings: featureSettings });
+      } catch(e) {}
+    }
+
     playSound('chaching');
     closeModal('modal-feature-config');
     showToast('Screen layout & feature toggles saved! ✨', 'success');
@@ -3517,7 +3528,7 @@ async function saveFeatureConfig() {
 function applyPOSFeatureConfig(settings) {
   if (!settings) return;
 
-  // Sound FX toggle
+  // 1. Sound FX toggle
   if (settings.cfg_pos_sound_effects === 'false') {
     soundEnabled = false;
     const audioIcon = document.getElementById('audio-icon');
@@ -3528,15 +3539,44 @@ function applyPOSFeatureConfig(settings) {
     if (audioIcon) audioIcon.setAttribute('data-lucide', 'volume-2');
   }
 
-  // Barcode / Camera Scan buttons in search bar
+  // 2. Barcode / Camera Scan buttons
   const cameraBtns = document.querySelectorAll('[onclick="openCameraScanner()"]');
   cameraBtns.forEach(btn => {
-    if (settings.cfg_pos_camera_scan === 'false') {
-      btn.classList.add('hidden');
-    } else {
-      btn.classList.remove('hidden');
-    }
+    btn.classList.toggle('hidden', settings.cfg_pos_camera_scan === 'false');
   });
+
+  // 3. Quick Cash Tender Buttons in cash modal
+  const quickCashContainer = document.getElementById('pos-quick-cash-container');
+  if (quickCashContainer) {
+    quickCashContainer.classList.toggle('hidden', settings.cfg_pos_quick_cash === 'false');
+  }
+
+  // 4. Face Scanning Mode Switch in camera modal
+  const btnFace = document.getElementById('btn-mode-face');
+  if (btnFace) {
+    btnFace.classList.toggle('hidden', settings.cfg_pos_face_scan === 'false');
+  }
+
+  // 5. Discounts & Promo Codes Bar in Cart
+  const discBar = document.getElementById('cart-discount-bar');
+  if (discBar) {
+    discBar.classList.toggle('hidden', settings.cfg_pos_discounts === 'false');
+  }
+
+  // 6. Loss / Spoilage / Shrinkage button
+  const btnShrinkage = document.getElementById('btn-inventory-spoilage');
+  if (btnShrinkage) {
+    btnShrinkage.classList.toggle('hidden', settings.cfg_pos_shrinkage === 'false');
+  }
+
+  // 7. Fundraiser Allocator in Cart
+  const fundBar = document.getElementById('cart-fundraiser-bar');
+  if (fundBar) {
+    fundBar.classList.toggle('hidden', settings.cfg_pos_fundraiser === 'false');
+  }
+
+  // 8. Auto-Combo computation & banner update
+  renderCart();
 
   lucide.createIcons();
 }
