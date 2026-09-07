@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 const db = require('./db');
 require('dotenv').config();
 
@@ -2489,6 +2490,77 @@ app.put('/api/manager/security_settings', async (req, res) => {
   } catch (err) {
     console.error('Error updating security settings:', err);
     res.status(500).json({ error: 'Failed to update security settings' });
+  }
+});
+
+// 5. Watchlist Management
+app.get('/api/manager/watchlist', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM students ORDER BY is_flagged DESC, name ASC');
+    const flagged = result.rows.filter(s => s.is_flagged || (s.unpaid_balance && parseFloat(s.unpaid_balance) > 0));
+    res.json({
+      all: result.rows,
+      flagged: flagged
+    });
+  } catch (err) {
+    console.error('Error fetching watchlist:', err);
+    res.status(500).json({ error: 'Failed to fetch watchlist' });
+  }
+});
+
+app.post('/api/manager/watchlist/toggle', async (req, res) => {
+  try {
+    const { student_id, is_flagged, watchlist_reason, unpaid_balance } = req.body;
+    const result = await db.query(
+      `UPDATE students
+       SET is_flagged = $1,
+           watchlist_reason = $2,
+           unpaid_balance = $3
+       WHERE id = $4 RETURNING *`,
+      [!!is_flagged, watchlist_reason || '', parseFloat(unpaid_balance) || 0.00, student_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
+    res.json({ success: true, student: result.rows[0] });
+  } catch (err) {
+    console.error('Error toggling student watchlist:', err);
+    res.status(500).json({ error: 'Failed to update watchlist status' });
+  }
+});
+
+// 6. Security Diagnostics & Test Alerts
+app.post('/api/manager/security/test_alert', (req, res) => {
+  const { test_type } = req.body;
+  const now = Date.now();
+  
+  broadcastToDisplayClients({
+    type: 'security_test_alert',
+    testType: test_type || 'system_test',
+    timestamp: now,
+    message: `DIAGNOSTIC TEST: ${test_type}`
+  });
+
+  res.json({ success: true, message: `Dispatched test alert for ${test_type}` });
+});
+
+// 7. Historical Shift Logs
+app.get('/api/manager/logs/historical', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM daily_logs ORDER BY log_date DESC LIMIT 30');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching historical logs:', err);
+    res.status(500).json({ error: 'Failed to fetch historical logs' });
+  }
+});
+
+// 8. CCTV Incident Bookmarks
+app.get('/api/security/incidents', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM security_incidents ORDER BY created_at DESC LIMIT 50');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching security incidents:', err);
+    res.status(500).json({ error: 'Failed to fetch security incidents' });
   }
 });
 
