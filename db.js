@@ -13,6 +13,10 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
+pool.on('error', (err, client) => {
+  console.warn('⚡ Unexpected error on idle PostgreSQL client (auto-reconnecting):', err.message);
+});
+
 async function initDB() {
   const client = await pool.connect();
   try {

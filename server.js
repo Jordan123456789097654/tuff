@@ -1952,3 +1952,11 @@ app.listen(PORT, async () => {
     console.error('DB Initialization failed on startup:', e);
   }
 });
+
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught Exception in server process:', err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ Unhandled Rejection in server process:', reason);
+});
