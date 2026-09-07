@@ -10,7 +10,7 @@ Backed by **PostgreSQL (Supabase)** with zero-configuration automatic schema mig
 
 ### 1. 🛒 Fast Cashier Register
 - **Visual Snack Grid:** Categorized cards (Chips, Candy, Drinks, Ice Cream, Baked Goods, Combos) with touch-friendly tiles, emojis, and prices.
-- **Instant Search & Barcode:** Real-time filter and scanning bar for fast recess rush checkout.
+- **Instant Search & Barcode:** Real-time filter and scanning bar for fast peak rush checkout.
 - **Cart & Pricing:** Live cart quantity modifiers, coupons/discounts (50¢ off, 10% honor roll, 50% clearance), subtotal, and total due.
 - **Web Audio Sound Effects:** Realistic scan chirps, register chimes (*cha-ching!*), and allergen alerts powered by the Web Audio API.
 - **Printable Thermal Receipts:** 80mm receipt generator formatted with store title, itemized breakdown, and barcode.

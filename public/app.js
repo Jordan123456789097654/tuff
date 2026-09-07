@@ -226,7 +226,7 @@ function switchTab(tabId) {
 // ==========================================
 async function initApp() {
   try {
-    await Promise.all([loadCategories(), loadProducts(), loadFundraisers(), loadShiftStatus()]);
+    await Promise.all([loadCategories(), loadProducts(), loadFundraisers(), loadShiftStatus(), loadStaff()]);
   } catch (err) {
     console.error('Init error:', err);
   }
@@ -1425,6 +1425,9 @@ function renderStudentsTable(filterText = '') {
             : `<span class="text-slate-500 text-[11px]">None</span>`}
         </td>
         <td class="p-3.5 text-right space-x-1 whitespace-nowrap">
+          <button onclick="openEditStudentModal(${s.id})" class="bg-blue-500/20 hover:bg-blue-500 text-blue-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-blue-500/30 text-xs font-semibold transition" title="Edit Student Profile">
+            ✏️ Edit
+          </button>
           <button onclick="openPrintBadgeModal(${s.id})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 px-2.5 py-1.5 rounded-lg border border-amber-500/30 text-xs font-semibold transition" title="Print Barcode Badge Pass">
             🏷️ Badge
           </button>
@@ -1438,13 +1441,51 @@ function renderStudentsTable(filterText = '') {
 }
 
 function openNewStudentModal() {
+  document.getElementById('edit-stu-id-pk').value = '';
+  document.getElementById('student-modal-title').textContent = 'Create Student Pass & Punch Card';
+  document.getElementById('btn-save-stu-text').textContent = 'Create Student Pass';
+  document.getElementById('btn-delete-stu').classList.add('hidden');
+
   document.getElementById('new-stu-name').value = '';
   document.getElementById('new-stu-id').value = `STU${Math.floor(100 + Math.random() * 900)}`;
   document.getElementById('new-stu-grade').value = '7th Grade';
   document.getElementById('new-stu-balance').value = '0.00';
   document.getElementById('new-stu-limit').value = '10.00';
+  document.getElementById('new-stu-punch').value = '0';
+  document.getElementById('new-stu-rewards').value = '0';
   document.getElementById('new-stu-allergies').value = '';
   document.getElementById('new-stu-notes').value = '';
+  document.getElementById('new-stu-photo-data').value = '';
+  document.getElementById('new-stu-photo-preview').innerHTML = `👤`;
+
+  openModal('modal-student-new');
+}
+
+function openEditStudentModal(studentId) {
+  const student = students.find(s => s.id === studentId);
+  if (!student) return;
+
+  document.getElementById('edit-stu-id-pk').value = student.id;
+  document.getElementById('student-modal-title').textContent = `Edit Profile: ${student.name}`;
+  document.getElementById('btn-save-stu-text').textContent = 'Save Profile Changes';
+  document.getElementById('btn-delete-stu').classList.remove('hidden');
+
+  document.getElementById('new-stu-name').value = student.name || '';
+  document.getElementById('new-stu-id').value = student.student_id || '';
+  document.getElementById('new-stu-grade').value = student.grade || '7th Grade';
+  document.getElementById('new-stu-balance').value = parseFloat(student.balance || 0).toFixed(2);
+  document.getElementById('new-stu-limit').value = parseFloat(student.daily_limit || 10).toFixed(2);
+  document.getElementById('new-stu-punch').value = student.punch_card || 0;
+  document.getElementById('new-stu-rewards').value = student.free_rewards || 0;
+  document.getElementById('new-stu-allergies').value = student.allergies || '';
+  document.getElementById('new-stu-notes').value = student.notes || '';
+  document.getElementById('new-stu-photo-data').value = student.photo_data || '';
+
+  if (student.photo_data) {
+    document.getElementById('new-stu-photo-preview').innerHTML = `<img src="${student.photo_data}" class="w-full h-full object-cover" />`;
+  } else {
+    document.getElementById('new-stu-photo-preview').innerHTML = `👤`;
+  }
 
   openModal('modal-student-new');
 }
@@ -1488,12 +1529,15 @@ async function snapPhotoFromWebcam() {
   }
 }
 
-async function submitNewStudent() {
+async function submitStudentForm() {
+  const pk = document.getElementById('edit-stu-id-pk').value;
   const name = document.getElementById('new-stu-name').value.trim();
   const student_id = document.getElementById('new-stu-id').value.trim();
   const grade = document.getElementById('new-stu-grade').value.trim();
   const balance = parseFloat(document.getElementById('new-stu-balance').value) || 0;
   const limit = parseFloat(document.getElementById('new-stu-limit').value) || 10;
+  const punch_card = parseInt(document.getElementById('new-stu-punch').value, 10) || 0;
+  const free_rewards = parseInt(document.getElementById('new-stu-rewards').value, 10) || 0;
   const allergies = document.getElementById('new-stu-allergies').value.trim();
   const notes = document.getElementById('new-stu-notes').value.trim();
   const photo_data = document.getElementById('new-stu-photo-data').value || '';
@@ -1503,29 +1547,56 @@ async function submitNewStudent() {
     return;
   }
 
+  const payload = {
+    student_id,
+    name,
+    grade,
+    balance,
+    daily_limit: limit,
+    punch_card,
+    free_rewards,
+    allergies,
+    notes,
+    photo_data
+  };
+
   try {
-    const res = await fetch('/api/students', {
-      method: 'POST',
+    const url = pk ? `/api/students/${pk}` : '/api/students';
+    const method = pk ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        student_id,
-        name,
-        grade,
-        balance,
-        daily_limit: limit,
-        allergies,
-        notes,
-        photo_data
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create student');
+    if (!res.ok) throw new Error(data.error || 'Failed to save student');
 
     playSound('beep');
     closeModal('modal-student-new');
     loadStudents();
-    showToast(`Student pass created for ${name}! 🎒`, 'success');
+    showToast(pk ? `Updated profile for ${name}! ✨` : `Student pass created for ${name}! 🎒`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleDeleteStudent() {
+  const pk = document.getElementById('edit-stu-id-pk').value;
+  if (!pk) return;
+  const s = students.find(item => item.id === parseInt(pk, 10));
+  const confirmMsg = s ? `Are you sure you want to delete ${s.name}'s snack pass?` : 'Delete this student pass?';
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch(`/api/students/${pk}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete student');
+
+    closeModal('modal-student-new');
+    loadStudents();
+    showToast('Student account deleted.', 'info');
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -1646,11 +1717,14 @@ function renderInventoryTable(filterText = '') {
           }
         </td>
         <td class="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+          <button onclick="openEditProductModal(${p.id})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 px-2.5 py-1.5 rounded-lg border border-amber-500/30 text-xs font-semibold transition" title="Edit Item Details & Price">
+            ✏️ Edit
+          </button>
           <button onclick="openShrinkageModal(${p.id})" class="bg-rose-500/10 hover:bg-rose-500 text-rose-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-rose-500/30 text-xs font-semibold transition" title="Log expired, damaged, or spilled snack">
             🗑️ Spoilage
           </button>
-          <button onclick="openRestockModal(${p.id})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 px-2.5 py-1.5 rounded-lg border border-amber-500/30 text-xs font-semibold transition">
-            + Restock Case
+          <button onclick="openRestockModal(${p.id})" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold transition">
+            + Restock
           </button>
         </td>
       </tr>
@@ -1705,7 +1779,13 @@ async function submitRestock() {
 }
 
 function openNewProductModal() {
+  document.getElementById('prod-id').value = '';
+  document.getElementById('product-modal-title').textContent = 'Add New Snack Item';
+  document.getElementById('btn-save-prod-text').textContent = 'Save Item to Catalog';
+  document.getElementById('btn-delete-prod').classList.add('hidden');
+
   document.getElementById('prod-name').value = '';
+  document.getElementById('prod-barcode').value = '';
   document.getElementById('prod-price').value = '1.50';
   document.getElementById('prod-cost').value = '0.65';
   document.getElementById('prod-stock').value = '48';
@@ -1719,13 +1799,43 @@ function openNewProductModal() {
   openModal('modal-product');
 }
 
+function openEditProductModal(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  document.getElementById('prod-id').value = product.id;
+  document.getElementById('product-modal-title').textContent = `Edit Snack: ${product.name}`;
+  document.getElementById('btn-save-prod-text').textContent = 'Save Snack Changes';
+  document.getElementById('btn-delete-prod').classList.remove('hidden');
+
+  document.getElementById('prod-name').value = product.name || '';
+  document.getElementById('prod-barcode').value = product.barcode || '';
+  document.getElementById('prod-price').value = parseFloat(product.price || 0).toFixed(2);
+  document.getElementById('prod-cost').value = parseFloat(product.cost_price || 0).toFixed(2);
+  document.getElementById('prod-stock').value = product.stock_quantity || 0;
+  document.getElementById('prod-low').value = product.low_stock_threshold || 10;
+  document.getElementById('prod-emoji').value = product.emoji || '🍿';
+  document.getElementById('prod-allergy').value = product.allergy_info || '';
+  document.getElementById('prod-is-open-price').checked = Boolean(product.is_open_price);
+  toggleOpenPriceFields(Boolean(product.is_open_price));
+
+  renderCategories();
+  if (product.category_id) {
+    document.getElementById('prod-category').value = product.category_id;
+  }
+
+  openModal('modal-product');
+}
+
 function openCustomItemModal() {
   openNewProductModal();
 }
 
 async function submitProductForm() {
+  const id = document.getElementById('prod-id').value;
   const name = document.getElementById('prod-name').value.trim();
   const category_id = parseInt(document.getElementById('prod-category').value, 10);
+  const barcode = document.getElementById('prod-barcode').value.trim();
   const emoji = document.getElementById('prod-emoji').value.trim() || '🍪';
   const is_open_price = document.getElementById('prod-is-open-price').checked;
   const price = is_open_price ? 0 : (parseFloat(document.getElementById('prod-price').value) || 1.0);
@@ -1739,30 +1849,56 @@ async function submitProductForm() {
     return;
   }
 
+  const payload = {
+    name,
+    category_id,
+    barcode,
+    emoji,
+    price,
+    cost_price,
+    stock_quantity,
+    low_stock_threshold,
+    allergy_info,
+    is_open_price
+  };
+
   try {
-    const res = await fetch('/api/products', {
-      method: 'POST',
+    const url = id ? `/api/products/${id}` : '/api/products';
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        category_id,
-        emoji,
-        price,
-        cost_price,
-        stock_quantity,
-        low_stock_threshold,
-        allergy_info,
-        is_open_price
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create product');
+    if (!res.ok) throw new Error(data.error || 'Failed to save product');
 
     playSound('beep');
     closeModal('modal-product');
     loadProducts();
-    showToast(`Added "${name}" to catalog! ✨`, 'success');
+    showToast(id ? `Updated "${name}" in catalog! ✨` : `Added "${name}" to catalog! ✨`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleDeleteProduct() {
+  const id = document.getElementById('prod-id').value;
+  if (!id) return;
+  const p = products.find(item => item.id === parseInt(id, 10));
+  const confirmMsg = p ? `Are you sure you want to delete "${p.name}"?` : 'Delete this product?';
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete product');
+
+    closeModal('modal-product');
+    loadProducts();
+    showToast('Product removed from catalog.', 'info');
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -2378,7 +2514,7 @@ function openPrintBadgeModal(studentId) {
 }
 
 // ==========================================
-// RECESS PRE-ORDER QUEUE ("SKIP THE LINE" MODE)
+// ONLINE PRE-ORDER QUEUE ("SKIP THE LINE" MODE)
 // ==========================================
 let preorders = [];
 
@@ -2405,7 +2541,7 @@ function renderPreorders() {
       <div class="col-span-full bg-slate-950 p-12 rounded-3xl border border-slate-800 text-center space-y-3">
         <span class="text-4xl">⏰</span>
         <h3 class="font-heading font-bold text-base text-white">No Pre-Orders in Queue</h3>
-        <p class="text-xs text-slate-400 max-w-sm mx-auto">Students and teachers can submit pre-orders ahead of recess at <a href="/order" target="_blank" class="text-amber-400 underline font-semibold">/order</a></p>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">Students and teachers can submit pre-orders ahead of time at <a href="/order" target="_blank" class="text-amber-400 underline font-semibold">/order</a></p>
       </div>
     `;
     return;
@@ -2858,6 +2994,152 @@ async function loadAdvisorReport() {
   } catch (err) {
     container.innerHTML = `<div class="py-8 text-center text-rose-600 font-bold">Failed to load financial report: ${err.message}</div>`;
   }
+}
+
+// ==========================================
+// STAFF PROFILES & ROLES MANAGEMENT
+// ==========================================
+let staffMembers = [];
+let activeStaffProfile = null;
+
+async function loadStaff() {
+  try {
+    const res = await fetch('/api/staff');
+    staffMembers = await res.json();
+    renderStaffList();
+  } catch (err) {
+    console.error('Failed to load staff members:', err);
+  }
+}
+
+function renderStaffList() {
+  const container = document.getElementById('staff-list-container');
+  if (!container) return;
+
+  if (staffMembers.length === 0) {
+    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No staff members found. Click "+ Add Staff" above.</p>`;
+    return;
+  }
+
+  container.innerHTML = staffMembers.map(s => `
+    <div class="bg-slate-950 p-3.5 rounded-2xl border ${activeStaffProfile && activeStaffProfile.id === s.id ? 'border-purple-500 bg-purple-950/20' : 'border-slate-800'} flex items-center justify-between gap-3 shadow-md">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="text-2xl p-1.5 bg-slate-900 rounded-xl border border-slate-800 shrink-0">${s.emoji || '🧑‍💼'}</span>
+        <div class="min-w-0">
+          <div class="font-bold text-sm text-white flex items-center gap-1.5">
+            <span>${s.name}</span>
+            ${activeStaffProfile && activeStaffProfile.id === s.id ? '<span class="bg-purple-500 text-slate-950 font-extrabold text-[9px] px-1.5 py-0.5 rounded">ACTIVE REGISTER</span>' : ''}
+          </div>
+          <div class="text-xs text-purple-300 font-medium">${s.role || 'Cashier'}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="selectActiveStaff(${s.id})" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white px-2.5 py-1.5 rounded-xl border border-emerald-500/30 text-xs font-bold transition">
+          Switch To
+        </button>
+        <button onclick="openEditStaffModal(${s.id})" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs font-semibold transition">
+          ✏️ Edit
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openStaffModal() {
+  loadStaff();
+  openModal('modal-staff-management');
+}
+
+function openNewStaffModal() {
+  document.getElementById('edit-staff-id').value = '';
+  document.getElementById('staff-edit-modal-title').textContent = 'Add Staff Member';
+  document.getElementById('staff-name-input').value = '';
+  document.getElementById('staff-role-select').value = 'Cashier Volunteer';
+  document.getElementById('staff-emoji-input').value = '🧑‍💼';
+  document.getElementById('staff-pin-input').value = '1234';
+  document.getElementById('btn-delete-staff').classList.add('hidden');
+  openModal('modal-staff-edit');
+}
+
+function openEditStaffModal(staffId) {
+  const staff = staffMembers.find(s => s.id === staffId);
+  if (!staff) return;
+
+  document.getElementById('edit-staff-id').value = staff.id;
+  document.getElementById('staff-edit-modal-title').textContent = `Edit Staff: ${staff.name}`;
+  document.getElementById('staff-name-input').value = staff.name || '';
+  document.getElementById('staff-role-select').value = staff.role || 'Cashier Volunteer';
+  document.getElementById('staff-emoji-input').value = staff.emoji || '🧑‍💼';
+  document.getElementById('staff-pin-input').value = staff.pin || '';
+  document.getElementById('btn-delete-staff').classList.remove('hidden');
+  openModal('modal-staff-edit');
+}
+
+async function submitStaffForm() {
+  const id = document.getElementById('edit-staff-id').value;
+  const name = document.getElementById('staff-name-input').value.trim();
+  const role = document.getElementById('staff-role-select').value;
+  const emoji = document.getElementById('staff-emoji-input').value.trim() || '🧑‍💼';
+  const pin = document.getElementById('staff-pin-input').value.trim() || '1234';
+
+  if (!name) {
+    showToast('Staff name is required', 'error');
+    return;
+  }
+
+  const payload = { name, role, emoji, pin };
+
+  try {
+    const url = id ? `/api/staff/${id}` : '/api/staff';
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save staff profile');
+
+    closeModal('modal-staff-edit');
+    loadStaff();
+    showToast(id ? `Updated ${name}'s profile!` : `Added ${name} to staff team!`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleDeleteStaff() {
+  const id = document.getElementById('edit-staff-id').value;
+  if (!id) return;
+  const s = staffMembers.find(item => item.id === parseInt(id, 10));
+  const confirmMsg = s ? `Delete staff account for ${s.name}?` : 'Delete this staff member?';
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch(`/api/staff/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete staff member');
+
+    closeModal('modal-staff-edit');
+    loadStaff();
+    showToast('Staff member deleted.', 'info');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function selectActiveStaff(staffId) {
+  const staff = staffMembers.find(s => s.id === staffId);
+  if (!staff) return;
+
+  activeStaffProfile = staff;
+  const openCashierInput = document.getElementById('open-cashier-name');
+  if (openCashierInput) openCashierInput.value = staff.name;
+
+  renderStaffList();
+  showToast(`Active cashier switched to: ${staff.name} (${staff.role})! 🧑‍💼`, 'success');
 }
 
 // ==========================================

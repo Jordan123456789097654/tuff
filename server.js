@@ -72,7 +72,7 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category_id, barcode, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active } = req.body;
+    const { name, category_id, barcode, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price, is_active } = req.body;
 
     const result = await db.query(
       `UPDATE products
@@ -81,13 +81,27 @@ app.put('/api/products/:id', async (req, res) => {
            barcode = COALESCE($3, barcode),
            price = COALESCE($4, price),
            cost_price = COALESCE($5, cost_price),
-           low_stock_threshold = COALESCE($6, low_stock_threshold),
-           emoji = COALESCE($7, emoji),
-           allergy_info = COALESCE($8, allergy_info),
-           is_open_price = COALESCE($9, is_open_price),
-           is_active = COALESCE($10, is_active)
-       WHERE id = $11 RETURNING *`,
-      [name, category_id, barcode, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active, id]
+           stock_quantity = COALESCE($6, stock_quantity),
+           low_stock_threshold = COALESCE($7, low_stock_threshold),
+           emoji = COALESCE($8, emoji),
+           allergy_info = COALESCE($9, allergy_info),
+           is_open_price = COALESCE($10, is_open_price),
+           is_active = COALESCE($11, is_active)
+       WHERE id = $12 RETURNING *`,
+      [
+        name,
+        category_id !== undefined ? category_id : null,
+        barcode !== undefined ? barcode : null,
+        price !== undefined ? parseFloat(price) : null,
+        cost_price !== undefined ? parseFloat(cost_price) : null,
+        stock_quantity !== undefined ? parseInt(stock_quantity, 10) : null,
+        low_stock_threshold !== undefined ? parseInt(low_stock_threshold, 10) : null,
+        emoji,
+        allergy_info,
+        is_open_price !== undefined ? Boolean(is_open_price) : null,
+        is_active !== undefined ? Boolean(is_active) : null,
+        id
+      ]
     );
 
     if (result.rows.length === 0) {
@@ -97,6 +111,20 @@ app.put('/api/products/:id', async (req, res) => {
   } catch (err) {
     console.error('Error updating product:', err);
     res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json({ success: true, message: 'Product deleted', product: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting product:', err);
+    res.status(500).json({ error: 'Failed to delete product' });
   }
 });
 
@@ -190,7 +218,7 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// RECESS PRE-ORDERS ("SKIP THE LINE" QUEUE)
+// ONLINE PRE-ORDERS ("SKIP THE LINE" QUEUE)
 // ----------------------------------------------------
 
 app.get('/api/preorders', async (req, res) => {
@@ -290,7 +318,7 @@ const BUILT_IN_DISCOUNTS = [
   { code: 'HONORROLL', name: '10% Honor Roll Discount', type: 'percentage', value: 10 },
   { code: 'TEACHER', name: '20% Teacher & Staff Discount', type: 'percentage', value: 20 },
   { code: 'VOLUNTEER', name: '15% Volunteer Helper Discount', type: 'percentage', value: 15 },
-  { code: 'FRIDAY', name: '$0.50 Friday Recess Promo', type: 'fixed', value: 0.50 },
+  { code: 'FRIDAY', name: '$0.50 Friday Snack Promo', type: 'fixed', value: 0.50 },
   { code: 'CLEARANCE', name: '50% End-of-Day Clearance', type: 'percentage', value: 50 },
   { code: 'FREEPASS', name: '100% Free Teacher Reward Pass', type: 'percentage', value: 100 },
 ];
@@ -437,6 +465,173 @@ app.post('/api/students/:id/recharge', async (req, res) => {
   } catch (err) {
     console.error('Error recharging student:', err);
     res.status(500).json({ error: 'Failed to recharge balance' });
+  }
+});
+
+app.put('/api/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data, punch_card, free_rewards } = req.body;
+
+    const result = await db.query(
+      `UPDATE students
+       SET student_id = COALESCE($1, student_id),
+           name = COALESCE($2, name),
+           grade = COALESCE($3, grade),
+           balance = COALESCE($4, balance),
+           daily_limit = COALESCE($5, daily_limit),
+           allergies = COALESCE($6, allergies),
+           notes = COALESCE($7, notes),
+           photo_data = COALESCE($8, photo_data),
+           punch_card = COALESCE($9, punch_card),
+           free_rewards = COALESCE($10, free_rewards)
+       WHERE id::text = $11::text OR student_id = $11::text RETURNING *`,
+      [
+        student_id ? student_id.trim().toUpperCase() : null,
+        name ? name.trim() : null,
+        grade !== undefined ? grade : null,
+        balance !== undefined ? parseFloat(balance) : null,
+        daily_limit !== undefined ? parseFloat(daily_limit) : null,
+        allergies !== undefined ? allergies : null,
+        notes !== undefined ? notes : null,
+        photo_data !== undefined ? photo_data : null,
+        punch_card !== undefined ? parseInt(punch_card, 10) : null,
+        free_rewards !== undefined ? parseInt(free_rewards, 10) : null,
+        id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student profile not found.' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating student:', err);
+    res.status(500).json({ error: 'Failed to update student profile' });
+  }
+});
+
+app.delete('/api/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query('DELETE FROM students WHERE id::text = $1::text OR student_id = $1::text RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student profile not found.' });
+    }
+    res.json({ success: true, message: 'Student profile deleted', student: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting student:', err);
+    res.status(500).json({ error: 'Failed to delete student profile' });
+  }
+});
+
+// ----------------------------------------------------
+// STAFF & CASHIER PROFILES
+// ----------------------------------------------------
+
+app.get('/api/staff', async (req, res) => {
+  try {
+    const result = await db.query('SELECT id, name, role, emoji, is_active, created_at FROM staff_members ORDER BY is_active DESC, name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching staff:', err);
+    res.status(500).json({ error: 'Failed to fetch staff members' });
+  }
+});
+
+app.post('/api/staff', async (req, res) => {
+  try {
+    const { name, role, pin, emoji } = req.body;
+    if (!name) return res.status(400).json({ error: 'Staff name is required.' });
+
+    const result = await db.query(
+      `INSERT INTO staff_members (name, role, pin, emoji)
+       VALUES ($1, $2, $3, $4) RETURNING id, name, role, emoji, is_active, created_at`,
+      [name.trim(), role || 'Cashier Volunteer', pin || '1234', emoji || '🧑‍💼']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating staff member:', err);
+    res.status(500).json({ error: 'Failed to create staff member' });
+  }
+});
+
+app.put('/api/staff/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, role, pin, emoji, is_active } = req.body;
+
+    const result = await db.query(
+      `UPDATE staff_members
+       SET name = COALESCE($1, name),
+           role = COALESCE($2, role),
+           pin = COALESCE($3, pin),
+           emoji = COALESCE($4, emoji),
+           is_active = COALESCE($5, is_active)
+       WHERE id = $6 RETURNING id, name, role, emoji, is_active, created_at`,
+      [
+        name ? name.trim() : null,
+        role !== undefined ? role : null,
+        pin !== undefined ? pin : null,
+        emoji !== undefined ? emoji : null,
+        is_active !== undefined ? Boolean(is_active) : null,
+        id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found.' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating staff member:', err);
+    res.status(500).json({ error: 'Failed to update staff member' });
+  }
+});
+
+app.delete('/api/staff/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query('DELETE FROM staff_members WHERE id = $1 RETURNING id, name', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found.' });
+    }
+    res.json({ success: true, message: 'Staff member deleted', staff: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting staff member:', err);
+    res.status(500).json({ error: 'Failed to delete staff member' });
+  }
+});
+
+// ----------------------------------------------------
+// INTERACTIVE CUSTOMER DISPLAY POLLS & REACTIONS
+// ----------------------------------------------------
+
+app.get('/api/polls', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM snack_polls ORDER BY votes DESC, id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching polls:', err);
+    res.status(500).json({ error: 'Failed to fetch polls' });
+  }
+});
+
+app.post('/api/polls/vote', async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Option ID is required.' });
+
+    const result = await db.query('UPDATE snack_polls SET votes = votes + 1 WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Poll option not found.' });
+    }
+
+    const allPolls = await db.query('SELECT * FROM snack_polls ORDER BY votes DESC, id ASC');
+    res.json({ success: true, updated: result.rows[0], polls: allPolls.rows });
+  } catch (err) {
+    console.error('Error recording vote:', err);
+    res.status(500).json({ error: 'Failed to record vote' });
   }
 });
 

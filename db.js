@@ -192,7 +192,55 @@ async function initDB() {
         prize_won VARCHAR(150) NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS staff_members (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        role VARCHAR(50) DEFAULT 'Cashier Volunteer',
+        pin VARCHAR(10) DEFAULT '1234',
+        emoji VARCHAR(10) DEFAULT '🧑‍💼',
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS snack_polls (
+        id SERIAL PRIMARY KEY,
+        option_name VARCHAR(100) NOT NULL UNIQUE,
+        emoji VARCHAR(10) DEFAULT '🍿',
+        votes INT DEFAULT 0
+      );
     `);
+
+    // Ensure default staff members exist
+    const staffCheck = await client.query('SELECT COUNT(*) FROM staff_members');
+    if (parseInt(staffCheck.rows[0].count, 10) === 0) {
+      const defaultStaff = [
+        { name: 'Jordan Daniels', role: 'Store Lead & Manager', pin: '1234', emoji: '👑' },
+        { name: 'Alex Taylor', role: 'Cashier Volunteer', pin: '1111', emoji: '🧑‍🎓' },
+        { name: 'Sam Rivera', role: 'Staff Advisor', pin: '9999', emoji: '👨‍🏫' },
+      ];
+      for (const s of defaultStaff) {
+        await client.query('INSERT INTO staff_members (name, role, pin, emoji) VALUES ($1, $2, $3, $4)', [
+          s.name, s.role, s.pin, s.emoji
+        ]);
+      }
+    }
+
+    // Ensure default poll options exist
+    const pollCheck = await client.query('SELECT COUNT(*) FROM snack_polls');
+    if (parseInt(pollCheck.rows[0].count, 10) === 0) {
+      const defaultPolls = [
+        { option_name: 'Takis Blue Heat', emoji: '🌶️', votes: 14 },
+        { option_name: 'Doritos Sweet Chili', emoji: '🧀', votes: 19 },
+        { option_name: 'Prime Ice Pop', emoji: '⚡', votes: 23 },
+        { option_name: 'Sour Patch Watermelon', emoji: '🍉', votes: 18 }
+      ];
+      for (const p of defaultPolls) {
+        await client.query('INSERT INTO snack_polls (option_name, emoji, votes) VALUES ($1, $2, $3)', [
+          p.option_name, p.emoji, p.votes
+        ]);
+      }
+    }
 
     // Ensure default fundraiser campaigns exist
     const fundCheck = await client.query('SELECT COUNT(*) FROM fundraiser_campaigns');
@@ -201,7 +249,7 @@ async function initDB() {
         { name: 'General Student Activity Fund', goal: 1000.00, desc: 'School-wide activities, pep rallies, student store operations' },
         { name: '8th Grade Class DC / End of Year Trip', goal: 2500.00, desc: 'Subsidizing travel tickets and meals for 8th grade students' },
         { name: 'Robotics & STEM Club Competition Fund', goal: 750.00, desc: 'Sensors, motors, and tournament registration fees' },
-        { name: 'Athletics & Gym Equipment', goal: 600.00, desc: 'New basketballs, recess gear, and team jerseys' },
+        { name: 'Athletics & Gym Equipment', goal: 600.00, desc: 'New sports gear, basketballs, and team jerseys' },
       ];
       for (const fund of defaultFunds) {
         await client.query('INSERT INTO fundraiser_campaigns (name, goal_amount, description) VALUES ($1, $2, $3)', [
