@@ -299,7 +299,7 @@ app.post('/api/checkout', async (req, res) => {
   try {
     const {
       cart,
-      payment_method, // 'cash', 'student_account', 'student_cash', 'reward_token', etc.
+      payment_method,
       student_id,
       use_reward = false,
       discount = 0,
@@ -336,7 +336,6 @@ app.post('/api/checkout', async (req, res) => {
         });
       }
 
-      // Use dynamic custom price if open price or overridden by cashier, else standard price
       const unitPrice = (item.custom_price !== undefined && !isNaN(parseFloat(item.custom_price)))
         ? parseFloat(item.custom_price)
         : parseFloat(product.price);
@@ -742,6 +741,11 @@ app.get('/api/analytics/export', async (req, res) => {
     console.error('Error generating export:', err);
     res.status(500).json({ error: 'Failed to export CSV' });
   }
+});
+
+// View-Only Portal Routes
+app.get(['/portal', '/balance', '/student'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'portal.html'));
 });
 
 app.get('*', (req, res) => {
