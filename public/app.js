@@ -4275,7 +4275,7 @@ function initPOSThemeParticles(theme) {
       swayOffset: Math.random() * Math.PI * 2,
       rotation: Math.random() * Math.PI * 2,
       vRot: (Math.random() - 0.5) * 0.02,
-      opacity: Math.random() * 0.5 + 0.3
+      opacity: Math.random() * 0.25 + 0.22
     });
   }
 
