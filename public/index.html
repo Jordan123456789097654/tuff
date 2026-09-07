@@ -130,6 +130,12 @@
         <span class="hidden md:inline">Feature Config</span>
       </button>
 
+      <!-- Shift Drawer Quick Indicator Badge -->
+      <div onclick="switchTab('shifts')" id="top-shift-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition cursor-pointer" title="Cash Drawer Shift Status (Click to view)">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="top-shift-text" class="hidden sm:inline">Shift Open</span>
+      </div>
+
       <!-- Sound FX Toggle -->
       <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition" title="Toggle Sound FX">
         <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>

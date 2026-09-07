@@ -450,12 +450,15 @@ async function loadShiftStatus() {
     const badge = document.getElementById('top-shift-badge');
     const text = document.getElementById('top-shift-text');
 
-    if (activeShift) {
-      badge.className = 'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition';
-      text.textContent = 'Shift Open';
-    } else {
-      badge.className = 'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 font-semibold hover:bg-rose-500/20 transition';
-      text.textContent = 'Shift Closed';
+    if (badge) {
+      if (activeShift) {
+        badge.className = 'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition cursor-pointer';
+      } else {
+        badge.className = 'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 font-semibold hover:bg-rose-500/20 transition cursor-pointer';
+      }
+    }
+    if (text) {
+      text.textContent = activeShift ? 'Shift Open' : 'Shift Closed';
     }
   } catch (err) {
     console.error('Failed to load shift status', err);
