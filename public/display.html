@@ -1898,17 +1898,17 @@
   </div>
 
   <!-- ==================================================== -->
-  <!-- ALWAYS-ON LIVE SECURITY CCTV MONITORING WIDGET -->
+  <!-- ALWAYS-ON LIVE SECURITY CCTV & AUDIO MONITORING WIDGET -->
   <!-- ==================================================== -->
-  <div id="display-security-cctv" class="fixed bottom-4 left-4 z-40 bg-slate-950/90 border-2 border-red-500/70 rounded-2xl shadow-2xl p-2.5 backdrop-blur-md max-w-[210px] sm:max-w-[230px] space-y-1.5 transition-all">
+  <div id="display-security-cctv" class="fixed bottom-4 left-4 z-40 bg-slate-950/95 border-2 border-red-500/80 rounded-2xl shadow-2xl p-2.5 backdrop-blur-md max-w-[210px] sm:max-w-[240px] space-y-1.5 transition-all">
     <div class="flex items-center justify-between text-[10px] font-extrabold text-red-400">
       <div class="flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-        <span>🔴 LIVE CCTV</span>
+        <span>🔴 LIVE CCTV + AUDIO</span>
       </div>
       <div class="flex items-center gap-1">
-        <button onclick="recordDisplayCctvClip()" class="text-rose-400 hover:text-white px-1 font-mono font-bold bg-rose-950/80 border border-rose-500/40 rounded text-[9px]" title="Save 5s Clip">
-          📹 Clip
+        <button onclick="recordDisplayCctvClip()" class="text-rose-300 hover:text-white px-1.5 py-0.5 font-mono font-bold bg-rose-950/90 border border-rose-500/50 rounded text-[9px] flex items-center gap-0.5 shadow" title="Record 10-Second Video + Audio Clip">
+          <span>📹 A/V Clip</span>
         </button>
         <button onclick="toggleSecurityCctv()" class="text-slate-400 hover:text-white" title="Minimize / Expand">
           <i data-lucide="minus" class="w-3 h-3" id="cctv-toggle-icon"></i>
@@ -1918,13 +1918,28 @@
     <div id="cctv-viewport-container" class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-slate-800 space-y-1">
       <video id="cctv-live-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
       <canvas id="display-cctv-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-      <div class="absolute top-1 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-red-400 font-bold flex items-center gap-1">
+      <div class="absolute top-1 left-1.5 bg-black/80 px-1.5 py-0.5 rounded text-[8px] font-mono text-red-400 font-bold flex items-center gap-1">
         <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-        <span>REC</span>
+        <span>REC A/V</span>
       </div>
       <div id="display-cctv-tag" class="absolute top-1 right-1.5 bg-emerald-950/90 border border-emerald-500/50 px-1 py-0.2 rounded text-[7px] font-mono text-emerald-300 font-bold">
         NO SUBJECT
       </div>
+
+      <!-- Live Audio Recording Status & Decibel Indicator Overlay -->
+      <div class="absolute bottom-6 left-1.5 right-1.5 flex items-center justify-between text-[8px] font-mono px-1 py-0.5 rounded bg-black/70 border border-slate-700/60">
+        <span id="display-cctv-mic-label" class="text-emerald-400 flex items-center gap-1 font-bold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          🎙️ MIC REC
+        </span>
+        <span id="display-cctv-db-text" class="text-slate-300 font-bold">0 dB</span>
+      </div>
+
+      <!-- Live Audio Volume Wave/Level Bar -->
+      <div class="absolute bottom-5 left-1.5 right-1.5 h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div id="display-cctv-audio-bar" class="h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 transition-all duration-100" style="width: 0%;"></div>
+      </div>
+
       <div id="cctv-timestamp" class="absolute bottom-1 right-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-white">08:00:00</div>
     </div>
     
@@ -1936,7 +1951,7 @@
     </div>
 
     <div class="text-[9px] text-slate-400 text-center font-medium leading-tight">
-      Jordan's Snack Shack Security & Loss Prevention
+      Jordan's Snack Shack Security & Loss Prevention (Audio/Video 1-Hr DVR)
     </div>
   </div>
 
@@ -4148,10 +4163,22 @@
     }
 
     function initCctvAudioAnalysis(stream) {
+      const audioBar = document.getElementById('display-cctv-audio-bar');
+      const dbText = document.getElementById('display-cctv-db-text');
+      const micLabel = document.getElementById('display-cctv-mic-label');
+
       if (!stream || !stream.getAudioTracks().length) {
         currentDisplayAudioLevel = 0;
+        if (micLabel) micLabel.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> 🎙️ NO MIC`;
+        if (audioBar) audioBar.style.width = '0%';
+        if (dbText) dbText.textContent = 'Muted';
         return;
       }
+
+      if (micLabel) {
+        micLabel.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🎙️ MIC REC ON`;
+      }
+
       try {
         const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtxClass) return;
@@ -4176,7 +4203,19 @@
           }
           const avg = sum / sampleData.length;
           currentDisplayAudioLevel = Math.min(100, Math.round((avg / 128) * 100));
-        }, 150);
+
+          // Update live UI audio meter on 2nd display
+          if (audioBar) {
+            audioBar.style.width = `${currentDisplayAudioLevel}%`;
+          }
+          if (dbText) {
+            const dbEstimate = Math.round(35 + (currentDisplayAudioLevel * 0.55));
+            dbText.textContent = `${dbEstimate} dB`;
+            dbText.className = currentDisplayAudioLevel > 70 
+              ? 'text-rose-400 font-bold animate-pulse' 
+              : 'text-slate-300 font-bold';
+          }
+        }, 120);
       } catch(e) {
         console.warn('CCTV Audio analysis notice:', e);
       }
@@ -4195,13 +4234,18 @@
           : { facingMode: 'user', width: 320, height: 320 };
 
         try {
-          // Attempt Video + Microphone Audio
+          // Attempt High-Quality Video + Active Microphone Audio
           cctvStream = await navigator.mediaDevices.getUserMedia({
             video: videoConstraints,
-            audio: { echoCancellation: true, noiseSuppression: true }
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
           });
         } catch(err) {
-          // Fallback to video only if mic is unavailable or blocked
+          // Fallback to video only if microphone is unavailable or blocked by browser permission
+          console.warn('Audio capture notice on CCTV, falling back to video:', err.message);
           try {
             cctvStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
           } catch(err2) {
@@ -4448,15 +4492,21 @@
     async function recordDisplayCctvClip() {
       if (isDisplayRecordingClip) return;
       if (!cctvStream) await startSecurityCctv();
-      if (!cctvStream) return alert('Camera not available');
+      if (!cctvStream) return alert('Camera/Mic not available');
 
       try {
         displayRecordedChunks = [];
         isDisplayRecordingClip = true;
+        const hasAudio = cctvStream.getAudioTracks().length > 0;
+        
         try {
           displayMediaRecorder = new MediaRecorder(cctvStream, { mimeType: 'video/webm;codecs=vp8,opus' });
         } catch(e) {
-          displayMediaRecorder = new MediaRecorder(cctvStream);
+          try {
+            displayMediaRecorder = new MediaRecorder(cctvStream, { mimeType: 'video/webm' });
+          } catch(e2) {
+            displayMediaRecorder = new MediaRecorder(cctvStream);
+          }
         }
 
         displayMediaRecorder.ondataavailable = (e) => {
@@ -4468,10 +4518,11 @@
           const blob = new Blob(displayRecordedChunks, { type: 'video/webm' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.download = `Snack_Shack_CCTV_5s_Clip_${Date.now()}.webm`;
+          const timeStr = new Date().toISOString().slice(11, 19).replace(/:/g, '-');
+          a.download = `Snack_Shack_Display_CCTV_AudioVideo_${timeStr}.webm`;
           a.href = url;
           a.click();
-          alert('📹 5-second CCTV clip downloaded!');
+          alert(`📹 10-Second CCTV Video + Audio Recording downloaded!\n(Audio Track: ${hasAudio ? 'Included ✅' : 'Muted/Unavailable ⚠️'})`);
         };
 
         displayMediaRecorder.start();
@@ -4479,7 +4530,7 @@
           if (displayMediaRecorder && displayMediaRecorder.state !== 'inactive') {
             displayMediaRecorder.stop();
           }
-        }, 5000);
+        }, 10000); // 10 seconds clip
       } catch (err) {
         isDisplayRecordingClip = false;
         console.warn('Clip recorder notice:', err);

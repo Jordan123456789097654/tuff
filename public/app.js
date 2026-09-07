@@ -4712,6 +4712,40 @@ function updateCustomerCctvAudioHud(audioLevel = 0, hasAudio = true) {
 }
 
 // Handle incoming frame from 2nd display camera
+function updateCustomerCctvAudioHud(audioLevel, hasAudio) {
+  const bar = document.getElementById('cctv-audio-bar');
+  const label = document.getElementById('cctv-audio-status-label');
+  const icon = document.getElementById('cctv-audio-icon');
+
+  const level = typeof audioLevel === 'number' ? Math.max(0, Math.min(100, audioLevel)) : 0;
+
+  if (bar) {
+    bar.style.width = `${level}%`;
+    if (level > 70) {
+      bar.className = 'h-full bg-rose-500 rounded-full transition-all duration-100';
+    } else if (level > 40) {
+      bar.className = 'h-full bg-amber-400 rounded-full transition-all duration-100';
+    } else {
+      bar.className = 'h-full bg-emerald-400 rounded-full transition-all duration-100';
+    }
+  }
+
+  if (label) {
+    if (!hasAudio) {
+      label.textContent = 'NO MIC';
+      label.className = 'text-[9px] font-mono text-slate-400 font-bold';
+      if (icon) icon.textContent = '🔇';
+    } else {
+      const db = Math.round(35 + (level * 0.55));
+      label.textContent = `${db} dB • REC`;
+      label.className = level > 70 
+        ? 'text-[9px] font-mono text-rose-400 font-bold animate-pulse' 
+        : 'text-[9px] font-mono text-emerald-400 font-bold';
+      if (icon) icon.textContent = '🎙️';
+    }
+  }
+}
+
 function handleIncomingCustomerCctvPacket(packet) {
   if (!packet) return;
   lastCustomerFrameTime = Date.now();
