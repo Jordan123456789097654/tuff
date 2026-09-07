@@ -351,7 +351,7 @@ app.get('/api/students', async (req, res) => {
 app.get('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await db.query('SELECT * FROM students WHERE id = $1 OR student_id = $1', [id]);
+    const result = await db.query('SELECT * FROM students WHERE id::text = $1::text OR student_id = $1::text', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Student not found' });
     }
@@ -489,7 +489,7 @@ app.post('/api/checkout', async (req, res) => {
 
     let rewardUsed = false;
     if (use_reward && student_id) {
-      const stuRewardCheck = await client.query('SELECT free_rewards FROM students WHERE id = $1 OR student_id = $1 FOR UPDATE', [student_id]);
+      const stuRewardCheck = await client.query('SELECT free_rewards FROM students WHERE id::text = $1::text OR student_id = $1::text FOR UPDATE', [student_id]);
       if (stuRewardCheck.rows.length > 0 && stuRewardCheck.rows[0].free_rewards > 0) {
         const maxPrice = Math.max(...preparedItems.map(i => i.unit_price));
         discountAmt = Math.min(subtotal, discountAmt + maxPrice);
@@ -509,7 +509,7 @@ app.post('/api/checkout', async (req, res) => {
 
     if (student_id) {
       const studentRes = await client.query(
-        'SELECT * FROM students WHERE id = $1 OR student_id = $1 FOR UPDATE',
+        'SELECT * FROM students WHERE id::text = $1::text OR student_id = $1::text FOR UPDATE',
         [student_id]
       );
 
