@@ -17,6 +17,50 @@ let soundEnabled = true;
 // Discount State
 let activeDiscount = null; // { name: string, type: 'pct' | 'fixed', value: number, code?: string }
 
+// Display Synchronization (BroadcastChannel + SSE)
+const displayChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('snack_display_sync') : null;
+
+function syncCartToDisplay() {
+  const { subtotal, comboDiscount, discountAmount, discountLabel, total } = calculateTotals();
+  const payload = {
+    state: (cart.length === 0 && !selectedStudentForCheckout) ? 'idle' : 'active',
+    cart: cart,
+    subtotal: subtotal,
+    comboDiscount: comboDiscount,
+    discountAmount: discountAmount,
+    discountLabel: discountLabel,
+    total: total,
+    student: selectedStudentForCheckout || null
+  };
+
+  if (displayChannel) {
+    try { displayChannel.postMessage(payload); } catch(e){}
+  }
+
+  fetch('/api/display/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
+}
+
+function celebrateDisplay(order) {
+  const payload = {
+    state: 'celebrate',
+    order: order
+  };
+
+  if (displayChannel) {
+    try { displayChannel.postMessage(payload); } catch(e){}
+  }
+
+  fetch('/api/display/celebrate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order })
+  }).catch(() => {});
+}
+
 // Open Price State
 let pendingOpenPriceProduct = null;
 
@@ -628,6 +672,9 @@ function updateCartTotals() {
 
   document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
   document.getElementById('cash-btn-total-preview').textContent = `$${total.toFixed(2)}`;
+
+  // Sync Customer Facing Second Screen
+  syncCartToDisplay();
 }
 
 // ==========================================
@@ -805,6 +852,7 @@ async function submitCashCheckout() {
     closeModal('modal-cash-checkout');
     clearCart();
     loadProducts();
+    celebrateDisplay(data.order);
     showReceiptModal(data.order);
     showToast(`Order ${data.order.order_number} completed! 🍿`, 'success');
   } catch (err) {
@@ -973,6 +1021,7 @@ function selectStudentForCheckout(studentId) {
 
   playSound('beep');
   lucide.createIcons();
+  syncCartToDisplay();
 }
 
 async function submitStudentCheckout(paymentType) {
@@ -1012,6 +1061,7 @@ async function submitStudentCheckout(paymentType) {
     clearCart();
     loadProducts();
     loadStudents();
+    celebrateDisplay(data.order);
     showReceiptModal(data.order);
   } catch (err) {
     showToast(err.message, 'error');
@@ -1047,6 +1097,7 @@ async function quickOtherCheckout(methodName) {
     playSound('chaching');
     clearCart();
     loadProducts();
+    celebrateDisplay(data.order);
     showReceiptModal(data.order);
     showToast(`Order completed via ${methodName}! 🍿`, 'success');
   } catch (err) {

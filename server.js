@@ -873,7 +873,94 @@ app.get('/api/analytics/export', async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// CUSTOMER-FACING SECOND SCREEN (/display)
+// ----------------------------------------------------
+let displayState = {
+  state: 'idle', // 'idle' | 'active' | 'celebrate'
+  cart: [],
+  subtotal: 0,
+  comboDiscount: 0,
+  discountAmount: 0,
+  discountLabel: '',
+  total: 0,
+  student: null,
+  order: null,
+  updatedAt: Date.now()
+};
+
+let displaySseClients = [];
+
+function notifyDisplayClients() {
+  const payload = `data: ${JSON.stringify(displayState)}\n\n`;
+  displaySseClients.forEach(client => {
+    try {
+      client.write(payload);
+    } catch(e) {}
+  });
+}
+
+app.get('/api/display/state', (req, res) => {
+  res.json(displayState);
+});
+
+app.post('/api/display/update', (req, res) => {
+  const { state = 'active', cart = [], subtotal = 0, comboDiscount = 0, discountAmount = 0, discountLabel = '', total = 0, student = null } = req.body;
+  displayState = {
+    state: (!cart || cart.length === 0) && !student ? 'idle' : state,
+    cart: cart || [],
+    subtotal: parseFloat(subtotal) || 0,
+    comboDiscount: parseFloat(comboDiscount) || 0,
+    discountAmount: parseFloat(discountAmount) || 0,
+    discountLabel: discountLabel || '',
+    total: parseFloat(total) || 0,
+    student: student || null,
+    order: null,
+    updatedAt: Date.now()
+  };
+  notifyDisplayClients();
+  res.json({ success: true, displayState });
+});
+
+app.post('/api/display/celebrate', (req, res) => {
+  const { order } = req.body;
+  displayState = {
+    state: 'celebrate',
+    cart: [],
+    subtotal: 0,
+    comboDiscount: 0,
+    discountAmount: 0,
+    discountLabel: '',
+    total: order ? parseFloat(order.total) : 0,
+    student: null,
+    order: order || null,
+    updatedAt: Date.now()
+  };
+  notifyDisplayClients();
+  res.json({ success: true, displayState });
+});
+
+app.get('/api/display/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Send initial state immediately
+  res.write(`data: ${JSON.stringify(displayState)}\n\n`);
+
+  displaySseClients.push(res);
+
+  req.on('close', () => {
+    displaySseClients = displaySseClients.filter(client => client !== res);
+  });
+});
+
 // Routing
+app.get(['/display', '/customer-display', '/screen'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'display.html'));
+});
+
 app.get(['/portal', '/balance', '/student'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'portal.html'));
 });
