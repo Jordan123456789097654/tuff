@@ -50,11 +50,17 @@ npm start
 ```
 
 ### 3. Open in Browser
-Visit [http://localhost:3000](http://localhost:3000) in Chrome, Edge, Safari, iPad, or Chromebook.
+- **Live Online:** [https://jordanssnackshack.onrender.com](https://jordanssnackshack.onrender.com)
+- **Local Dev:** [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 🌐 Deploy to the Web (Free & 1-Click)
+## 🌐 Live Deployment
+- **Main POS Register:** [https://jordanssnackshack.onrender.com](https://jordanssnackshack.onrender.com)
+- **Customer Facing Display & Trivia:** [https://jordanssnackshack.onrender.com/display](https://jordanssnackshack.onrender.com/display)
+- **SOP Manual:** [https://jordanssnackshack.onrender.com/sop](https://jordanssnackshack.onrender.com/sop)
+- **Pre-Order Menu:** [https://jordanssnackshack.onrender.com/order](https://jordanssnackshack.onrender.com/order)
+- **Student Balance Portal:** [https://jordanssnackshack.onrender.com/portal](https://jordanssnackshack.onrender.com/portal)
 
 ### Option A: Deploy on **Render** (Recommended)
 1. Push this repository to GitHub.

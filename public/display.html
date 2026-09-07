@@ -5275,7 +5275,8 @@
       const orderLabel = document.getElementById('mobile-receipt-order-label');
       if (!modal || !qrImg) return;
 
-      const receiptUrl = `${window.location.origin}/receipt/${orderNumber}`;
+      const defaultOrigin = (window.location.origin && !window.location.origin.includes('null') && !window.location.origin.startsWith('file')) ? window.location.origin : 'https://jordanssnackshack.onrender.com';
+      const receiptUrl = `${defaultOrigin}/receipt/${orderNumber}`;
       qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(receiptUrl)}`;
       if (orderLabel) orderLabel.textContent = `ORDER #${orderNumber}`;
 

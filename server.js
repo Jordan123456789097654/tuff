@@ -2988,23 +2988,21 @@ app.get('/receipt/:orderNumber', (req, res) => {
 });
 
 app.get('/api/network-info', (req, res) => {
-  const nets = os.networkInterfaces();
-  const ips = [];
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
-        ips.push(net.address);
-      }
-    }
-  }
-  const primaryIp = ips[0] || 'localhost';
+  const host = req.get('host') || 'jordanssnackshack.onrender.com';
+  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+  const baseUrl = isLocal ? `http://${host}` : `https://${host}`;
+  const prodUrl = 'https://jordanssnackshack.onrender.com';
+  const effectiveBase = host.includes('render.com') ? prodUrl : baseUrl;
+
   res.json({
-    primaryIp,
-    ips,
+    primaryIp: host,
+    baseUrl: effectiveBase,
     port: PORT,
-    displayUrl: `http://${primaryIp}:${PORT}/display`,
-    orderUrl: `http://${primaryIp}:${PORT}/order`,
-    portalUrl: `http://${primaryIp}:${PORT}/portal`
+    displayUrl: `${effectiveBase}/display`,
+    orderUrl: `${effectiveBase}/order`,
+    portalUrl: `${effectiveBase}/portal`,
+    sopUrl: `${effectiveBase}/sop`,
+    productionUrl: prodUrl
   });
 });
 

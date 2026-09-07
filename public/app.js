@@ -4509,14 +4509,16 @@ async function openPairDisplayModal() {
     const urlInput = document.getElementById('pair-display-url-input');
     const qrImg = document.getElementById('pair-qr-image');
     
-    const displayUrl = data.displayUrl || `http://${window.location.hostname || 'localhost'}:${window.location.port || 3000}/display`;
+    const defaultOrigin = (window.location.origin && !window.location.origin.includes('null')) ? window.location.origin : 'https://jordanssnackshack.onrender.com';
+    const displayUrl = data.displayUrl || `${defaultOrigin}/display`;
     if (urlInput) urlInput.value = displayUrl;
     if (qrImg) {
       qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(displayUrl)}`;
     }
   } catch (err) {
     console.warn('Network info fetch fallback:', err);
-    const fallbackUrl = `${window.location.origin}/display`;
+    const defaultOrigin = (window.location.origin && !window.location.origin.includes('null')) ? window.location.origin : 'https://jordanssnackshack.onrender.com';
+    const fallbackUrl = `${defaultOrigin}/display`;
     const urlInput = document.getElementById('pair-display-url-input');
     const qrImg = document.getElementById('pair-qr-image');
     if (urlInput) urlInput.value = fallbackUrl;
