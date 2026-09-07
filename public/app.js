@@ -27,10 +27,31 @@ if (displayChannel) {
   displayChannel.onmessage = (event) => {
     if (event.data && event.data.type === 'student_face_identified') {
       handleStudentFaceIdentifiedFromDisplay(event.data.student);
+    } else if (event.data && event.data.type === 'student_registered') {
+      handleStudentRegisteredFromDisplay(event.data.student);
     } else if (event.data && event.data.type === 'stealth_mode') {
       setStealthMode(event.data.active, false);
     }
   };
+}
+
+// Connect SSE on POS for cross-device events
+if (typeof EventSource !== 'undefined') {
+  try {
+    const posEvtSource = new EventSource('/api/display/events');
+    posEvtSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'student_face_identified') {
+          handleStudentFaceIdentifiedFromDisplay(data.student);
+        } else if (data.type === 'student_registered') {
+          handleStudentRegisteredFromDisplay(data.student);
+        } else if (data.type === 'stealth_mode') {
+          setStealthMode(data.active, false);
+        }
+      } catch(e){}
+    };
+  } catch(e){}
 }
 
 function handleStudentFaceIdentifiedFromDisplay(student) {
@@ -40,6 +61,15 @@ function handleStudentFaceIdentifiedFromDisplay(student) {
   openStudentCheckoutModal();
   selectStudentForCheckout(student.id);
   showToast(`👤 Face ID Identified from 2nd Monitor: ${student.name}! ($${parseFloat(student.balance || 0).toFixed(2)})`, 'success');
+}
+
+function handleStudentRegisteredFromDisplay(student) {
+  if (!student) return;
+  playSound('chaching');
+  showToast(`🎉 New Student Registered from 2nd Screen: ${student.name} (${student.student_id})!`, 'success');
+  if (typeof loadStudents === 'function') {
+    loadStudents();
+  }
 }
 
 function getActiveFundraiser() {

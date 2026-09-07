@@ -396,14 +396,18 @@ app.get('/api/students/:id', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   try {
-    const { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data } = req.body;
-    if (!student_id || !name) {
-      return res.status(400).json({ error: 'Student ID and name are required.' });
+    let { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data, birthday } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Student name is required.' });
+    }
+
+    if (!student_id || !student_id.trim()) {
+      student_id = `STU-${Math.floor(10000 + Math.random() * 90000)}`;
     }
 
     const result = await db.query(
-      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards, photo_data)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, $8) RETURNING *`,
+      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards, photo_data, birthday)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 0, $8, $9) RETURNING *`,
       [
         student_id.trim().toUpperCase(),
         name.trim(),
@@ -412,13 +416,25 @@ app.post('/api/students', async (req, res) => {
         parseFloat(daily_limit) || 10.00,
         allergies || '',
         notes || '',
-        photo_data || ''
+        photo_data || '',
+        birthday || ''
       ]
     );
-    res.status(201).json(result.rows[0]);
+
+    const newStudent = result.rows[0];
+
+    // Broadcast new registration to POS and all 2nd displays
+    try {
+      broadcastToDisplayClients({
+        type: 'student_registered',
+        student: newStudent
+      });
+    } catch(e){}
+
+    res.status(201).json(newStudent);
   } catch (err) {
     if (err.code === '23505') {
-      return res.status(400).json({ error: 'Student ID already exists.' });
+      return res.status(400).json({ error: 'Student ID already exists. Please choose a different ID or auto-generate one.' });
     }
     console.error('Error creating student:', err);
     res.status(500).json({ error: 'Failed to create student' });

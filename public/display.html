@@ -146,6 +146,12 @@
         <span class="hidden sm:inline">Face ID</span>
       </button>
 
+      <!-- Student Self-Registration Trigger -->
+      <button id="display-btn-register" onclick="openDisplayRegisterModal()" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Register required student account & take face photo">
+        <span>📝</span>
+        <span class="hidden sm:inline">Register Pass</span>
+      </button>
+
       <!-- Student Balance Checker Trigger -->
       <button id="display-btn-balance" onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>💳</span>
@@ -247,12 +253,18 @@
           Order snacks, cold drinks & treats at the register window.
         </p>
 
-        <!-- Student Face ID Quick Action on 2nd Screen -->
-        <div class="pt-2">
-          <button onclick="openDisplayFaceScanner()" class="inline-flex items-center gap-2.5 bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border-2 border-blue-500/50 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold shadow-xl shadow-blue-900/30 transition transform hover:scale-105 active:scale-95">
+        <!-- Student Face ID & Account Registration Quick Actions on 2nd Screen -->
+        <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+          <button onclick="openDisplayFaceScanner()" class="inline-flex items-center gap-2.5 bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border-2 border-blue-500/50 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold shadow-xl shadow-blue-900/30 transition transform hover:scale-105 active:scale-95">
             <span class="text-lg">👤</span>
-            <span>Scan My Face ID for Pass & Rewards</span>
+            <span>Scan My Face ID</span>
             <span class="bg-blue-500/30 text-blue-200 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border border-blue-400/30">Camera Ready</span>
+          </button>
+
+          <button onclick="openDisplayRegisterModal()" class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-black shadow-xl shadow-emerald-900/30 transition transform hover:scale-105 active:scale-95">
+            <span class="text-lg">📝</span>
+            <span>New Student? Register Account & Face Photo</span>
+            <span class="bg-slate-950/20 text-slate-950 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">Required</span>
           </button>
         </div>
       </div>
@@ -1051,6 +1063,266 @@
           Cancel
         </button>
       </div>
+
+      <!-- Jump to Registration Button if not registered -->
+      <div class="pt-2 border-t border-slate-800 w-full text-center">
+        <button onclick="closeDisplayFaceScanner(); openDisplayRegisterModal();" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center justify-center gap-1.5 mx-auto">
+          <span>✨ Don't have an account yet? Tap here to Register</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 📝 STUDENT SELF-REGISTRATION & BIOMETRIC FACE CAPTURE -->
+  <!-- ==================================================== -->
+  <div id="modal-display-register" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-emerald-500/60 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto">
+      <button onclick="closeDisplayRegisterModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3.5 border-b border-slate-800 pb-4">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl font-bold">
+          📝
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="font-heading font-extrabold text-xl sm:text-2xl text-white">Student Account Registration</h3>
+            <span class="text-[10px] uppercase font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">Required</span>
+          </div>
+          <p class="text-xs text-slate-400">Register your pass to earn loyalty rewards, free snacks, and enable instant Face ID checkout!</p>
+        </div>
+      </div>
+
+      <!-- Registration Form Area (Hidden on Success) -->
+      <div id="display-reg-form-container" class="space-y-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          
+          <!-- Left Column: Personal Information -->
+          <div class="space-y-4 text-left">
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">
+                Student Full Name <span class="text-rose-400">*</span>
+              </label>
+              <input
+                type="text"
+                id="reg-student-name"
+                placeholder="e.g. Jordan Daniels"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+              />
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-slate-300">
+                  Student ID / Lunch # <span class="text-rose-400">*</span>
+                </label>
+                <button type="button" onclick="generateRandomStudentId()" class="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1">
+                  <span>🎲 Auto-Generate ID</span>
+                </button>
+              </div>
+              <input
+                type="text"
+                id="reg-student-id"
+                placeholder="e.g. 10842 or STU-8821"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-amber-300 uppercase focus:outline-none focus:border-emerald-500 transition"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-slate-300 block mb-1">Grade Level</label>
+                <select id="reg-student-grade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+                  <option value="6th Grade">6th Grade</option>
+                  <option value="7th Grade">7th Grade</option>
+                  <option value="8th Grade">8th Grade</option>
+                  <option value="9th Grade" selected>9th Grade</option>
+                  <option value="10th Grade">10th Grade</option>
+                  <option value="11th Grade">11th Grade</option>
+                  <option value="12th Grade">12th Grade</option>
+                  <option value="Staff / Faculty">Staff / Faculty</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-slate-300 block mb-1">
+                  Birthday (MM-DD) 🎂
+                </label>
+                <input
+                  type="text"
+                  id="reg-student-birthday"
+                  placeholder="e.g. 09-15"
+                  maxlength="5"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-pink-300 focus:outline-none focus:border-pink-500 transition"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Favorite Snack / Dietary Allergies (Optional)</label>
+              <input
+                type="text"
+                id="reg-student-notes"
+                placeholder="e.g. Takis Blue Heat / Peanut Free"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+              />
+            </div>
+
+            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-[11px] text-emerald-300 space-y-1">
+              <strong class="flex items-center gap-1">
+                <span>🎁</span> Welcome Bonus:
+              </strong>
+              <p class="text-slate-400 text-[10px]">
+                You will receive <strong>1 FREE Loyalty Stamp</strong> automatically upon registration! (10 stamps = 1 Free Snack).
+              </p>
+            </div>
+          </div>
+
+          <!-- Right Column: Biometric Face Photo Capture -->
+          <div class="space-y-3 text-center flex flex-col items-center">
+            <div class="flex items-center justify-between w-full">
+              <label class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <span>📸</span>
+                <span>Face Photo ID <span class="text-rose-400">*</span></span>
+              </label>
+              <button type="button" onclick="switchDisplayRegCamera()" id="btn-switch-reg-cam" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1">
+                <span>🔄 Switch Cam</span>
+              </button>
+            </div>
+
+            <!-- Viewport Container -->
+            <div class="relative w-56 h-56 rounded-3xl overflow-hidden border-2 border-emerald-500/50 bg-slate-950 shadow-inner flex items-center justify-center">
+              <video id="display-reg-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+              
+              <!-- Oval Silhouette Overlay -->
+              <div id="display-reg-guide-overlay" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-40 h-48 rounded-[50%] border-2 border-dashed border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.3)]"></div>
+              </div>
+
+              <!-- Photo Preview Container -->
+              <div id="display-reg-photo-preview" class="hidden absolute inset-0 bg-slate-950 flex flex-col items-center justify-center">
+                <img id="display-reg-preview-img" src="" class="w-full h-full object-cover" alt="Captured Face" />
+                <div class="absolute bottom-2 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-emerald-400 font-bold border border-emerald-500/40">
+                  ✅ Photo Captured
+                </div>
+              </div>
+
+              <!-- 3-2-1 Countdown Badge -->
+              <div id="display-reg-countdown" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-5xl font-heading font-black text-amber-400 animate-ping">
+                3
+              </div>
+
+              <!-- Camera Flash Effect -->
+              <div id="display-reg-flash" class="hidden absolute inset-0 bg-white z-20"></div>
+
+              <canvas id="display-reg-canvas" class="hidden"></canvas>
+            </div>
+
+            <!-- Snap / Retake Buttons -->
+            <div class="w-full space-y-1.5">
+              <button type="button" onclick="snapDisplayRegPhoto()" id="btn-snap-reg-photo" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-md shadow-emerald-900/30 flex items-center justify-center gap-2 transition active:scale-95">
+                <i data-lucide="camera" class="w-4 h-4"></i>
+                <span>Snap Face Photo</span>
+              </button>
+
+              <button type="button" onclick="retakeDisplayRegPhoto()" id="btn-retake-reg-photo" class="hidden w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Retake Photo</span>
+              </button>
+            </div>
+
+            <p class="text-[10px] text-slate-500">
+              Center your face inside the frame and look directly at the lens.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Submit & Cancel Buttons -->
+        <div class="pt-3 border-t border-slate-800 flex gap-3">
+          <button type="button" onclick="submitDisplayRegistration()" id="btn-submit-reg" class="flex-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black py-3.5 rounded-2xl text-sm shadow-xl shadow-emerald-500/20 transition flex items-center justify-center gap-2 active:scale-98">
+            <span>✨ Complete Registration & Get Pass</span>
+          </button>
+          <button type="button" onclick="closeDisplayRegisterModal()" class="px-6 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 rounded-2xl text-xs transition">
+            Cancel
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Success Screen / Digital Pass Card (Shown after Registration) -->
+      <div id="display-reg-success-card" class="hidden space-y-6 text-center animate-in zoom-in duration-300">
+        <div class="w-16 h-16 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-3xl mx-auto shadow-xl">
+          🎉
+        </div>
+
+        <div class="space-y-1">
+          <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-1 rounded-full inline-block">
+            Registration Successful!
+          </span>
+          <h4 class="font-heading font-black text-2xl sm:text-3xl text-white">
+            Welcome to Jordan's Snack Shack!
+          </h4>
+          <p class="text-xs text-slate-300">Your student pass is now active and ready for fast Face ID checkouts.</p>
+        </div>
+
+        <!-- Digital Student Badge Card Graphic -->
+        <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/60 border-2 border-emerald-500/60 rounded-3xl p-5 max-w-md mx-auto text-left shadow-2xl relative overflow-hidden space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🍿</span>
+              <div>
+                <strong class="text-xs font-extrabold text-white tracking-wide block">JORDAN'S SNACK SHACK</strong>
+                <span class="text-[10px] text-emerald-400 font-mono">OFFICIAL STUDENT PASS</span>
+              </div>
+            </div>
+            <span id="reg-success-grade" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">9th Grade</span>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div id="reg-success-photo" class="w-20 h-20 rounded-2xl border-2 border-emerald-400 overflow-hidden shrink-0 shadow-md bg-slate-900 flex items-center justify-center text-4xl">
+              👤
+            </div>
+            <div class="space-y-1 min-w-0">
+              <h5 id="reg-success-name" class="font-heading font-bold text-lg text-white truncate">Student Name</h5>
+              <div id="reg-success-id" class="font-mono text-xs text-amber-300 font-bold">STU-10023</div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                <span>Balance: <strong class="text-emerald-400">$0.00</strong></span>
+                <span>•</span>
+                <span class="text-amber-400">1/10 Stamps</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loyalty Punch Card Preview -->
+          <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+            <div class="flex justify-between text-[10px] text-slate-400 font-bold">
+              <span>Loyalty Stamp Card:</span>
+              <span class="text-amber-300">1 Free Snack at 10 Stamps</span>
+            </div>
+            <div class="grid grid-cols-10 gap-1 text-center text-xs">
+              <div class="bg-amber-500 text-slate-950 rounded-lg py-1 font-bold shadow-sm">⭐</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">2</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">3</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">4</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">5</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">6</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">7</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">8</div>
+              <div class="bg-slate-950 border border-slate-800 text-slate-600 rounded-lg py-1 font-bold">9</div>
+              <div class="bg-slate-950 border border-amber-500/40 text-amber-400 rounded-lg py-1 font-bold">🎁</div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" onclick="closeDisplayRegisterModal()" class="w-full max-w-md mx-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-xl shadow-emerald-900/30 transition">
+          🚀 Done • Return to Store
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -2830,6 +3102,253 @@
         }, 1800);
       } else if (!isAuto && statusText) {
         statusText.textContent = 'Face not recognized. Please align face or try again.';
+      }
+    }
+
+    // ==========================================
+    // 📝 2ND MONITOR STUDENT SELF-REGISTRATION & FACE CAPTURE
+    // ==========================================
+    let displayRegStream = null;
+    let regCameraFacingMode = 'user';
+    let regCapturedPhotoData = null;
+
+    function generateRandomStudentId() {
+      const randNum = Math.floor(10000 + Math.random() * 90000);
+      const input = document.getElementById('reg-student-id');
+      if (input) input.value = `STU-${randNum}`;
+    }
+
+    async function openDisplayRegisterModal() {
+      const modal = document.getElementById('modal-display-register');
+      const formContainer = document.getElementById('display-reg-form-container');
+      const successCard = document.getElementById('display-reg-success-card');
+      
+      if (formContainer) formContainer.classList.remove('hidden');
+      if (successCard) successCard.classList.add('hidden');
+      
+      // Auto-generate student ID if field is empty
+      const idInput = document.getElementById('reg-student-id');
+      if (idInput && !idInput.value.trim()) {
+        generateRandomStudentId();
+      }
+
+      retakeDisplayRegPhoto();
+
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+
+      await startDisplayRegCamera();
+    }
+
+    function closeDisplayRegisterModal() {
+      closeDisplayRegCamera();
+      const modal = document.getElementById('modal-display-register');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function startDisplayRegCamera() {
+      const video = document.getElementById('display-reg-video');
+      const guide = document.getElementById('display-reg-guide-overlay');
+      const preview = document.getElementById('display-reg-photo-preview');
+
+      if (preview) preview.classList.add('hidden');
+      if (guide) guide.classList.remove('hidden');
+
+      try {
+        if (displayRegStream) {
+          closeDisplayRegCamera();
+        }
+        displayRegStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: regCameraFacingMode, width: 480, height: 480 }
+        });
+        if (video) {
+          video.srcObject = displayRegStream;
+          video.play().catch(()=>{});
+        }
+      } catch (err) {
+        console.warn('Registration camera stream error:', err);
+      }
+    }
+
+    function closeDisplayRegCamera() {
+      if (displayRegStream) {
+        displayRegStream.getTracks().forEach(t => t.stop());
+        displayRegStream = null;
+      }
+    }
+
+    async function switchDisplayRegCamera() {
+      regCameraFacingMode = regCameraFacingMode === 'user' ? 'environment' : 'user';
+      await startDisplayRegCamera();
+    }
+
+    function snapDisplayRegPhoto() {
+      const video = document.getElementById('display-reg-video');
+      const canvas = document.getElementById('display-reg-canvas');
+      const preview = document.getElementById('display-reg-photo-preview');
+      const previewImg = document.getElementById('display-reg-preview-img');
+      const snapBtn = document.getElementById('btn-snap-reg-photo');
+      const retakeBtn = document.getElementById('btn-retake-reg-photo');
+      const flashEl = document.getElementById('display-reg-flash');
+
+      if (!video || !video.videoWidth) {
+        alert('Camera stream is not ready yet. Please ensure camera permissions are granted.');
+        return;
+      }
+
+      // Flash animation
+      if (flashEl) {
+        flashEl.classList.remove('hidden');
+        setTimeout(() => flashEl.classList.add('hidden'), 150);
+      }
+
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d');
+      // Mirror if user facing
+      if (regCameraFacingMode === 'user') {
+        ctx.translate(300, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, 300, 300);
+
+      regCapturedPhotoData = canvas.toDataURL('image/jpeg', 0.88);
+
+      if (previewImg) previewImg.src = regCapturedPhotoData;
+      if (preview) preview.classList.remove('hidden');
+      if (snapBtn) snapBtn.classList.add('hidden');
+      if (retakeBtn) retakeBtn.classList.remove('hidden');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function retakeDisplayRegPhoto() {
+      regCapturedPhotoData = null;
+      const preview = document.getElementById('display-reg-photo-preview');
+      const snapBtn = document.getElementById('btn-snap-reg-photo');
+      const retakeBtn = document.getElementById('btn-retake-reg-photo');
+
+      if (preview) preview.classList.add('hidden');
+      if (snapBtn) snapBtn.classList.remove('hidden');
+      if (retakeBtn) retakeBtn.classList.add('hidden');
+    }
+
+    async function submitDisplayRegistration() {
+      const nameInput = document.getElementById('reg-student-name');
+      const idInput = document.getElementById('reg-student-id');
+      const gradeInput = document.getElementById('reg-student-grade');
+      const bdayInput = document.getElementById('reg-student-birthday');
+      const notesInput = document.getElementById('reg-student-notes');
+      const submitBtn = document.getElementById('btn-submit-reg');
+
+      const name = nameInput ? nameInput.value.trim() : '';
+      const student_id = idInput ? idInput.value.trim() : '';
+      const grade = gradeInput ? gradeInput.value : '9th Grade';
+      const birthday = bdayInput ? bdayInput.value.trim() : '';
+      const notes = notesInput ? notesInput.value.trim() : '';
+
+      if (!name) {
+        alert('Please enter your full name to create an account.');
+        if (nameInput) nameInput.focus();
+        return;
+      }
+
+      if (!student_id) {
+        generateRandomStudentId();
+      }
+
+      // Auto-snap if not snapped yet
+      if (!regCapturedPhotoData) {
+        snapDisplayRegPhoto();
+      }
+
+      const payload = {
+        name,
+        student_id: student_id || `STU-${Math.floor(10000 + Math.random() * 90000)}`,
+        grade,
+        birthday,
+        allergies: notes,
+        notes: notes,
+        photo_data: regCapturedPhotoData || '',
+        balance: 0.00
+      };
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>⏳ Registering Account...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Failed to create student account.');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>✨ Complete Registration & Get Pass</span>';
+          }
+          return;
+        }
+
+        // Success! Populate Success Card
+        closeDisplayRegCamera();
+
+        const formContainer = document.getElementById('display-reg-form-container');
+        const successCard = document.getElementById('display-reg-success-card');
+        const sName = document.getElementById('reg-success-name');
+        const sId = document.getElementById('reg-success-id');
+        const sGrade = document.getElementById('reg-success-grade');
+        const sPhoto = document.getElementById('reg-success-photo');
+
+        if (sName) sName.textContent = data.name;
+        if (sId) sId.textContent = data.student_id;
+        if (sGrade) sGrade.textContent = data.grade || '9th Grade';
+        if (sPhoto) {
+          if (data.photo_data) {
+            sPhoto.innerHTML = `<img src="${data.photo_data}" class="w-full h-full object-cover" />`;
+          } else {
+            sPhoto.innerHTML = `👤`;
+          }
+        }
+
+        if (formContainer) formContainer.classList.add('hidden');
+        if (successCard) successCard.classList.remove('hidden');
+
+        // Trigger Confetti
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 120, spread: 90, origin: { y: 0.5 } });
+        }
+
+        // Notify Cashier POS immediately
+        const syncMsg = {
+          type: 'student_registered',
+          student: data
+        };
+
+        if (typeof BroadcastChannel !== 'undefined') {
+          try {
+            const bc = new BroadcastChannel('snack_display_sync');
+            bc.postMessage(syncMsg);
+          } catch(e){}
+        }
+
+        // Refresh face matching cache on 2nd display
+        await loadEnrolledStudentsForFace();
+
+      } catch (err) {
+        console.error('Registration network error:', err);
+        alert('Network error while registering account. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>✨ Complete Registration & Get Pass</span>';
+        }
       }
     }
 
