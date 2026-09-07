@@ -18,6 +18,7 @@ let soundEnabled = true;
 
 // Discount State
 let activeDiscount = null; // { name: string, type: 'pct' | 'fixed', value: number, code?: string }
+let isCelebrationActiveOnDisplay = false;
 
 // Display Synchronization (BroadcastChannel + SSE)
 const displayChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('snack_display_sync') : null;
@@ -31,7 +32,17 @@ function getActiveFundraiser() {
   return fundraisers[0] || null;
 }
 
-function syncCartToDisplay() {
+function syncCartToDisplay(forceIdle = false) {
+  // If celebration screen is currently active on customer 2nd monitor and cart is empty,
+  // do NOT overwrite celebrate screen unless cashier explicitly clicked 'New Order' (forceIdle = true)
+  if (isCelebrationActiveOnDisplay && cart.length === 0 && !selectedStudentForCheckout && !forceIdle) {
+    return;
+  }
+
+  if (cart.length > 0) {
+    isCelebrationActiveOnDisplay = false;
+  }
+
   const { subtotal, comboDiscount, discountAmount, discountLabel, total } = calculateTotals();
   const currentFund = getActiveFundraiser();
   const payload = {
@@ -58,6 +69,7 @@ function syncCartToDisplay() {
 }
 
 function celebrateDisplay(order) {
+  isCelebrationActiveOnDisplay = true;
   const currentFund = getActiveFundraiser();
   const payload = {
     state: 'celebrate',
@@ -1373,6 +1385,26 @@ function showReceiptModal(order) {
 
 function printReceipt() {
   window.print();
+}
+
+function handleNewOrderClick() {
+  closeModal('modal-receipt');
+  isCelebrationActiveOnDisplay = false;
+  cart = [];
+  selectedStudentForCheckout = null;
+  activeDiscount = null;
+  renderCart();
+
+  // Explicitly return the 2nd monitor to the idle/welcome screen
+  syncCartToDisplay(true);
+
+  // Clear search input and restore full catalog view for next customer
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.value = '';
+    searchQuery = '';
+    renderProductGrid();
+  }
 }
 
 // ==========================================

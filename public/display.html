@@ -1117,6 +1117,7 @@
         }
 
         // Fire festive celebration confetti!
+        // Fire festive celebration confetti!
         if (typeof confetti !== 'undefined') {
           confetti({
             particleCount: 90,
@@ -1125,10 +1126,11 @@
           });
         }
 
-        if (celebrationTimer) clearTimeout(celebrationTimer);
-        celebrationTimer = setTimeout(() => {
-          renderState({ state: 'idle', cart: [] });
-        }, 8500);
+        // Keep celebration screen visible until cashier clicks 'New Order' on the POS
+        if (celebrationTimer) {
+          clearTimeout(celebrationTimer);
+          celebrationTimer = null;
+        }
 
         lucide.createIcons();
         return;
