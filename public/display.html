@@ -24,14 +24,14 @@
     }
     @keyframes pulseGlow {
       0%, 100% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.2); }
-      50% { box-shadow: 0 0 45px rgba(245, 158, 11, 0.5); }
+      50% { box-shadow: 0 0 45px rgba(245, 158, 11, 0.45); }
     }
     .glow-pulse {
       animation: pulseGlow 3s infinite ease-in-out;
     }
     @keyframes float {
       0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-8px) rotate(2deg); }
+      50% { transform: translateY(-6px) rotate(1.5deg); }
     }
     .float-anim {
       animation: float 4s infinite ease-in-out;
@@ -45,12 +45,12 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-hidden antialiased selection:bg-amber-500 selection:text-slate-950">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased selection:bg-amber-500 selection:text-slate-950">
 
   <!-- TOP HEADER BAR -->
-  <header class="bg-slate-900/90 border-b border-slate-800 px-6 py-4 flex items-center justify-between backdrop-blur-md z-20">
+  <header class="bg-slate-900/90 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between backdrop-blur-md z-20 shrink-0">
     <div class="flex items-center gap-3.5">
-      <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg float-anim">
+      <div class="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg float-anim">
         🍿
       </div>
       <div>
@@ -68,38 +68,38 @@
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
         <span>Live Register Sync</span>
       </div>
-      <div id="live-clock" class="text-sm font-mono font-bold text-slate-300 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800">
+      <div id="live-clock" class="text-xs sm:text-sm font-mono font-bold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
         --:-- --
       </div>
     </div>
   </header>
 
   <!-- MAIN DYNAMIC CONTENT AREA -->
-  <main class="flex-1 flex overflow-hidden relative p-6">
+  <main class="flex-1 flex overflow-y-auto p-4 sm:p-6 items-center justify-center">
 
     <!-- ==================================================== -->
     <!-- VIEW 1: IDLE / WELCOME MODE (When Cart is Empty) -->
     <!-- ==================================================== -->
-    <div id="view-idle" class="w-full flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-300">
+    <div id="view-idle" class="w-full flex-1 flex flex-col justify-center items-center text-center max-w-5xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in zoom-in duration-300 py-4">
       
       <!-- Welcome Hero Badge -->
-      <div class="space-y-4">
-        <div class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/40 px-5 py-2 rounded-full text-amber-300 font-bold text-sm tracking-wide shadow-xl">
+      <div class="space-y-3">
+        <div class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/40 px-5 py-2 rounded-full text-amber-300 font-bold text-xs sm:text-sm tracking-wide shadow-xl">
           <span>✨</span> Welcome to Recess Snack Time! <span>✨</span>
         </div>
-        <h2 class="font-heading font-extrabold text-4xl sm:text-6xl text-white tracking-tight leading-tight">
+        <h2 class="font-heading font-extrabold text-3xl sm:text-6xl text-white tracking-tight leading-tight">
           Grab Your Favorites & <br>
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300">Support Our School!</span>
         </h2>
-        <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
-          Order snacks, ice-cold drinks & baked treats at the register window.
+        <p class="text-slate-400 text-xs sm:text-base max-w-xl mx-auto">
+          Order snacks, cold drinks & treats at the register window.
         </p>
       </div>
 
-      <!-- Feature Highlight Carousel / Info Cards -->
+      <!-- Feature Highlight Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
         <!-- Card 1: Combo Savings -->
-        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-amber-500/40 transition">
+        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-amber-500/40 transition shadow-lg">
           <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl">
             🥤
           </div>
@@ -108,7 +108,7 @@
         </div>
 
         <!-- Card 2: Student Punch Pass -->
-        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-blue-500/40 transition">
+        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-blue-500/40 transition shadow-lg">
           <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xl">
             ⭐
           </div>
@@ -117,9 +117,9 @@
         </div>
 
         <!-- Card 3: Payment Methods -->
-        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-emerald-500/40 transition">
+        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-emerald-500/40 transition shadow-lg">
           <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xl">
-            💳
+            📱
           </div>
           <h3 class="font-heading font-bold text-base text-white">Ways to Pay</h3>
           <p class="text-xs text-slate-400">We accept <strong>Cash</strong>, <strong>Prepaid Student Balance</strong>, and <strong>Venmo / CashApp</strong>.</p>
@@ -134,17 +134,17 @@
     </div>
 
     <!-- ==================================================== -->
-    <!-- VIEW 2: ACTIVE RING-UP MODE (Live Items in Cart) -->
+    <!-- VIEW 2: ACTIVE RING-UP & SMARTPHONE QR MODE -->
     <!-- ==================================================== -->
-    <div id="view-active" class="hidden w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch max-w-7xl mx-auto">
+    <div id="view-active" class="hidden w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch py-2">
       
-      <!-- LEFT: Live Items Order List (7 cols) -->
-      <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-2xl backdrop-blur-sm">
-        <div class="space-y-4">
+      <!-- LEFT: Live Items Order List (6 cols) -->
+      <div class="lg:col-span-6 bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between shadow-2xl backdrop-blur-sm space-y-4">
+        <div class="space-y-3">
           
           <div class="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Current Order</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Current Order</span>
               <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
                 <span>Items Ringing Up</span>
                 <span id="display-item-count" class="text-xs bg-slate-800 text-slate-300 font-bold px-2.5 py-0.5 rounded-full">0 items</span>
@@ -152,7 +152,7 @@
             </div>
 
             <!-- Student Badge Banner (If identified) -->
-            <div id="display-student-pill" class="hidden bg-blue-500/10 border border-blue-500/30 px-3.5 py-1.5 rounded-2xl flex items-center gap-2.5">
+            <div id="display-student-pill" class="hidden bg-blue-500/10 border border-blue-500/30 px-3 py-1.5 rounded-2xl flex items-center gap-2">
               <span class="text-lg">🎒</span>
               <div class="text-left">
                 <div id="display-student-name" class="font-bold text-xs text-white">Student Name</div>
@@ -162,75 +162,106 @@
           </div>
 
           <!-- Items Table Container -->
-          <div id="display-items-container" class="max-h-[380px] overflow-y-auto space-y-2.5 pr-1 scrollbar-none">
+          <div id="display-items-container" class="max-h-[340px] sm:max-h-[400px] overflow-y-auto space-y-2 pr-1 scrollbar-none">
             <!-- Dynamically populated rows -->
           </div>
         </div>
 
-        <!-- Student Dietary Restrictions Alert (If any) -->
-        <div id="display-allergy-notice" class="hidden mt-3 bg-rose-500/10 border border-rose-500/30 p-3 rounded-2xl text-xs text-rose-300 flex items-center gap-2">
-          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 shrink-0"></i>
-          <span id="display-allergy-text">Allergy notice on file</span>
+        <!-- Student Dietary Restrictions & Punch Card -->
+        <div class="space-y-2">
+          <div id="display-allergy-notice" class="hidden bg-rose-500/10 border border-rose-500/30 p-2.5 rounded-2xl text-xs text-rose-300 flex items-center gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 shrink-0"></i>
+            <span id="display-allergy-text">Allergy notice on file</span>
+          </div>
+
+          <div id="display-punch-container" class="hidden bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-amber-400 flex items-center gap-1">
+                <i data-lucide="award" class="w-3.5 h-3.5"></i> Punch Pass Progress:
+              </span>
+              <span id="display-punch-text" class="font-bold text-white">0 / 10 Stamps</span>
+            </div>
+            <div id="display-punch-stars" class="grid grid-cols-10 gap-1 text-center">
+              <!-- Populated by JS -->
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- RIGHT: Large Totals & Punch Card Box (5 cols) -->
-      <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+      <!-- RIGHT: PAYMENT TOTAL & VENMO/CASHAPP SCANNABLE QR (6 cols) -->
+      <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
         
-        <!-- Big Total Card -->
-        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/40 rounded-3xl p-6 shadow-2xl space-y-5 flex-1 flex flex-col justify-between glow-pulse">
-          <div class="space-y-4">
+        <!-- Totals Card -->
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/40 rounded-3xl p-5 shadow-2xl space-y-4 flex flex-col justify-between glow-pulse">
+          <div class="space-y-3">
             
-            <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3">
+            <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2.5">
               <span class="font-semibold uppercase tracking-wider">Payment Breakdown</span>
               <span class="text-emerald-400 font-bold flex items-center gap-1">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Live Register
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Register Active
               </span>
             </div>
 
-            <div class="space-y-2.5 text-sm">
+            <div class="space-y-2 text-xs sm:text-sm">
               <div class="flex justify-between items-center text-slate-300">
                 <span>Subtotal:</span>
                 <span id="display-subtotal" class="font-bold font-mono text-white">$0.00</span>
               </div>
 
-              <div id="display-combo-row" class="hidden flex justify-between items-center text-emerald-400 font-semibold text-xs bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
-                <span class="flex items-center gap-1.5"><span>🎉</span> Snack + Drink Combo:</span>
+              <div id="display-combo-row" class="hidden flex justify-between items-center text-emerald-400 font-semibold text-xs bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20">
+                <span class="flex items-center gap-1"><span>🎉</span> Snack + Drink:</span>
                 <span id="display-combo-amount" class="font-mono font-bold">-$0.50</span>
               </div>
 
-              <div id="display-discount-row" class="hidden flex justify-between items-center text-amber-300 font-semibold text-xs bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
-                <span id="display-discount-label" class="flex items-center gap-1.5"><span>🏷️</span> Discount Applied:</span>
+              <div id="display-discount-row" class="hidden flex justify-between items-center text-amber-300 font-semibold text-xs bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20">
+                <span id="display-discount-label" class="flex items-center gap-1"><span>🏷️</span> Discount:</span>
                 <span id="display-discount-amount" class="font-mono font-bold">-$0.00</span>
               </div>
             </div>
           </div>
 
-          <!-- Giant Total Due -->
-          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 text-center space-y-1">
-            <span class="text-xs text-slate-400 uppercase font-bold tracking-widest block">TOTAL AMOUNT DUE</span>
-            <div id="display-total-amount" class="font-heading font-extrabold text-5xl sm:text-6xl text-amber-400 tracking-tight">
+          <!-- Giant Total Due Box -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+            <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold tracking-widest block">TOTAL AMOUNT DUE</span>
+            <div id="display-total-amount" class="font-heading font-extrabold text-4xl sm:text-5xl text-amber-400 tracking-tight">
               $0.00
             </div>
           </div>
 
-          <!-- Bottom Prompt -->
-          <div class="text-center text-xs text-slate-400 font-medium">
-            Cash in hand, Student Pass, or Venmo accepted
+          <div class="text-center text-[11px] text-slate-400 font-medium">
+            💵 Cash in hand or 🎒 Student Pass accepted
           </div>
         </div>
 
-        <!-- Mini Punch Progress (If student active) -->
-        <div id="display-punch-container" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-bold text-amber-400 flex items-center gap-1">
-              <i data-lucide="award" class="w-4 h-4"></i> Punch Pass Progress:
-            </span>
-            <span id="display-punch-text" class="font-bold text-white">0 / 10 Stamps</span>
+        <!-- Venmo / CashApp / SchoolPay QR Code Display Card -->
+        <div id="display-qr-card" class="bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between shadow-2xl space-y-3 text-center">
+          
+          <div class="flex items-center justify-center gap-2 text-xs font-bold text-white">
+            <span class="p-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">📱</span>
+            <span>Venmo / CashApp / SchoolPay</span>
           </div>
-          <div id="display-punch-stars" class="grid grid-cols-10 gap-1 text-center">
-            <!-- Populated by JS -->
+
+          <!-- White Scannable QR Container -->
+          <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-inner flex flex-col items-center justify-center space-y-2 text-slate-900">
+            <div id="display-qr-wrapper" class="w-full flex items-center justify-center min-h-[160px]">
+              <img id="display-qr-img" src="" alt="Payment QR Code" class="max-h-40 max-w-full object-contain rounded-lg shadow-sm hidden" />
+              <div id="display-qr-empty" class="text-slate-400 text-xs py-6 flex flex-col items-center">
+                <span class="text-3xl mb-1">📸</span>
+                <p class="font-bold text-slate-700">QR Code Ready</p>
+                <p class="text-[10px] text-slate-500">Scan with your camera app</p>
+              </div>
+            </div>
+
+            <div class="w-full pt-1.5 border-t border-slate-200">
+              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Total Due:</span>
+              <div id="display-qr-total" class="font-heading font-extrabold text-2xl text-emerald-700">$0.00</div>
+              <div id="display-qr-handle" class="font-mono text-[11px] text-slate-600 font-semibold mt-0.5">CashApp: jordanelwooddaniels</div>
+            </div>
           </div>
+
+          <p class="text-[10px] text-slate-400">
+            Point smartphone camera at QR code above to pay instantly!
+          </p>
         </div>
 
       </div>
@@ -239,9 +270,9 @@
     <!-- ==================================================== -->
     <!-- VIEW 3: CELEBRATION / THANK YOU MODE -->
     <!-- ==================================================== -->
-    <div id="view-celebrate" class="hidden w-full flex-1 flex flex-col justify-center items-center text-center max-w-2xl mx-auto space-y-6 animate-in fade-in zoom-in duration-300">
+    <div id="view-celebrate" class="hidden w-full flex-1 flex flex-col justify-center items-center text-center max-w-2xl mx-auto space-y-6 animate-in fade-in zoom-in duration-300 py-6">
       
-      <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 flex items-center justify-center text-5xl shadow-2xl float-anim">
+      <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 flex items-center justify-center text-4xl sm:text-5xl shadow-2xl float-anim">
         🎉
       </div>
 
@@ -253,7 +284,7 @@
           Thank You for Supporting <br>
           <span class="text-amber-400">Jordan's Snack Shack!</span>
         </h2>
-        <p class="text-slate-300 text-sm font-medium">Enjoy your snacks & have a wonderful recess!</p>
+        <p class="text-slate-300 text-xs sm:text-sm font-medium">Enjoy your snacks & have a wonderful recess!</p>
       </div>
 
       <!-- Receipt Summary Card -->
@@ -287,7 +318,7 @@
   </main>
 
   <!-- FOOTER -->
-  <footer class="bg-slate-900/60 border-t border-slate-800/80 px-6 py-3 flex items-center justify-between text-xs text-slate-500">
+  <footer class="bg-slate-900/60 border-t border-slate-800/80 px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0">
     <div class="flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-amber-400"></span>
       <span>Jordan's Snack Shack Customer Screen</span>
@@ -301,6 +332,7 @@
   <script>
     let currentState = 'idle';
     let celebrationTimer = null;
+    let storeSettings = {};
 
     // Live Clock
     function updateClock() {
@@ -309,6 +341,39 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    // Fetch Store Settings (Payment QR & Handle)
+    async function loadStoreSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        storeSettings = await res.json();
+        updateQRDisplay();
+      } catch (err) {
+        console.warn('Failed to load settings:', err);
+      }
+    }
+
+    function updateQRDisplay(totalVal = 0) {
+      const qrImg = document.getElementById('display-qr-img');
+      const qrEmpty = document.getElementById('display-qr-empty');
+      const qrHandle = document.getElementById('display-qr-handle');
+      const qrTotal = document.getElementById('display-qr-total');
+
+      if (qrTotal) qrTotal.textContent = `$${parseFloat(totalVal || 0).toFixed(2)}`;
+
+      if (storeSettings.payment_qr_image) {
+        qrImg.src = storeSettings.payment_qr_image;
+        qrImg.classList.remove('hidden');
+        qrEmpty.classList.add('hidden');
+      } else {
+        qrImg.classList.add('hidden');
+        qrEmpty.classList.remove('hidden');
+      }
+
+      if (storeSettings.payment_handle) {
+        qrHandle.textContent = storeSettings.payment_handle;
+      }
+    }
 
     // Render Display State
     function renderState(data) {
@@ -346,8 +411,8 @@
         // Fire festive celebration confetti!
         if (typeof confetti !== 'undefined') {
           confetti({
-            particleCount: 80,
-            spread: 70,
+            particleCount: 90,
+            spread: 75,
             origin: { y: 0.6 }
           });
         }
@@ -372,21 +437,21 @@
 
         const itemsContainer = document.getElementById('display-items-container');
         itemsContainer.innerHTML = data.cart.map(item => `
-          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-md">
-            <div class="flex items-center gap-3 min-w-0">
-              <span class="text-2xl p-1 bg-slate-900 rounded-xl border border-slate-800">${item.emoji || '🍿'}</span>
+          <div class="bg-slate-950 p-2.5 sm:p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="text-xl sm:text-2xl p-1 bg-slate-900 rounded-xl border border-slate-800">${item.emoji || '🍿'}</span>
               <div class="min-w-0">
-                <h4 class="font-bold text-sm text-white truncate">${item.name}</h4>
-                <div class="text-[11px] text-slate-400 font-mono">
+                <h4 class="font-bold text-xs sm:text-sm text-white truncate">${item.name}</h4>
+                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono">
                   $${parseFloat(item.price).toFixed(2)} each
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-4">
-              <span class="bg-slate-900 border border-slate-800 px-3 py-1 rounded-xl text-xs font-extrabold text-amber-400">
+            <div class="flex items-center gap-3">
+              <span class="bg-slate-900 border border-slate-800 px-2.5 py-0.5 rounded-xl text-xs font-extrabold text-amber-400">
                 ${item.quantity}x
               </span>
-              <span class="font-heading font-extrabold text-base text-amber-400 w-16 text-right">
+              <span class="font-heading font-extrabold text-sm sm:text-base text-amber-400 w-16 text-right">
                 $${(parseFloat(item.price) * (item.quantity || 1)).toFixed(2)}
               </span>
             </div>
@@ -449,7 +514,11 @@
           discRow.classList.add('hidden');
         }
 
-        document.getElementById('display-total-amount').textContent = `$${parseFloat(data.total || 0).toFixed(2)}`;
+        const totalVal = parseFloat(data.total || 0);
+        document.getElementById('display-total-amount').textContent = `$${totalVal.toFixed(2)}`;
+
+        // Update QR total & card
+        updateQRDisplay(totalVal);
 
         lucide.createIcons();
         return;
@@ -489,11 +558,13 @@
       };
     }
 
-    // Initial State Fetch
-    fetch('/api/display/state')
-      .then(res => res.json())
-      .then(data => renderState(data))
-      .catch(err => console.warn('Initial state fetch error:', err));
+    // Initial Load
+    loadStoreSettings().then(() => {
+      fetch('/api/display/state')
+        .then(res => res.json())
+        .then(data => renderState(data))
+        .catch(err => console.warn('Initial state fetch error:', err));
+    });
 
     initSSE();
     lucide.createIcons();

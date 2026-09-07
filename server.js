@@ -182,6 +182,7 @@ app.post('/api/settings', async (req, res) => {
       );
     }
     res.json({ success: true, message: 'Settings saved successfully' });
+    try { notifyDisplayClients(); } catch(e){}
   } catch (err) {
     console.error('Error saving settings:', err);
     res.status(500).json({ error: 'Failed to save settings' });
