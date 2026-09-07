@@ -4614,9 +4614,9 @@ async function toggleRemoteCustomerKiosk(force = null) {
 }
 
 // ==========================================
-// 📹 2ND DISPLAY (CUSTOMER SCREEN) CCTV RECEIVER & 1-HR DVR
+// 📹 2ND DISPLAY (CUSTOMER SCREEN) CCTV RECEIVER & 24-HR DVR
 // ==========================================
-const DVR_MAX_DURATION_SEC = 3600; // 60 minutes = 3600 seconds
+const DVR_MAX_DURATION_SEC = 86400; // 24 hours = 86400 seconds
 let dvrRollingBuffer = []; // Array of { timestamp: number, dataUrl: string, tag: string, student: object, audioLevel: number, imgObj: Image }
 let dvrCurrentOffsetSec = 0; // 0 = LIVE; negative numbers = past seconds
 let isDvrReplayPlaying = false;
@@ -4872,7 +4872,7 @@ function toggleCashierFloatingCctv(show = null) {
 }
 
 // ==========================================
-// ⏱️ 1-HOUR TIME-MACHINE DVR SCRUBBER & REPLAY
+// ⏱️ 24-HOUR TIME-MACHINE DVR SCRUBBER & REPLAY
 // ==========================================
 function onDvrScrubInput(val) {
   const offset = parseInt(val, 10);
@@ -4885,10 +4885,12 @@ function onDvrScrubInput(val) {
       offsetLabel.className = 'text-[11px] font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30';
     } else {
       const absSec = Math.abs(offset);
-      const m = Math.floor(absSec / 60);
+      const h = Math.floor(absSec / 3600);
+      const m = Math.floor((absSec % 3600) / 60);
       const s = absSec % 60;
       const pastTime = new Date(Date.now() - (absSec * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      offsetLabel.textContent = `-${m}m ${s}s ago (${pastTime})`;
+      const timeStr = h > 0 ? `-${h}h ${m}m ${s}s` : `-${m}m ${s}s`;
+      offsetLabel.textContent = `${timeStr} ago (${pastTime})`;
       offsetLabel.className = 'text-[11px] font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 animate-pulse';
     }
   }
@@ -4928,6 +4930,13 @@ function jumpToLiveFeed() {
   }
   if (watermark) watermark.classList.add('hidden');
   if (playBtn) playBtn.textContent = 'Play Replay';
+}
+
+function jumpDvrHours(hours) {
+  const targetOffset = hours * 3600;
+  const slider = document.getElementById('cctv-dvr-slider');
+  if (slider) slider.value = targetOffset;
+  onDvrScrubInput(targetOffset);
 }
 
 function jumpDvrMinutes(min) {
@@ -7610,6 +7619,193 @@ async function activateSuggestedCombo(index) {
     }
   } catch (err) {
     showToast('Failed to activate combo', 'error');
+  }
+}
+
+// ==========================================
+// 😋 EMPLOYEE QUALITY CONTROL / TASTE TEST LOGS
+// ==========================================
+function openEmployeeQcModal() {
+  openModal('modal-employee-qc');
+  populateEmployeeQcProducts();
+  loadEmployeeQcLogs();
+  switchQcSubTab('new');
+}
+
+function switchQcSubTab(tab) {
+  const tabNew = document.getElementById('qc-tab-new');
+  const tabLogs = document.getElementById('qc-tab-logs');
+  const panelNew = document.getElementById('qc-panel-new');
+  const panelLogs = document.getElementById('qc-panel-logs');
+
+  if (tab === 'new') {
+    if (tabNew) {
+      tabNew.className = 'flex-1 py-1.5 rounded-lg font-bold bg-amber-500 text-slate-950 transition';
+    }
+    if (tabLogs) {
+      tabLogs.className = 'flex-1 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition';
+    }
+    if (panelNew) panelNew.classList.remove('hidden');
+    if (panelLogs) panelLogs.classList.add('hidden');
+  } else {
+    if (tabNew) {
+      tabNew.className = 'flex-1 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition';
+    }
+    if (tabLogs) {
+      tabLogs.className = 'flex-1 py-1.5 rounded-lg font-bold bg-amber-500 text-slate-950 transition';
+    }
+    if (panelNew) panelNew.classList.add('hidden');
+    if (panelLogs) panelLogs.classList.remove('hidden');
+    loadEmployeeQcLogs();
+  }
+}
+
+function populateEmployeeQcProducts() {
+  const select = document.getElementById('qc-product-select');
+  if (!select) return;
+  
+  select.innerHTML = '<option value="">-- Choose Item to Inspect / Sample --</option>';
+  if (Array.isArray(products) && products.length > 0) {
+    products.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.name} (In Stock: ${p.stock_quantity || 0}) - $${Number(p.price || 0).toFixed(2)}`;
+      select.appendChild(opt);
+    });
+  }
+}
+
+async function submitEmployeeQcInspection() {
+  const select = document.getElementById('qc-product-select');
+  const qtyInput = document.getElementById('qc-quantity');
+  const inspectorInput = document.getElementById('qc-inspector');
+  const notesInput = document.getElementById('qc-notes');
+  const selectedVerdict = document.querySelector('input[name="qc-verdict"]:checked');
+  const btn = document.getElementById('btn-submit-qc');
+
+  const productId = select ? parseInt(select.value, 10) : null;
+  const quantity = qtyInput ? parseInt(qtyInput.value, 10) : 1;
+  const inspector = (inspectorInput && inspectorInput.value.trim()) || 'Cashier (Taste Tester)';
+  const notes = (notesInput && notesInput.value.trim()) || 'Verified quality & freshness';
+  const verdict = selectedVerdict ? selectedVerdict.value : 'Grade A+ Exceptional';
+
+  if (!productId || isNaN(productId)) {
+    showToast('Please select an item from the snack shack catalog to sample/inspect', 'error');
+    return;
+  }
+
+  if (quantity < 1) {
+    showToast('Quantity must be at least 1 item', 'error');
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Recording Quality Control Deduction...';
+    }
+
+    const res = await fetch('/api/inventory/quality-control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id: productId,
+        quantity: quantity,
+        logged_by: inspector,
+        notes: notes,
+        qc_verdict: verdict
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`😋 Quality Control logged! Deducted ${quantity}x from stock. Verdict: ${verdict}`, 'success');
+      playSound('chaching');
+      
+      // Update local product cache
+      if (data.updated_product && Array.isArray(products)) {
+        const idx = products.findIndex(p => p.id === data.updated_product.id);
+        if (idx !== -1) {
+          products[idx].stock_quantity = data.updated_product.stock_quantity;
+          renderProducts();
+          renderInventoryTable();
+        }
+      }
+      
+      // Reset form
+      if (qtyInput) qtyInput.value = '1';
+      if (notesInput) notesInput.value = '';
+      populateEmployeeQcProducts();
+      loadEmployeeQcLogs();
+      switchQcSubTab('logs');
+    } else {
+      showToast(data.error || 'Failed to record Employee QC deduction', 'error');
+    }
+  } catch (err) {
+    console.error('Error recording employee QC:', err);
+    showToast('Network error while logging Employee QC', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>😋 Confirm Employee Quality Control &amp; Deduct Stock</span>`;
+    }
+  }
+}
+
+async function loadEmployeeQcLogs() {
+  const container = document.getElementById('qc-logs-container');
+  const countBadge = document.getElementById('qc-log-count');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/inventory/quality-control');
+    if (!res.ok) throw new Error('Failed to fetch QC logs');
+    const logs = await res.json();
+
+    if (countBadge) countBadge.textContent = logs.length;
+
+    if (!logs || logs.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-slate-500 py-8 bg-slate-950/50 rounded-2xl border border-slate-800">
+          <span class="text-2xl block mb-1">😋</span>
+          <p class="font-bold text-slate-400">No Employee QC Taste Tests Logged Yet</p>
+          <p class="text-[11px] text-slate-500 mt-1">When staff sample items for quality verification, audit records will appear here.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = logs.map(l => {
+      const timeStr = new Date(l.created_at || l.timestamp).toLocaleString([], { 
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+      });
+      return `
+        <div class="bg-slate-950 border border-slate-800/80 hover:border-amber-500/40 p-3 rounded-2xl flex items-center justify-between gap-3 transition">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg shrink-0">
+              😋
+            </div>
+            <div>
+              <div class="font-bold text-white text-xs flex items-center gap-2">
+                <span>${escapeHtml(l.product_name || 'Snack Item')}</span>
+                <span class="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/30">-${l.quantity_deducted || l.quantity || 1} units</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                <span class="text-emerald-400 font-medium">Verdict: ${escapeHtml(l.qc_verdict || 'Grade A+')}</span> • 
+                <span>Inspector: <strong class="text-slate-300">${escapeHtml(l.logged_by || 'Staff')}</strong></span>
+              </div>
+              ${l.notes ? `<div class="text-[10px] text-slate-500 italic mt-0.5">"${escapeHtml(l.notes)}"</div>` : ''}
+            </div>
+          </div>
+          <div class="text-[10px] font-mono text-slate-500 shrink-0 text-right">
+            ${timeStr}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading QC logs:', err);
+    container.innerHTML = `<div class="text-center text-rose-400 py-4 text-xs">Error loading QC history log</div>`;
   }
 }
 

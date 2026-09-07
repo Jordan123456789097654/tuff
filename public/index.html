@@ -243,6 +243,14 @@
           </div>
         </button>
 
+        <button onclick="openEmployeeQcModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
+          <span class="text-base">😋</span>
+          <div>
+            <div class="text-white font-bold">Employee Quality Control</div>
+            <div class="text-[10px] text-slate-400">Taste test &amp; snack sampling log (comp stock deduction)</div>
+          </div>
+        </button>
+
         <div class="border-t border-slate-800 my-1 pt-1"></div>
         <div class="px-3 py-1 text-[10px] font-mono font-bold text-purple-400 uppercase tracking-wider">Kyro AI Suite</div>
 
@@ -3149,7 +3157,7 @@
           </div>
 
           <!-- ========================================== -->
-          <!-- ⏪ 1-HOUR DVR TIMELINE SCRUBBER & CONTROLS -->
+          <!-- ⏪ 24-HOUR DVR TIMELINE SCRUBBER & CONTROLS -->
           <!-- ========================================== -->
           <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2.5">
             
@@ -3157,7 +3165,7 @@
             <div class="flex items-center justify-between text-xs">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-slate-300 flex items-center gap-1">
-                  <span>⏱️</span> 1-Hour Time-Machine Timeline
+                  <span>⏱️</span> 24-Hour Time-Machine Timeline
                 </span>
                 <span id="dvr-time-offset-label" class="text-[11px] font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
                   LIVE (NOW)
@@ -3177,7 +3185,7 @@
                 <input
                   type="range"
                   id="cctv-dvr-slider"
-                  min="-3600"
+                  min="-86400"
                   max="0"
                   step="1"
                   value="0"
@@ -3189,14 +3197,14 @@
                 <div id="cctv-timeline-markers" class="absolute inset-0 pointer-events-none"></div>
               </div>
 
-              <!-- Timeline Tick Labels -->
+              <!-- Timeline Tick Labels (24-Hour Presets) -->
               <div class="flex justify-between text-[10px] font-mono text-slate-500 px-0.5">
-                <span onclick="jumpDvrMinutes(-60)" class="cursor-pointer hover:text-amber-400">-60 min</span>
-                <span onclick="jumpDvrMinutes(-45)" class="cursor-pointer hover:text-amber-400">-45 min</span>
-                <span onclick="jumpDvrMinutes(-30)" class="cursor-pointer hover:text-amber-400">-30 min</span>
-                <span onclick="jumpDvrMinutes(-15)" class="cursor-pointer hover:text-amber-400">-15 min</span>
-                <span onclick="jumpDvrMinutes(-5)" class="cursor-pointer hover:text-amber-400">-5 min</span>
-                <span onclick="jumpDvrMinutes(-1)" class="cursor-pointer hover:text-amber-400">-1 min</span>
+                <span onclick="jumpDvrHours(-24)" class="cursor-pointer hover:text-amber-400 font-bold">-24h</span>
+                <span onclick="jumpDvrHours(-12)" class="cursor-pointer hover:text-amber-400 font-bold">-12h</span>
+                <span onclick="jumpDvrHours(-4)" class="cursor-pointer hover:text-amber-400 font-bold">-4h</span>
+                <span onclick="jumpDvrHours(-1)" class="cursor-pointer hover:text-amber-400">-1h</span>
+                <span onclick="jumpDvrMinutes(-30)" class="cursor-pointer hover:text-amber-400">-30m</span>
+                <span onclick="jumpDvrMinutes(-5)" class="cursor-pointer hover:text-amber-400">-5m</span>
                 <span onclick="jumpToLiveFeed()" class="cursor-pointer font-bold text-rose-400 hover:underline">LIVE</span>
               </div>
             </div>
@@ -4594,6 +4602,110 @@
       <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
         <span class="text-slate-400 text-[11px]">1-Click add directly activates the bundle in checkout register</span>
         <button onclick="closeModal('modal-ai-combo-optimizer')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 😋 EMPLOYEE QUALITY CONTROL / TASTE TEST MODAL      -->
+  <!-- ==================================================== -->
+  <div id="modal-employee-qc" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-employee-qc')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg">
+            😋
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <span>Employee Quality Control</span>
+              <span class="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">TASTE TEST LOG</span>
+            </h3>
+            <p class="text-xs text-slate-400">Deduct inventory for official volunteer snack sampling, freshness &amp; crispiness verification</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- QC Tabs: New Inspection vs History Logs -->
+      <div class="flex items-center gap-2 bg-slate-950/70 p-1 rounded-xl border border-slate-800 text-xs">
+        <button id="qc-tab-new" onclick="switchQcSubTab('new')" class="flex-1 py-1.5 rounded-lg font-bold bg-amber-500 text-slate-950 transition">
+          New Taste Test / Inspection
+        </button>
+        <button id="qc-tab-logs" onclick="switchQcSubTab('logs')" class="flex-1 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition">
+          Inspection History Log (<span id="qc-log-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Panel 1: New Inspection Form -->
+      <div id="qc-panel-new" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-400 font-bold mb-1">Select Item for Quality Control Check *</label>
+          <select id="qc-product-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-xs font-semibold focus:outline-none focus:border-amber-500">
+            <option value="">-- Choose Item to Inspect / Sample --</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Quantity Sampled / Deducted *</label>
+            <input type="number" id="qc-quantity" value="1" min="1" max="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono font-bold focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Inspector / Volunteer Name *</label>
+            <input type="text" id="qc-inspector" placeholder="e.g. Jordan (Cashier)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-bold mb-1">Quality Control Verdict *</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="flex items-center gap-2 bg-slate-950 border border-emerald-500/30 hover:border-emerald-500 p-2 rounded-xl cursor-pointer">
+              <input type="radio" name="qc-verdict" value="Grade A+ Exceptional" checked class="accent-emerald-500" />
+              <span class="text-[11px] font-bold text-emerald-400">🔥 Grade A+ Delicious</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950 border border-amber-500/30 hover:border-amber-500 p-2 rounded-xl cursor-pointer">
+              <input type="radio" name="qc-verdict" value="Approved Fresh" class="accent-amber-500" />
+              <span class="text-[11px] font-bold text-amber-400">✅ Fresh &amp; Crispy</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950 border border-blue-500/30 hover:border-blue-500 p-2 rounded-xl cursor-pointer">
+              <input type="radio" name="qc-verdict" value="Volunteer Fuel" class="accent-blue-500" />
+              <span class="text-[11px] font-bold text-blue-400">⚡ Cashier Morale Boost</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-bold mb-1">QC Sensory Notes / Tasting Log</label>
+          <input type="text" id="qc-notes" placeholder="e.g. Verified optimal crunch, perfectly chilled, excellent flavor balance" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2.5">
+          <span class="text-lg">💡</span>
+          <p class="text-[11px] text-amber-300 leading-snug">
+            <strong>SOP Quality Compliance:</strong> Deducting inventory under Employee QC automatically logs an audit-compliant shrinkage entry and syncs with real-time stock levels across both registers and pre-order menus.
+          </p>
+        </div>
+
+        <button onclick="submitEmployeeQcInspection()" id="btn-submit-qc" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2">
+          <span>😋 Confirm Employee Quality Control &amp; Deduct Stock</span>
+        </button>
+      </div>
+
+      <!-- Panel 2: QC Inspection History Log -->
+      <div id="qc-panel-logs" class="hidden flex-1 overflow-y-auto space-y-2 pr-1 text-xs max-h-80">
+        <div id="qc-logs-container" class="space-y-2">
+          <div class="text-center text-slate-500 py-8">Loading Employee QC logs...</div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end pt-2 border-t border-slate-800 text-xs">
+        <button onclick="closeModal('modal-employee-qc')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition">
           Close
         </button>
       </div>

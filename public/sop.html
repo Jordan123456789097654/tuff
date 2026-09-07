@@ -131,7 +131,7 @@
         </a>
         <a href="#ch-4" class="hover:text-amber-600 transition flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100">
           <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">04</span>
-          <span>Customer CCTV Surveillance, Audio Recording &amp; 1-Hour DVR</span>
+          <span>Customer CCTV Surveillance, Audio Recording &amp; 24-Hour DVR</span>
         </a>
         <a href="#ch-5" class="hover:text-amber-600 transition flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100">
           <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">05</span>
@@ -196,6 +196,10 @@
         <a href="#ch-20" class="hover:text-amber-600 transition flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100">
           <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">20</span>
           <span>Principal &amp; PTO Executive Board Governance Standards</span>
+        </a>
+        <a href="#ch-21" class="hover:text-amber-600 transition flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">21</span>
+          <span>Employee Quality Control (QC Taste Test) &amp; Sampling Governance</span>
         </a>
         <a href="#appendix-forms" class="hover:text-amber-600 transition flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 font-black text-amber-700">
           <span class="w-6 h-6 rounded bg-amber-600 text-white flex items-center justify-center font-mono">F</span>
@@ -334,17 +338,18 @@
         <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
           <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">04</span>
           <div>
-            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Customer CCTV Surveillance, Microphone Audio Recording &amp; 1-Hour DVR</h2>
-            <p class="text-xs text-slate-500 font-mono">Customer-facing camera feed, live decibel meter, synchronized microphone audio recording, and 1-hour time-machine DVR</p>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Customer CCTV Surveillance, Microphone Audio Recording &amp; 24-Hour DVR</h2>
+            <p class="text-xs text-slate-500 font-mono">Customer-facing camera feed, live decibel meter, synchronized microphone audio recording, and 24-hour time-machine DVR</p>
           </div>
         </div>
 
         <div class="space-y-3 text-xs text-slate-700">
           <p class="text-slate-600 text-[11px] leading-relaxed">
-            The 2nd Customer Display station maintains an active camera and microphone recording stream. Both high-definition video and synchronized ambient microphone audio are continuously buffered into the <strong>1-Hour Rolling DVR Time-Machine</strong> and streamed live to the Cashier POS Monitor.
+            The 2nd Customer Display station maintains an active camera and microphone recording stream. Both high-definition video and synchronized ambient microphone audio are continuously buffered into the <strong>24-Hour Rolling DVR Time-Machine</strong> (86,400 seconds) and streamed live to the Cashier POS Monitor.
           </p>
           <ul class="list-disc pl-4 space-y-1 text-slate-600 text-[11px]">
             <li><strong>Audio Recording:</strong> Captures counter dialogue, verbal change confirmations, and hostile volume spikes ($>75\text{ dB}$).</li>
+            <li><strong>24-Hour Timeline Scrubbing:</strong> Operators can scrub back across the entire 24-hour operational window using quick preset jump buttons (-24h, -12h, -4h, -1h, -30m, -5m, LIVE) or variable playback speeds (0.5x, 1x, 2x, 4x scan).</li>
             <li><strong>10-Second A/V Clip Export:</strong> Cashiers or leads can instantly download 10-second synchronized video + audio clips directly from the display or cashier hub.</li>
             <li><strong>Cashier Webcam Protection:</strong> Cashier-facing webcams remain strictly unrecorded to safeguard student volunteer privacy.</li>
           </ul>
@@ -673,6 +678,40 @@
         </div>
       </section>
 
+      <!-- CHAPTER 21: EMPLOYEE QUALITY CONTROL -->
+      <section id="ch-21" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-sm">21</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Employee Quality Control (QC Taste Test) &amp; Sampling Governance</h2>
+            <p class="text-xs text-slate-500 font-mono">Volunteer snack taste-testing, crispiness &amp; freshness verification, and automated comp inventory shrinkage logging</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 text-xs text-slate-700">
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            To ensure student customer satisfaction and verify product crispiness, seasoning balance, and beverage chill temperatures, designated volunteers and station leads are authorized to conduct <strong>Employee Quality Control (QC Taste Tests)</strong> under strict ledger accountability.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+              <h4 class="font-bold text-slate-900 uppercase tracking-wider text-[11px]">😋 Sampling Authorization &amp; Limits</h4>
+              <ul class="space-y-1 text-slate-600 text-[11px]">
+                <li><strong>Max Allowance:</strong> 1 sampling unit per volunteer shift (e.g. 1 bag of chips or 1 cold drink).</li>
+                <li><strong>Mandatory System Logging:</strong> Cashiers must immediately open the <em>Employee Quality Control</em> modal, select the item, input the volunteer name, select a verdict (e.g. <code>Grade A+ Exceptional</code>), and record sensory notes.</li>
+                <li><strong>Auto-Deduction:</strong> The POS automatically updates warehouse and register stock to prevent unrecorded inventory drift.</li>
+              </ul>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+              <h4 class="font-bold text-slate-900 uppercase tracking-wider text-[11px]">📋 Audit Compliance &amp; Reconciliation</h4>
+              <p class="text-slate-600 text-[11px] leading-relaxed">
+                All QC deductions are classified under official operational shrinkage (<code>Employee Quality Control</code>). They are included in the end-of-day Z-Report and Kyro AI Loss Prevention audits to ensure 100% transparent book balancing between physical inventory counts and financial receipts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- OFFICIAL PRINTABLE FORMS APPENDIX -->
       <section id="appendix-forms" class="sop-card bg-slate-100 border-2 border-slate-300 rounded-2xl p-6 sm:p-8 space-y-8 page-break">
         <div class="flex items-center gap-3 border-b-2 border-slate-400 pb-3">
@@ -753,7 +792,7 @@
           </div>
 
           <div class="space-y-1 text-xs">
-            <label class="font-bold block text-slate-800">CCTV 1-Hour Time-Machine DVR Timestamp Range:</label>
+            <label class="font-bold block text-slate-800">CCTV 24-Hour Time-Machine DVR Timestamp Range:</label>
             <div class="p-2 bg-slate-50 border rounded font-mono text-[11px]">Start: ___:___:___ AM  |  End: ___:___:___ AM  |  Camera: Table 4B Customer Screen</div>
           </div>
 
@@ -788,6 +827,34 @@
               <tr><td class="p-2 font-sans">____________________</td><td class="p-2 font-sans">Lead Cashier</td><td class="p-2">07:50 AM</td><td class="p-2">08:45 AM</td><td class="p-2">0.9 hrs</td><td class="p-2">50 pts</td></tr>
               <tr><td class="p-2 font-sans">____________________</td><td class="p-2 font-sans">Snack Runner</td><td class="p-2">07:55 AM</td><td class="p-2">08:45 AM</td><td class="p-2">0.8 hrs</td><td class="p-2">40 pts</td></tr>
               <tr><td class="p-2 font-sans">____________________</td><td class="p-2 font-sans">Line Concierge</td><td class="p-2">07:55 AM</td><td class="p-2">08:45 AM</td><td class="p-2">0.8 hrs</td><td class="p-2">40 pts</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- FORM 4: EMPLOYEE QUALITY CONTROL & TASTE TEST AUDIT SHEET -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-300 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between border-b pb-2">
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-sm uppercase tracking-wide">Form JSS-QC-04: Employee Quality Control &amp; Sampling Audit Record</h3>
+              <p class="text-[11px] text-slate-500">Official Taste Testing, Freshness Verification &amp; Comp Inventory Tracking</p>
+            </div>
+            <span class="font-mono font-bold text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg border border-amber-300">QC COMPLIANCE</span>
+          </div>
+
+          <table class="w-full text-left text-xs border border-slate-200">
+            <thead class="bg-slate-100 font-bold text-slate-800 text-[11px]">
+              <tr>
+                <th class="p-2 border-b">Item Sampled</th>
+                <th class="p-2 border-b text-center">Qty</th>
+                <th class="p-2 border-b">Inspector / Staff</th>
+                <th class="p-2 border-b">Verdict</th>
+                <th class="p-2 border-b">Sensory Notes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 font-mono text-[11px]">
+              <tr><td class="p-2 font-sans">Doritos Nacho Cheese</td><td class="p-2 text-center">1</td><td class="p-2 font-sans">Jordan (Lead)</td><td class="p-2 text-emerald-700 font-bold">Grade A+</td><td class="p-2 text-slate-500 font-sans italic">Optimal crispiness, sealed fresh</td></tr>
+              <tr><td class="p-2 font-sans">Mountain Dew Frost</td><td class="p-2 text-center">1</td><td class="p-2 font-sans">Alex (Cashier)</td><td class="p-2 text-emerald-700 font-bold">Approved Fresh</td><td class="p-2 text-slate-500 font-sans italic">Chilled to &lt; 40°F, crisp carbonation</td></tr>
+              <tr><td class="p-2 font-sans">____________________</td><td class="p-2 text-center">___</td><td class="p-2 font-sans">_________________</td><td class="p-2">___________</td><td class="p-2 text-slate-500 font-sans italic">__________________________________</td></tr>
             </tbody>
           </table>
         </div>

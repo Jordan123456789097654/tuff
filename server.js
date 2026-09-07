@@ -1476,7 +1476,7 @@ app.delete('/api/inventory/shrinkage/:id', async (req, res) => {
     await client.query('UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2', [log.quantity, log.product_id]);
     await client.query(
       `INSERT INTO inventory_logs (product_id, change_qty, previous_stock, new_stock, reason)
-       SELECT id, $1, stock_quantity - $1, stock_quantity, 'Voided Shrinkage Entry #${id}' FROM products WHERE id = $2`,
+       SELECT id, $1, stock_quantity - $1, stock_quantity, 'Voided Shrinkage Entry #' || $2 FROM products WHERE id = $2`,
       [log.quantity, log.product_id]
     );
 
@@ -1487,7 +1487,90 @@ app.delete('/api/inventory/shrinkage/:id', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Error voiding shrinkage:', err);
-    res.status(500).json({ error: 'Failed to void shrinkage entry' });
+    res.status(500).json({ error: 'Failed to void shrinkage log' });
+  } finally {
+    client.release();
+  }
+});
+
+// ----------------------------------------------------
+// 😋 EMPLOYEE QUALITY CONTROL & TASTE TESTING LEDGER
+// ----------------------------------------------------
+app.get('/api/inventory/quality-control', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT s.*, p.emoji as product_emoji
+      FROM inventory_shrinkage s
+      LEFT JOIN products p ON s.product_id = p.id
+      WHERE s.reason ILIKE '%Quality Control%' OR s.reason ILIKE '%QC%'
+      ORDER BY s.created_at DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching QC logs:', err);
+    res.status(500).json({ error: 'Failed to fetch QC logs' });
+  }
+});
+
+app.post('/api/inventory/quality-control', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const { product_id, quantity, notes, logged_by, qc_verdict } = req.body;
+    const qty = parseInt(quantity, 10) || 1;
+
+    if (!product_id || isNaN(qty) || qty <= 0) {
+      return res.status(400).json({ error: 'Valid product and quantity are required.' });
+    }
+
+    await client.query('BEGIN');
+
+    const prodRes = await client.query('SELECT * FROM products WHERE id = $1 FOR UPDATE', [product_id]);
+    if (prodRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Product not found.' });
+    }
+
+    const product = prodRes.rows[0];
+    const unitCost = parseFloat(product.cost_price) || 0.00;
+    const totalCostLoss = unitCost * qty;
+    const prevStock = product.stock_quantity;
+    const newStock = Math.max(0, prevStock - qty);
+
+    await client.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [newStock, product.id]);
+
+    const reasonLabel = 'Employee Quality Control (QC Taste Test)';
+    const combinedNotes = `${qc_verdict || 'Taste Verified & Approved'} - ${notes || 'Freshness & flavor profile inspected'}`;
+
+    await client.query(
+      `INSERT INTO inventory_logs (product_id, change_qty, previous_stock, new_stock, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [product.id, -qty, prevStock, newStock, `QC Inspection: ${combinedNotes}`]
+    );
+
+    const logRes = await client.query(
+      `INSERT INTO inventory_shrinkage (product_id, product_name, quantity, unit_cost, total_cost_loss, reason, notes, logged_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [product.id, product.name, qty, unitCost, totalCostLoss, reasonLabel, combinedNotes, logged_by || 'Volunteer Lead']
+    );
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      success: true,
+      message: `😋 Quality Control approved! ${qty}x ${product.name} sampled & stock deducted.`,
+      qc_log: logRes.rows[0],
+      updated_product: {
+        id: product.id,
+        name: product.name,
+        emoji: product.emoji,
+        stock_quantity: newStock
+      }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error logging QC taste test:', err);
+    res.status(500).json({ error: 'Failed to record Employee Quality Control deduction' });
   } finally {
     client.release();
   }
