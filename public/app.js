@@ -4634,8 +4634,121 @@ let isCashierRecordingClip = false;
 let cashierMediaRecorder = null;
 let cashierRecordedChunks = [];
 
+let dvrIndexedDb = null;
+
+// ==========================================
+// 💾 INDEXEDDB PERSISTENT 24-HOUR DVR STORAGE
+// ==========================================
+function initDvrIndexedDb() {
+  if (typeof indexedDB === 'undefined') {
+    fetchServerCctvHistory();
+    return;
+  }
+  try {
+    const req = indexedDB.open('JSS_CCTV_DVR_DB', 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('dvr_frames')) {
+        db.createObjectStore('dvr_frames', { keyPath: 'timestamp' });
+      }
+    };
+    req.onsuccess = (e) => {
+      dvrIndexedDb = e.target.result;
+      loadDvrBufferFromIndexedDb();
+      fetchServerCctvHistory();
+    };
+    req.onerror = (e) => {
+      console.warn('IndexedDB DVR init notice:', e);
+      fetchServerCctvHistory();
+    };
+  } catch (err) {
+    console.warn('IndexedDB exception:', err);
+    fetchServerCctvHistory();
+  }
+}
+
+function saveDvrFrameToIndexedDb(frameItem) {
+  if (!dvrIndexedDb || !frameItem || !frameItem.timestamp || !frameItem.dataUrl) return;
+  try {
+    const tx = dvrIndexedDb.transaction(['dvr_frames'], 'readwrite');
+    const store = tx.objectStore('dvr_frames');
+    store.put({
+      timestamp: frameItem.timestamp,
+      dataUrl: frameItem.dataUrl,
+      tag: frameItem.tag || null,
+      student: frameItem.student || null,
+      isHumanDetected: !!frameItem.isHumanDetected,
+      audioLevel: frameItem.audioLevel || 0
+    });
+  } catch (e) {}
+}
+
+function loadDvrBufferFromIndexedDb() {
+  if (!dvrIndexedDb) return;
+  try {
+    const tx = dvrIndexedDb.transaction(['dvr_frames'], 'readonly');
+    const store = tx.objectStore('dvr_frames');
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const savedFrames = req.result || [];
+      const cutoff = Date.now() - (DVR_MAX_DURATION_SEC * 1000);
+      savedFrames.forEach(f => {
+        if (f.timestamp >= cutoff) {
+          if (!dvrRollingBuffer.some(existing => Math.abs(existing.timestamp - f.timestamp) < 500)) {
+            const img = new Image();
+            img.src = f.dataUrl;
+            dvrRollingBuffer.push({
+              timestamp: f.timestamp,
+              dataUrl: f.dataUrl,
+              imgObj: img,
+              tag: f.tag,
+              student: f.student,
+              isHumanDetected: f.isHumanDetected,
+              audioLevel: f.audioLevel
+            });
+          }
+        }
+      });
+      dvrRollingBuffer.sort((a, b) => a.timestamp - b.timestamp);
+      updateTimelineEventMarkers();
+    };
+  } catch(e) {}
+}
+
+async function fetchServerCctvHistory() {
+  try {
+    const res = await fetch('/api/display/cctv_history');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && Array.isArray(data.frames)) {
+      const cutoff = Date.now() - (DVR_MAX_DURATION_SEC * 1000);
+      data.frames.forEach(f => {
+        if (f.timestamp >= cutoff && !dvrRollingBuffer.some(ex => Math.abs(ex.timestamp - f.timestamp) < 500)) {
+          const img = new Image();
+          img.src = f.frame;
+          const item = {
+            timestamp: f.timestamp,
+            dataUrl: f.frame,
+            imgObj: img,
+            tag: f.tag,
+            student: f.student,
+            isHumanDetected: f.isHumanDetected,
+            audioLevel: f.audioLevel
+          };
+          dvrRollingBuffer.push(item);
+          saveDvrFrameToIndexedDb(item);
+        }
+      });
+      dvrRollingBuffer.sort((a, b) => a.timestamp - b.timestamp);
+      updateTimelineEventMarkers();
+    }
+  } catch(e) {}
+}
+
 // Receiver connection initializer
 function initCashierCustomerCctvSync() {
+  initDvrIndexedDb();
+
   // 1. BroadcastChannel for zero-latency communication on same device
   if (typeof BroadcastChannel !== 'undefined') {
     try {
@@ -4696,53 +4809,21 @@ function updateCustomerCctvAudioHud(audioLevel = 0, hasAudio = true) {
   const icon = document.getElementById('cctv-audio-icon');
   if (!bar) return;
 
-  const lvl = Math.max(0, Math.min(100, audioLevel || 0));
-  bar.style.width = `${Math.max(8, lvl)}%`;
+  const level = typeof audioLevel === 'number' ? Math.max(0, Math.min(100, audioLevel)) : 0;
+  bar.style.width = `${Math.max(8, level)}%`;
 
-  if (lvl > 50) {
+  if (level > 70) {
     bar.className = 'h-full bg-rose-500 rounded-full transition-all duration-75';
     if (label) { label.textContent = '🔊 LOUD MIC'; label.className = 'text-[9px] font-mono text-rose-400 font-bold'; }
-  } else if (lvl > 20) {
+    if (icon) icon.textContent = '🔊';
+  } else if (level > 20) {
     bar.className = 'h-full bg-amber-400 rounded-full transition-all duration-75';
     if (label) { label.textContent = '🎙️ VOICE REC'; label.className = 'text-[9px] font-mono text-amber-300 font-bold'; }
+    if (icon) icon.textContent = '🎙️';
   } else {
     bar.className = 'h-full bg-emerald-400 rounded-full transition-all duration-100';
-    if (label) { label.textContent = hasAudio ? 'MIC LIVE' : 'MIC IDLE'; label.className = 'text-[9px] font-mono text-emerald-400 font-bold'; }
-  }
-}
-
-// Handle incoming frame from 2nd display camera
-function updateCustomerCctvAudioHud(audioLevel, hasAudio) {
-  const bar = document.getElementById('cctv-audio-bar');
-  const label = document.getElementById('cctv-audio-status-label');
-  const icon = document.getElementById('cctv-audio-icon');
-
-  const level = typeof audioLevel === 'number' ? Math.max(0, Math.min(100, audioLevel)) : 0;
-
-  if (bar) {
-    bar.style.width = `${level}%`;
-    if (level > 70) {
-      bar.className = 'h-full bg-rose-500 rounded-full transition-all duration-100';
-    } else if (level > 40) {
-      bar.className = 'h-full bg-amber-400 rounded-full transition-all duration-100';
-    } else {
-      bar.className = 'h-full bg-emerald-400 rounded-full transition-all duration-100';
-    }
-  }
-
-  if (label) {
-    if (!hasAudio) {
-      label.textContent = 'NO MIC';
-      label.className = 'text-[9px] font-mono text-slate-400 font-bold';
-      if (icon) icon.textContent = '🔇';
-    } else {
-      const db = Math.round(35 + (level * 0.55));
-      label.textContent = `${db} dB • REC`;
-      label.className = level > 70 
-        ? 'text-[9px] font-mono text-rose-400 font-bold animate-pulse' 
-        : 'text-[9px] font-mono text-emerald-400 font-bold';
-      if (icon) icon.textContent = '🎙️';
-    }
+    if (label) { label.textContent = hasAudio ? 'MIC LIVE' : 'NO MIC'; label.className = 'text-[9px] font-mono text-emerald-400 font-bold'; }
+    if (icon) icon.textContent = hasAudio ? '🎙️' : '🔇';
   }
 }
 
@@ -4787,9 +4868,9 @@ function handleIncomingCustomerCctvPacket(packet) {
     img.src = packet.frame;
   }
 
-  // Store in 1-Hour Rolling DVR buffer (recording from Customer Camera)
+  // Store in 24-Hour Rolling DVR buffer (recording from Customer Camera)
   if (packet.frame) {
-    dvrRollingBuffer.push({
+    const frameItem = {
       timestamp: now,
       dataUrl: packet.frame,
       imgObj: img,
@@ -4797,12 +4878,14 @@ function handleIncomingCustomerCctvPacket(packet) {
       student: packet.student || null,
       isHumanDetected: !!packet.isHumanDetected,
       audioLevel: packet.audioLevel || 0
-    });
+    };
+    dvrRollingBuffer.push(frameItem);
+    saveDvrFrameToIndexedDb(frameItem);
   }
 
-  // Purge frames older than 1 hour (3600s)
-  const oneHourAgo = now - (DVR_MAX_DURATION_SEC * 1000);
-  while (dvrRollingBuffer.length > 0 && dvrRollingBuffer[0].timestamp < oneHourAgo) {
+  // Purge frames older than 24 hours (86400s)
+  const cutoff = now - (DVR_MAX_DURATION_SEC * 1000);
+  while (dvrRollingBuffer.length > 0 && dvrRollingBuffer[0].timestamp < cutoff) {
     dvrRollingBuffer.shift();
   }
   updateTimelineEventMarkers();
@@ -5030,19 +5113,22 @@ function renderHistoricalDvrFrame(offsetSec) {
         closestFrame = dvrRollingBuffer[i];
       }
     }
-    // If target timestamp is earlier than the earliest frame we have, use the earliest frame
+    // If target timestamp is within recorded bounds but minDiff didn't pick, fallback to closest
     if (!closestFrame && dvrRollingBuffer[0]) {
       closestFrame = dvrRollingBuffer[0];
+      minDiff = Math.abs(dvrRollingBuffer[0].timestamp - targetTimestamp);
     }
   }
 
   const absSec = Math.abs(offsetSec);
-  const m = Math.floor(absSec / 60);
+  const h = Math.floor(absSec / 3600);
+  const m = Math.floor((absSec % 3600) / 60);
   const s = absSec % 60;
+  const timeOffsetStr = h > 0 ? `-${h}h ${m}m ${s}s` : `-${m}m ${s}s`;
   const pastTimeStr = new Date(targetTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   if (dvrBadge) {
-    dvrBadge.textContent = `⏪ REPLAY (-${m}m ${s}s)`;
+    dvrBadge.textContent = `⏪ REPLAY (${timeOffsetStr})`;
     dvrBadge.className = 'text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full';
   }
   if (statusPill && statusText) {
@@ -5051,11 +5137,11 @@ function renderHistoricalDvrFrame(offsetSec) {
   }
   if (watermark) {
     watermark.classList.remove('hidden');
-    watermark.textContent = `⏪ REWIND (CUSTOMER CAM): ${pastTimeStr} (-${m}m ${s}s)`;
+    watermark.textContent = `⏪ REWIND (CUSTOMER CAM): ${pastTimeStr} (${timeOffsetStr})`;
   }
 
-  // Frame is only considered present if within 3.5 seconds of target timestamp
-  const hasRecordedFrame = closestFrame && minDiff <= 3500 && (closestFrame.dataUrl || closestFrame.imgObj);
+  // Frame is considered present if within 5 minutes (300,000ms) of target timestamp
+  const hasRecordedFrame = closestFrame && minDiff <= 300000 && (closestFrame.dataUrl || closestFrame.imgObj);
 
   if (hasRecordedFrame) {
     // Function to draw image and DVR HUD
@@ -5087,6 +5173,16 @@ function renderHistoricalDvrFrame(offsetSec) {
       ctx.fillStyle = '#022c22';
       ctx.font = 'bold 11px monospace';
       ctx.fillText(`CUSTOMER CAM: ${tag}`, 24, 33);
+
+      // Actual capture time indicator if slight offset
+      if (minDiff > 2500) {
+        const actualTime = new Date(frameInfo.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(18, 44, 260, 18);
+        ctx.fillStyle = '#fde68a';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(`📹 CAPTURED AT: ${actualTime} (nearest frame)`, 24, 56);
+      }
 
       // Audio recording indicator
       const audioLvl = (frameInfo && frameInfo.audioLevel) ? frameInfo.audioLevel : 0;
@@ -5166,41 +5262,88 @@ function renderHistoricalDvrFrame(offsetSec) {
     // Center 3: Offset & Camera Location
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px monospace';
-    ctx.fillText(`Offset: -${m} min ${s} sec • CAM-02 Customer Screen (Table 4B)`, cx, cy + 24);
+    ctx.fillText(`Offset: ${timeOffsetStr} • CAM-02 Customer Screen (Table 4B)`, cx, cy + 24);
 
     // Center 4: Status / Subtitle
-    ctx.fillStyle = '#64748b';
-    ctx.font = '11px monospace';
-    ctx.fillText('Logged Customer Screen DVR Archive • Continuous Rec', cx, cy + 46);
+    if (dvrRollingBuffer.length > 0) {
+      const earliest = new Date(dvrRollingBuffer[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const latest = new Date(dvrRollingBuffer[dvrRollingBuffer.length - 1].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '11px monospace';
+      ctx.fillText(`📼 ${dvrRollingBuffer.length} Recorded Snapshots Saved (${earliest} - ${latest})`, cx, cy + 46);
+      ctx.fillStyle = '#a3e635';
+      ctx.font = '10px monospace';
+      ctx.fillText('💡 Click on green timeline spans or jump presets to view video', cx, cy + 64);
+    } else {
+      ctx.fillStyle = '#f87171';
+      ctx.font = '11px monospace';
+      ctx.fillText('⚪ 2nd Screen Offline • Launch /display to start recording', cx, cy + 46);
+    }
     ctx.textAlign = 'start';
   }
 }
 
-// Render colored event ticks on the 60-minute scrubber bar
+// Render colored event ticks & green recorded footage segments on scrubber bar
 function updateTimelineEventMarkers() {
   const container = document.getElementById('cctv-timeline-markers');
-  if (!container || cctvDetectionLogsList.length === 0) return;
+  if (!container) return;
 
   const now = Date.now();
-  container.innerHTML = cctvDetectionLogsList.map(item => {
-    const itemTime = item.created_at || now;
-    const diffSec = (now - itemTime) / 1000;
-    if (diffSec > DVR_MAX_DURATION_SEC) return '';
-    const pct = ((DVR_MAX_DURATION_SEC - diffSec) / DVR_MAX_DURATION_SEC) * 100;
-    const isHighSeverity = item.severity === 'HIGH' || (item.tag && (item.tag.includes('INC') || item.tag.includes('DURESS')));
-    const pinClass = isHighSeverity 
-      ? 'absolute -top-0.5 w-2 h-3.5 bg-rose-500 hover:bg-rose-400 rounded-full cursor-pointer hover:scale-150 transition shadow-md shadow-rose-500/50 z-10' 
-      : 'absolute top-0 w-1.5 h-2.5 bg-amber-400 hover:bg-amber-300 rounded-full cursor-pointer hover:scale-150 transition';
-    
-    return `
-      <div 
-        onclick="jumpToIncidentTimestamp(${itemTime})" 
-        class="${pinClass}" 
-        style="left: ${pct}%;" 
-        title="${item.tag || 'Tag'} - ${item.label} (${item.timestamp})">
-      </div>
-    `;
-  }).join('');
+  let html = '';
+
+  // 1. Draw Recorded Footage Segments (Green track spans)
+  if (dvrRollingBuffer.length > 0) {
+    const segments = [];
+    let segStart = dvrRollingBuffer[0].timestamp;
+    let segEnd = dvrRollingBuffer[0].timestamp;
+
+    for (let i = 1; i < dvrRollingBuffer.length; i++) {
+      const t = dvrRollingBuffer[i].timestamp;
+      if (t - segEnd <= 15000) { // continuous if within 15s
+        segEnd = t;
+      } else {
+        segments.push({ start: segStart, end: segEnd });
+        segStart = t;
+        segEnd = t;
+      }
+    }
+    segments.push({ start: segStart, end: segEnd });
+
+    segments.forEach(seg => {
+      const startDiff = (now - seg.start) / 1000;
+      const endDiff = (now - seg.end) / 1000;
+      const leftPct = Math.max(0, Math.min(100, ((DVR_MAX_DURATION_SEC - startDiff) / DVR_MAX_DURATION_SEC) * 100));
+      const rightPct = Math.max(0, Math.min(100, ((DVR_MAX_DURATION_SEC - endDiff) / DVR_MAX_DURATION_SEC) * 100));
+      const widthPct = Math.max(0.8, rightPct - leftPct);
+
+      html += `<div class="absolute top-1 h-1.5 bg-emerald-400/80 hover:bg-emerald-300 rounded-full pointer-events-auto cursor-pointer transition shadow-sm" style="left: ${leftPct}%; width: ${widthPct}%;" onclick="jumpToIncidentTimestamp(${seg.start})" title="Recorded Footage: ${new Date(seg.start).toLocaleTimeString()} - ${new Date(seg.end).toLocaleTimeString()}"></div>`;
+    });
+  }
+
+  // 2. Detection incident pins
+  if (cctvDetectionLogsList.length > 0) {
+    cctvDetectionLogsList.forEach(item => {
+      const itemTime = item.created_at || now;
+      const diffSec = (now - itemTime) / 1000;
+      if (diffSec > DVR_MAX_DURATION_SEC) return;
+      const pct = ((DVR_MAX_DURATION_SEC - diffSec) / DVR_MAX_DURATION_SEC) * 100;
+      const isHighSeverity = item.severity === 'HIGH' || (item.tag && (item.tag.includes('INC') || item.tag.includes('DURESS')));
+      const pinClass = isHighSeverity 
+        ? 'absolute -top-0.5 w-2 h-3.5 bg-rose-500 hover:bg-rose-400 rounded-full cursor-pointer hover:scale-150 transition shadow-md shadow-rose-500/50 z-10 pointer-events-auto' 
+        : 'absolute top-0 w-1.5 h-2.5 bg-amber-400 hover:bg-amber-300 rounded-full cursor-pointer hover:scale-150 transition pointer-events-auto';
+      
+      html += `
+        <div 
+          onclick="jumpToIncidentTimestamp(${itemTime})" 
+          class="${pinClass}" 
+          style="left: ${pct}%;" 
+          title="${item.tag || 'Tag'} - ${item.label || ''} (${new Date(itemTime).toLocaleTimeString()})">
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = html;
 }
 
 function jumpToIncidentTimestamp(timestamp) {
@@ -5209,7 +5352,7 @@ function jumpToIncidentTimestamp(timestamp) {
   const slider = document.getElementById('cctv-dvr-slider');
   if (slider) slider.value = offset;
   onDvrScrubInput(offset);
-  showToast(`⏪ Jumped to detection timestamp (${Math.round(diffSec / 60)}m ago)`, 'info');
+  showToast(`⏪ Jumped to recorded footage timestamp (${Math.round(diffSec / 60)}m ago)`, 'info');
 }
 
 // ==========================================

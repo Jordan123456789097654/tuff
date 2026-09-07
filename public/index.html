@@ -146,11 +146,11 @@
         <span id="label-cashier-kiosk-status">Kiosk: OFF</span>
       </button>
 
-      <!-- Security CCTV Monitor & 1-Hour DVR -->
-      <button id="btn-cashier-cctv" onclick="toggleCashierSecurityCamera()" class="flex items-center gap-1.5 text-xs text-rose-300 hover:text-white bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 px-2.5 py-1.5 rounded-xl transition font-bold shadow-sm" title="Live CCTV Stream, 1-Hour Time-Machine DVR Playback & Subject Tags">
+      <!-- Security CCTV Monitor & 24-Hour DVR -->
+      <button id="btn-cashier-cctv" onclick="toggleCashierSecurityCamera()" class="flex items-center gap-1.5 text-xs text-rose-300 hover:text-white bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 px-2.5 py-1.5 rounded-xl transition font-bold shadow-sm" title="Live CCTV Stream, 24-Hour Time-Machine DVR Playback & Subject Tags">
         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
         <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
-        <span>CCTV (1-Hr DVR)</span>
+        <span>CCTV (24-Hr DVR)</span>
       </button>
 
       <!-- Cashier-to-Queue Voice Intercom PA Button -->
@@ -3079,14 +3079,18 @@
           </div>
           <div>
             <h3 class="font-heading font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
-              <span>Customer Screen CCTV (2nd Display) & 1-Hour DVR</span>
+              <span>Customer Screen CCTV (2nd Display) &amp; 24-Hour DVR</span>
               <span id="dvr-mode-badge" class="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full">🔴 LIVE FEED</span>
             </h3>
-            <p class="text-xs text-slate-400 font-mono">Live Remote Stream from 2nd Display Camera • 60-Minute Rolling Buffer & Incident Rewind</p>
+            <p class="text-xs text-slate-400 font-mono">Live Remote Stream from 2nd Display Camera • 24-Hour Persistent Buffer &amp; Incident Rewind</p>
           </div>
         </div>
 
         <div class="hidden sm:flex items-center gap-2">
+          <!-- Quick Open 2nd Screen -->
+          <a href="/display" target="_blank" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1 active:scale-95" title="Open Customer 2nd Display in a new tab to activate camera recording">
+            <span>📺 Open 2nd Screen</span>
+          </a>
           <!-- 2nd Display Connection Status Pill -->
           <div id="cashier-display-conn-pill" class="flex items-center gap-1.5 bg-slate-950 border border-slate-700 text-slate-400 text-xs px-2.5 py-1.5 rounded-xl font-mono">
             <span class="w-2 h-2 rounded-full bg-amber-500" id="cashier-display-conn-dot"></span>

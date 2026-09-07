@@ -2290,6 +2290,9 @@ let latestCustomerCctv = {
   crowdCount: 1
 };
 
+let serverCctvFrameHistory = []; // Array of { timestamp, frame, tag, student, isHumanDetected, hasAudio, audioLevel, isHostileAudio }
+const MAX_SERVER_CCTV_FRAMES = 800; // retain recent snapshot frames
+
 app.post('/api/display/cctv_frame', (req, res) => {
   const { frame, tag, student, isHumanDetected, hasAudio, audioLevel, isHostileAudio, hostileConfidence, isCrowded, crowdCount } = req.body;
   const now = Date.now();
@@ -2308,6 +2311,25 @@ app.post('/api/display/cctv_frame', (req, res) => {
     isCrowded: !!isCrowded,
     crowdCount: crowdCount || 1
   };
+
+  if (frame) {
+    const lastSaved = serverCctvFrameHistory.length > 0 ? serverCctvFrameHistory[serverCctvFrameHistory.length - 1].timestamp : 0;
+    if (now - lastSaved >= 1500) {
+      serverCctvFrameHistory.push({
+        timestamp: now,
+        frame: frame,
+        tag: tag || null,
+        student: student || null,
+        isHumanDetected: !!isHumanDetected,
+        hasAudio: !!hasAudio,
+        audioLevel: latestCustomerCctv.audioLevel,
+        isHostileAudio: !!isHostileAudio
+      });
+      if (serverCctvFrameHistory.length > MAX_SERVER_CCTV_FRAMES) {
+        serverCctvFrameHistory.shift();
+      }
+    }
+  }
 
   broadcastToDisplayClients({
     type: 'cctv_customer_frame',
@@ -2363,6 +2385,10 @@ app.get('/api/display/cctv_status', (req, res) => {
     isHostileAudio: isOnline ? latestCustomerCctv.isHostileAudio : false,
     isCrowded: isOnline ? latestCustomerCctv.isCrowded : false
   });
+});
+
+app.get('/api/display/cctv_history', (req, res) => {
+  res.json({ success: true, count: serverCctvFrameHistory.length, frames: serverCctvFrameHistory });
 });
 
 // ====================================================
