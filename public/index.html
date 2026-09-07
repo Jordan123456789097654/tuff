@@ -2936,23 +2936,24 @@
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-slate-800 pb-3 pr-8">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center justify-center text-xl font-bold shrink-0">
+          <div class="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-xl text-rose-400 shrink-0 shadow-lg shadow-rose-950/40">
             <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
           </div>
           <div>
             <h3 class="font-heading font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
-              <span>Station Security CCTV & 1-Hour DVR Playback</span>
+              <span>Customer Screen CCTV (2nd Display) & 1-Hour DVR</span>
               <span id="dvr-mode-badge" class="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full">🔴 LIVE FEED</span>
             </h3>
-            <p class="text-xs text-slate-400 font-mono">Continuous 60-Minute Frame Buffer, Timeline Scrubbing & Incident Retrieval</p>
+            <p class="text-xs text-slate-400 font-mono">Live Remote Stream from 2nd Display Camera • 60-Minute Rolling Buffer & Incident Rewind</p>
           </div>
         </div>
 
         <div class="hidden sm:flex items-center gap-2">
-          <!-- Camera Source Selector -->
-          <select id="cashier-cctv-camera-select" onchange="changeCashierCctvCamera(this.value)" class="bg-slate-950 border border-slate-700 text-slate-300 text-xs px-2.5 py-1.5 rounded-xl font-mono focus:outline-none focus:border-rose-500 max-w-[170px] truncate" title="Select Cashier Station Camera Device">
-            <option value="">📷 Default Camera</option>
-          </select>
+          <!-- 2nd Display Connection Status Pill -->
+          <div id="cashier-display-conn-pill" class="flex items-center gap-1.5 bg-slate-950 border border-slate-700 text-slate-400 text-xs px-2.5 py-1.5 rounded-xl font-mono">
+            <span class="w-2 h-2 rounded-full bg-amber-500" id="cashier-display-conn-dot"></span>
+            <span id="cashier-display-conn-text">Checking 2nd Screen...</span>
+          </div>
           <span class="text-xs text-slate-400 font-mono" id="cashier-cctv-clock">--:--:--</span>
           <button onclick="dockCashierCctvWidget()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1">
             <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i>
@@ -2969,10 +2970,7 @@
           
           <!-- Viewport Box -->
           <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border-2 border-slate-800 shadow-inner group">
-            <!-- Live Video Stream (Shown when in LIVE mode) -->
-            <video id="cashier-cctv-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
-            
-            <!-- Canvas Overlay (Used for AI HUD Target in Live, or Replay Frames in DVR mode) -->
+            <!-- Canvas (Used for Live Customer Screen Feed, AI HUD, and DVR Playback) -->
             <canvas id="cashier-cctv-canvas" class="absolute inset-0 w-full h-full"></canvas>
 
             <!-- Top HUD Badges -->
@@ -2988,7 +2986,7 @@
 
             <!-- Bottom Left Location / Mode Badge -->
             <div class="absolute bottom-2 left-2 bg-slate-950/85 border border-slate-700 text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded shadow">
-              <span id="cctv-viewport-location">CAM-01 • Table 4B Station</span>
+              <span id="cctv-viewport-location">CAM-02 • Customer Screen (Table 4B)</span>
             </div>
 
             <!-- Bottom Right Historical Timestamp Watermark -->

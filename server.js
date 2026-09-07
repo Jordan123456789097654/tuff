@@ -2077,6 +2077,64 @@ app.post('/api/display/face_match', (req, res) => {
   res.json({ success: true });
 });
 
+// ----------------------------------------------------
+// 📹 2ND DISPLAY LIVE CCTV FRAME RELAY & HEARTBEAT
+// ----------------------------------------------------
+let latestCustomerCctv = {
+  online: false,
+  lastHeartbeat: 0,
+  timestamp: 0,
+  frame: null,
+  tag: null,
+  student: null
+};
+
+app.post('/api/display/cctv_frame', (req, res) => {
+  const { frame, tag, student, isHumanDetected } = req.body;
+  const now = Date.now();
+  latestCustomerCctv = {
+    online: true,
+    lastHeartbeat: now,
+    timestamp: now,
+    frame: frame || latestCustomerCctv.frame,
+    tag: tag || null,
+    student: student || null,
+    isHumanDetected: !!isHumanDetected
+  };
+
+  broadcastToDisplayClients({
+    type: 'cctv_customer_frame',
+    timestamp: now,
+    frame: latestCustomerCctv.frame,
+    tag: latestCustomerCctv.tag,
+    student: latestCustomerCctv.student,
+    isHumanDetected: latestCustomerCctv.isHumanDetected
+  });
+
+  res.json({ success: true, timestamp: now });
+});
+
+app.post('/api/display/heartbeat', (req, res) => {
+  const now = Date.now();
+  latestCustomerCctv.lastHeartbeat = now;
+  latestCustomerCctv.online = true;
+  broadcastToDisplayClients({ type: 'display_heartbeat', timestamp: now });
+  res.json({ success: true, timestamp: now });
+});
+
+app.get('/api/display/cctv_status', (req, res) => {
+  const now = Date.now();
+  const isOnline = (now - latestCustomerCctv.lastHeartbeat) < 4500;
+  res.json({
+    online: isOnline,
+    lastHeartbeat: latestCustomerCctv.lastHeartbeat,
+    frame: isOnline ? latestCustomerCctv.frame : null,
+    tag: isOnline ? latestCustomerCctv.tag : null,
+    student: isOnline ? latestCustomerCctv.student : null,
+    isHumanDetected: isOnline ? latestCustomerCctv.isHumanDetected : false
+  });
+});
+
 app.get('/api/network-info', (req, res) => {
   const nets = os.networkInterfaces();
   const ips = [];

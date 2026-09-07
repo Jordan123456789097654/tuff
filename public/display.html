@@ -4064,9 +4064,76 @@
         video.play().catch(()=>{});
         startDisplayCctvAiLoop();
         populateDisplayCameraList();
+        startCustomerCctvRelay();
       } catch (err) {
         console.warn('Security CCTV stream notice:', err);
       }
+    }
+
+    // 📡 Live Frame Transmitter from Customer Display to Cashier POS
+    let customerCctvRelayInterval = null;
+    let customerHeartbeatInterval = null;
+    const customerRelayCanvas = document.createElement('canvas');
+    customerRelayCanvas.width = 320;
+    customerRelayCanvas.height = 240;
+    const customerRelayCtx = customerRelayCanvas.getContext('2d');
+
+    function startCustomerCctvRelay() {
+      if (customerCctvRelayInterval) clearInterval(customerCctvRelayInterval);
+      if (customerHeartbeatInterval) clearInterval(customerHeartbeatInterval);
+
+      // Send immediate heartbeat on startup
+      sendDisplayHeartbeat();
+      customerHeartbeatInterval = setInterval(sendDisplayHeartbeat, 2500);
+
+      customerCctvRelayInterval = setInterval(() => {
+        const video = document.getElementById('cctv-live-video');
+        if (!video || !video.videoWidth || !cctvStream) return;
+
+        try {
+          customerRelayCtx.drawImage(video, 0, 0, 320, 240);
+          const frameData = customerRelayCanvas.toDataURL('image/jpeg', 0.60);
+          const tagEl = document.getElementById('display-cctv-tag');
+          const tagText = tagEl ? tagEl.textContent : null;
+          const stu = (typeof kioskCustomer !== 'undefined' && kioskCustomer) ? kioskCustomer : null;
+
+          const packet = {
+            type: 'cctv_customer_frame',
+            timestamp: Date.now(),
+            frame: frameData,
+            tag: tagText,
+            student: stu,
+            isHumanDetected: tagText && !tagText.includes('SCANNING')
+          };
+
+          // 1. Local BroadcastChannel for 0ms latency on same machine
+          if (typeof BroadcastChannel !== 'undefined') {
+            try {
+              const bc = new BroadcastChannel('snack_display_sync');
+              bc.postMessage(packet);
+            } catch(e){}
+          }
+
+          // 2. Server API relay for multi-device/LAN monitoring
+          fetch('/api/display/cctv_frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(packet)
+          }).catch(()=>{});
+
+        } catch(e){}
+      }, 650); // High-responsiveness ~1.5 FPS lightweight stream
+    }
+
+    function sendDisplayHeartbeat() {
+      const hb = { type: 'display_heartbeat', timestamp: Date.now() };
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const bc = new BroadcastChannel('snack_display_sync');
+          bc.postMessage(hb);
+        } catch(e){}
+      }
+      fetch('/api/display/heartbeat', { method: 'POST' }).catch(()=>{});
     }
 
     // Offscreen sampling canvas for customer display optical AI
