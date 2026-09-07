@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Jordan's Snack Shack - POS System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              200: '#fde68a',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f',
+            },
+            snack: {
+              red: '#ef4444',
+              orange: '#f97316',
+              amber: '#f59e0b',
+              emerald: '#10b981',
+              cyan: '#06b6d4',
+              blue: '#3b82f6',
+              purple: '#8b5cf6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
+
+  <!-- Top App Navigation Bar -->
+  <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+    <!-- Brand Logo -->
+    <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('register')">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/20">
+        🍿
+      </div>
+      <div>
+        <h1 class="font-heading font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+          Jordan's Snack Shack
+          <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">POS</span>
+        </h1>
+        <p class="text-xs text-slate-400 font-medium">School Snack Bar Register</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm overflow-x-auto max-w-full">
+      <button onclick="switchTab('register')" id="tab-btn-register" class="nav-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        <span>Register</span>
+      </button>
+      <button onclick="switchTab('students')" id="tab-btn-students" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="id-card" class="w-4 h-4"></i>
+        <span>Student Passes</span>
+      </button>
+      <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="package" class="w-4 h-4"></i>
+        <span>Inventory & Stock</span>
+      </button>
+      <button onclick="switchTab('orders')" id="tab-btn-orders" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="receipt" class="w-4 h-4"></i>
+        <span>Orders</span>
+      </button>
+      <button onclick="switchTab('shifts')" id="tab-btn-shifts" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="wallet" class="w-4 h-4"></i>
+        <span>Shift Drawer</span>
+      </button>
+      <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        <span>Analytics</span>
+      </button>
+    </nav>
+
+    <!-- Top Right Status & Controls -->
+    <div class="flex items-center space-x-2">
+      <!-- Active Shift Badge -->
+      <button onclick="switchTab('shifts')" id="top-shift-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="top-shift-text">Shift Open</span>
+      </button>
+
+      <!-- Audio Mute/Unmute Toggle -->
+      <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition" title="Toggle Sound FX">
+        <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Cashier Name Pill -->
+      <div class="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300">
+        <i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span id="top-cashier-name">Cashier Volunteer</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- ==================================================== -->
+    <!-- TAB 1: CASHIER REGISTER -->
+    <!-- ==================================================== -->
+    <section id="tab-register" class="flex-1 flex flex-col lg:flex-row overflow-hidden w-full">
+
+      <!-- Left: Products Catalog & Search -->
+      <div class="flex-1 flex flex-col overflow-hidden border-r border-slate-800 bg-slate-900/50">
+        <!-- Search & Filter Bar -->
+        <div class="p-3 bg-slate-950/60 border-b border-slate-800 flex flex-wrap items-center gap-2">
+          <!-- Search input -->
+          <div class="relative flex-1 min-w-[200px]">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="text"
+              id="product-search-input"
+              placeholder="Search snack, drink, or scan barcode..."
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-8 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+              oninput="handleSearch(this.value)"
+            />
+            <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Quick Action: Fast Add Custom Snack -->
+          <button onclick="openCustomItemModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
+            <span>Custom Item</span>
+          </button>
+        </div>
+
+        <!-- Category Selector Pills -->
+        <div class="px-3 py-2 bg-slate-950/40 border-b border-slate-800 flex items-center gap-2 overflow-x-auto scrollbar-none" id="categories-pill-container">
+          <button onclick="filterCategory(null)" class="category-pill active flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap">
+            <span>✨</span> All Items
+          </button>
+          <!-- Dynamic Category Pills inserted by JS -->
+        </div>
+
+        <!-- Product Cards Grid -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            <!-- Dynamic Product Cards inserted by JS -->
+          </div>
+          <!-- Empty State -->
+          <div id="no-products-msg" class="hidden flex flex-col items-center justify-center h-64 text-center text-slate-400">
+            <i data-lucide="search-x" class="w-12 h-12 mb-2 text-slate-600"></i>
+            <p class="font-bold text-slate-300">No snacks found</p>
+            <p class="text-xs text-slate-500">Try searching for something else or clear the filter.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Current Cart Drawer -->
+      <div class="w-full lg:w-[380px] xl:w-[420px] bg-slate-950 flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800 shadow-2xl z-20">
+        <!-- Cart Header -->
+        <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 class="font-heading font-bold text-base text-white">Current Order</h2>
+              <span id="cart-item-count" class="text-xs text-slate-400">0 items in cart</span>
+            </div>
+          </div>
+          <button onclick="clearCart()" class="text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1.5 rounded-lg border border-rose-500/20 transition flex items-center gap-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Clear</span>
+          </button>
+        </div>
+
+        <!-- Cart Items List (Scrollable) -->
+        <div id="cart-items-list" class="flex-1 overflow-y-auto p-3 space-y-2 divide-y divide-slate-800/60">
+          <!-- Empty cart placeholder -->
+          <div id="cart-empty-placeholder" class="flex flex-col items-center justify-center h-48 text-center text-slate-500">
+            <span class="text-4xl mb-2">🛒</span>
+            <p class="font-medium text-slate-400 text-sm">Cart is empty</p>
+            <p class="text-xs text-slate-600 mt-0.5">Click snack items on the left to add</p>
+          </div>
+        </div>
+
+        <!-- Cart Summary & Discount/Tax -->
+        <div class="p-4 bg-slate-900/80 border-t border-slate-800 space-y-2 text-xs">
+          <!-- Discount Selector -->
+          <div class="flex items-center justify-between gap-2 pb-1">
+            <span class="text-slate-400 font-medium">Discount / Coupon:</span>
+            <select id="discount-select" onchange="updateCartTotals()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-amber-500">
+              <option value="0">No Discount ($0.00)</option>
+              <option value="0.50">50¢ Off Coupon</option>
+              <option value="1.00">$1.00 Off Promo</option>
+              <option value="pct-10">10% Student Honor Roll</option>
+              <option value="pct-20">20% Staff Discount</option>
+              <option value="pct-50">50% End-of-Day Clearance</option>
+            </select>
+          </div>
+
+          <!-- Subtotal & Math -->
+          <div class="flex justify-between text-slate-300">
+            <span>Subtotal:</span>
+            <span id="summary-subtotal" class="font-bold text-white">$0.00</span>
+          </div>
+          <div id="discount-row" class="hidden flex justify-between text-emerald-400">
+            <span>Discount Applied:</span>
+            <span id="summary-discount" class="font-bold">-$0.00</span>
+          </div>
+
+          <!-- Big Total -->
+          <div class="pt-2 border-t border-slate-800 flex justify-between items-baseline">
+            <span class="text-sm font-bold text-slate-300">Total Due:</span>
+            <span id="summary-total" class="font-heading font-extrabold text-2xl text-amber-400">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Checkout Action Buttons -->
+        <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
+          <!-- Primary Cash / Student Buttons -->
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="openCashCheckoutModal()" id="btn-pay-cash" class="checkout-action-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-3 rounded-xl shadow-lg shadow-emerald-900/30 flex flex-col items-center justify-center gap-0.5 transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+              <div class="flex items-center gap-1.5 text-sm">
+                <i data-lucide="banknote" class="w-4 h-4"></i>
+                <span>CASH PAY</span>
+              </div>
+              <span class="text-[10px] text-emerald-200 font-normal">Exact & Quick Change</span>
+            </button>
+
+            <button onclick="openStudentCheckoutModal()" id="btn-pay-student" class="checkout-action-btn bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-3 rounded-xl shadow-lg shadow-blue-900/30 flex flex-col items-center justify-center gap-0.5 transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+              <div class="flex items-center gap-1.5 text-sm">
+                <i data-lucide="id-card" class="w-4 h-4"></i>
+                <span>STUDENT PASS</span>
+              </div>
+              <span class="text-[10px] text-blue-200 font-normal">Prepaid ID & Balance</span>
+            </button>
+          </div>
+
+          <!-- Secondary Payment: Card / Meal Pass / Token -->
+          <button onclick="quickOtherCheckout('School Meal Token')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold py-2 px-3 rounded-xl border border-slate-700 text-xs flex items-center justify-center gap-2 transition disabled:opacity-50">
+            <i data-lucide="credit-card" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Other / Card / Meal Token</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 2: STUDENT PASSES & ACCOUNTS -->
+    <!-- ==================================================== -->
+    <section id="tab-students" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
+      <div class="max-w-6xl mx-auto space-y-4">
+        <!-- Header & Action Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <i data-lucide="id-card" class="w-6 h-6 text-blue-400"></i>
+              Prepaid Student Snack Accounts
+            </h2>
+            <p class="text-xs text-slate-400">Manage student balances, set allergy safety warnings, and enforce daily spending limits.</p>
+          </div>
+          <button onclick="openNewStudentModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-900/30 flex items-center gap-2 transition">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>New Student Pass</span>
+          </button>
+        </div>
+
+        <!-- Student Search & Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="md:col-span-2 relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="text"
+              id="student-search-input"
+              placeholder="Search by student name, ID (e.g. STU101), or grade..."
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+              oninput="renderStudentsTable(this.value)"
+            />
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold">
+              <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400">Total Accounts</div>
+              <div id="stat-total-students" class="font-bold text-base text-white">0</div>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold">
+              <i data-lucide="wallet" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400">Total Prepaid Pool</div>
+              <div id="stat-total-balance" class="font-bold text-base text-emerald-400">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
+                <tr>
+                  <th class="p-3.5">Student ID</th>
+                  <th class="p-3.5">Name & Grade</th>
+                  <th class="p-3.5">Account Balance</th>
+                  <th class="p-3.5">Daily Limit</th>
+                  <th class="p-3.5">Allergies / Flags</th>
+                  <th class="p-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="students-table-body" class="divide-y divide-slate-800/60">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 3: INVENTORY & RESTOCK -->
+    <!-- ==================================================== -->
+    <section id="tab-inventory" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
+      <div class="max-w-6xl mx-auto space-y-4">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <i data-lucide="boxes" class="w-6 h-6 text-amber-400"></i>
+              Snack Shack Inventory & Restock Hub
+            </h2>
+            <p class="text-xs text-slate-400">Track real-time snack counts, wholesale costs, profit margins, and quick-add bulk cases.</p>
+          </div>
+          <button onclick="openNewProductModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/30 flex items-center gap-2 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Add New Snack / Item</span>
+          </button>
+        </div>
+
+        <!-- Inventory Filter & Alerts -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="md:col-span-2 relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="text"
+              id="inventory-search-input"
+              placeholder="Search products in stock..."
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition"
+              oninput="renderInventoryTable(this.value)"
+            />
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center font-bold">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400">Low Stock Alerts</div>
+              <div id="stat-low-stock-count" class="font-bold text-base text-rose-400">0 items</div>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold">
+              <i data-lucide="trending-up" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400">Total Catalog Items</div>
+              <div id="stat-total-products" class="font-bold text-base text-white">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
+                <tr>
+                  <th class="p-3.5">Snack Item</th>
+                  <th class="p-3.5">Category</th>
+                  <th class="p-3.5">Retail Price</th>
+                  <th class="p-3.5">Wholesale Cost</th>
+                  <th class="p-3.5">Profit Margin</th>
+                  <th class="p-3.5">Stock Status</th>
+                  <th class="p-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body" class="divide-y divide-slate-800/60">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 4: ORDERS & RECEIPTS -->
+    <!-- ==================================================== -->
+    <section id="tab-orders" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
+      <div class="max-w-6xl mx-auto space-y-4">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <i data-lucide="receipt" class="w-6 h-6 text-purple-400"></i>
+              Sales & Order History
+            </h2>
+            <p class="text-xs text-slate-400">View past snack orders, reprints receipts, and inspect payment breakdowns.</p>
+          </div>
+          <button onclick="loadOrders()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[11px] border-b border-slate-800">
+                <tr>
+                  <th class="p-3.5">Order #</th>
+                  <th class="p-3.5">Time</th>
+                  <th class="p-3.5">Items Purchased</th>
+                  <th class="p-3.5">Payment</th>
+                  <th class="p-3.5">Account / Customer</th>
+                  <th class="p-3.5">Total</th>
+                  <th class="p-3.5 text-right">Receipt</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table-body" class="divide-y divide-slate-800/60">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 5: SHIFT DRAWER AUDIT -->
+    <!-- ==================================================== -->
+    <section id="tab-shifts" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
+      <div class="max-w-4xl mx-auto space-y-5">
+        <!-- Header -->
+        <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800">
+          <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <i data-lucide="wallet" class="w-6 h-6 text-emerald-400"></i>
+            Cash Drawer & Shift Management
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Reconcile cash drawer, track starting float, count register at end of lunch/recess, and detect over/short discrepancies.</p>
+        </div>
+
+        <!-- Active Shift Card -->
+        <div id="active-shift-card" class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 6: ANALYTICS & REPORTS -->
+    <!-- ==================================================== -->
+    <section id="tab-analytics" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
+      <div class="max-w-6xl mx-auto space-y-5">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-6 h-6 text-cyan-400"></i>
+              Fundraiser Performance & Sales Analytics
+            </h2>
+            <p class="text-xs text-slate-400">Track profit margins, top selling snacks, and export records for school advisors.</p>
+          </div>
+          <a href="/api/analytics/export" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-cyan-900/30 flex items-center gap-2 transition">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Export CSV for School</span>
+          </a>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold text-xl">
+              💰
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 font-medium">Today's Revenue</span>
+              <div id="metric-today-rev" class="font-heading font-extrabold text-2xl text-white">$0.00</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold text-xl">
+              📈
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 font-medium">Today's Net Profit</span>
+              <div id="metric-today-profit" class="font-heading font-extrabold text-2xl text-emerald-400">$0.00</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold text-xl">
+              🛒
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 font-medium">Snack Orders Today</span>
+              <div id="metric-today-orders" class="font-heading font-extrabold text-2xl text-white">0</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold text-xl">
+              🏆
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 font-medium">All-Time Revenue</span>
+              <div id="metric-all-rev" class="font-heading font-extrabold text-2xl text-purple-400">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Selling Snacks & Payment Methods -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Top Snacks -->
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
+              <i data-lucide="flame" class="w-5 h-5 text-orange-400"></i>
+              Best Selling Snacks
+            </h3>
+            <div id="top-snacks-list" class="space-y-2.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Payment Breakdown -->
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-5 h-5 text-blue-400"></i>
+              Payment Methods Breakdown
+            </h3>
+            <div id="payment-breakdown-list" class="space-y-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: CASH CHECKOUT & FAST CHANGE CALCULATOR -->
+  <!-- ==================================================== -->
+  <div id="modal-cash-checkout" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-cash-checkout')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl font-bold">
+          💵
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Cash Register Checkout</h3>
+          <p class="text-xs text-slate-400">Calculate change due instantly</p>
+        </div>
+      </div>
+
+      <!-- Total Due Banner -->
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+        <span class="text-xs text-slate-400 uppercase font-semibold">Total Due</span>
+        <span id="cash-modal-total-due" class="font-heading font-extrabold text-3xl text-amber-400">$0.00</span>
+      </div>
+
+      <!-- Quick Cash Bills -->
+      <div class="space-y-2">
+        <span class="text-xs text-slate-400 font-semibold">Quick Cash Tendered:</span>
+        <div class="grid grid-cols-4 gap-2">
+          <button onclick="setCashTendered('exact')" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">Exact</button>
+          <button onclick="setCashTendered(1)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">$1</button>
+          <button onclick="setCashTendered(5)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">$5</button>
+          <button onclick="setCashTendered(10)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">$10</button>
+          <button onclick="setCashTendered(20)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">$20</button>
+          <button onclick="setCashTendered(50)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">$50</button>
+          <button onclick="addCashTendered(1)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">+ $1.00</button>
+          <button onclick="addCashTendered(0.25)" class="quick-cash-btn bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">+ 25¢</button>
+        </div>
+      </div>
+
+      <!-- Custom Input -->
+      <div>
+        <label class="text-xs text-slate-400 font-semibold mb-1 block">Cash Given by Student / Customer ($):</label>
+        <input
+          type="number"
+          step="0.01"
+          id="cash-amount-input"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-lg font-bold text-white focus:outline-none focus:border-emerald-500 transition"
+          oninput="computeCashChange(this.value)"
+        />
+      </div>
+
+      <!-- Change Due Box -->
+      <div id="cash-change-box" class="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center">
+        <div>
+          <span class="text-xs font-semibold text-emerald-400 uppercase">Change Due Back:</span>
+          <p id="cash-change-subtext" class="text-[11px] text-emerald-300/80">Give back to student</p>
+        </div>
+        <span id="cash-modal-change-due" class="font-heading font-extrabold text-3xl text-emerald-400">$0.00</span>
+      </div>
+
+      <!-- Complete Button -->
+      <button onclick="submitCashCheckout()" id="btn-complete-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl text-base shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition active:scale-98">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+        <span>Complete Sale & Print Receipt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: STUDENT ID / PREPAID PASS CHECKOUT -->
+  <!-- ==================================================== -->
+  <div id="modal-student-checkout" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-student-checkout')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-2xl font-bold">
+          🎒
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Student Account Checkout</h3>
+          <p class="text-xs text-slate-400">Deduct from prepaid student balance</p>
+        </div>
+      </div>
+
+      <!-- Total Due Banner -->
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+        <span class="text-xs text-slate-400 uppercase font-semibold">Total Due</span>
+        <span id="student-modal-total-due" class="font-heading font-extrabold text-2xl text-blue-400">$0.00</span>
+      </div>
+
+      <!-- Student Lookup Search -->
+      <div class="space-y-2">
+        <label class="text-xs text-slate-400 font-semibold block">Select or Scan Student ID:</label>
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input
+            type="text"
+            id="student-lookup-input"
+            placeholder="Type student name or ID..."
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+            oninput="searchStudentsForCheckout(this.value)"
+          />
+        </div>
+
+        <!-- Student Dropdown/Matches -->
+        <div id="student-matches-list" class="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Selected Student Profile Card -->
+      <div id="selected-student-card" class="hidden bg-slate-950 p-4 rounded-2xl border border-blue-500/40 space-y-2">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Allergen Warning Alert Box if applicable -->
+      <div id="student-allergy-alert" class="hidden bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-xs text-rose-300 flex items-start gap-2">
+        <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="font-bold text-rose-400">Allergy Warning:</strong>
+          <p id="student-allergy-text" class="mt-0.5">Student has dietary restrictions. Check cart items!</p>
+        </div>
+      </div>
+
+      <!-- Confirm Button -->
+      <button onclick="submitStudentCheckout()" id="btn-complete-student" disabled class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl text-base shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:pointer-events-none active:scale-98">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+        <span>Charge Student Pass & Complete</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: RECEIPT & PRINT PREVIEW -->
+  <!-- ==================================================== -->
+  <div id="modal-receipt" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-receipt')" class="absolute right-4 top-4 text-slate-400 hover:text-white print:hidden">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Thermal Receipt Slip Content -->
+      <div id="printable-receipt" class="bg-white text-slate-900 p-5 rounded-xl font-mono text-xs shadow-inner space-y-3">
+        <!-- Dynamically rendered receipt -->
+      </div>
+
+      <!-- Receipt Actions -->
+      <div class="flex gap-2 print:hidden">
+        <button onclick="printReceipt()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Print Receipt</span>
+        </button>
+        <button onclick="closeModal('modal-receipt')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center transition">
+          <span>New Order</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: RESTOCK SNACK ITEM -->
+  <!-- ==================================================== -->
+  <div id="modal-restock" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-restock')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold">
+          📦
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white" id="restock-item-title">Restock Snack</h3>
+          <p class="text-xs text-slate-400" id="restock-current-count">Current stock: 0</p>
+        </div>
+      </div>
+
+      <input type="hidden" id="restock-product-id" />
+
+      <!-- Quick Case Buttons -->
+      <div class="space-y-2">
+        <span class="text-xs text-slate-400 font-semibold">Quick Case Add:</span>
+        <div class="grid grid-cols-4 gap-2">
+          <button onclick="setRestockQty(12)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">+ 12 pack</button>
+          <button onclick="setRestockQty(24)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">+ 24 box</button>
+          <button onclick="setRestockQty(36)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">+ 36 case</button>
+          <button onclick="setRestockQty(50)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-xs transition">+ 50 count</button>
+        </div>
+      </div>
+
+      <!-- Custom Quantity -->
+      <div>
+        <label class="text-xs text-slate-400 font-semibold mb-1 block">Quantity to Add:</label>
+        <input
+          type="number"
+          id="restock-qty-input"
+          min="1"
+          value="24"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-base font-bold text-white focus:outline-none focus:border-amber-500 transition"
+        />
+      </div>
+
+      <!-- Restock Reason / Shipment Note -->
+      <div>
+        <label class="text-xs text-slate-400 font-semibold mb-1 block">Shipment Note / Reason:</label>
+        <input
+          type="text"
+          id="restock-reason-input"
+          placeholder="e.g. Costco bulk restock / Club donation"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition"
+        />
+      </div>
+
+      <!-- Submit -->
+      <button onclick="submitRestock()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span>Confirm Restock</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: ADD / EDIT PRODUCT -->
+  <!-- ==================================================== -->
+  <div id="modal-product" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-product')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-heading font-bold text-lg text-white" id="product-modal-title">Add New Snack Item</h3>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Snack Name:</label>
+          <input type="text" id="prod-name" placeholder="e.g. Doritos Cool Ranch" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Category:</label>
+            <select id="prod-category" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Emoji Icon:</label>
+            <input type="text" id="prod-emoji" value="🍿" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-center text-base focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Selling Price ($):</label>
+            <input type="number" step="0.05" id="prod-price" value="1.50" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Wholesale Cost ($):</label>
+            <input type="number" step="0.05" id="prod-cost" value="0.65" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Initial Stock Qty:</label>
+            <input type="number" id="prod-stock" value="48" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Low Stock Alert at:</label>
+            <input type="number" id="prod-low" value="10" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Allergy Warning / Dietary Flag:</label>
+          <input type="text" id="prod-allergy" placeholder="e.g. Contains Peanuts, Gluten-Free, Dairy" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+        </div>
+      </div>
+
+      <button onclick="submitProductForm()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span>Save Snack Item</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: NEW STUDENT PASS -->
+  <!-- ==================================================== -->
+  <div id="modal-student-new" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-student-new')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-heading font-bold text-lg text-white">Create Student Snack Pass</h3>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Student Full Name:</label>
+          <input type="text" id="new-stu-name" placeholder="e.g. Alex Johnson" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Student ID #:</label>
+            <input type="text" id="new-stu-id" placeholder="e.g. STU105" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Grade / Class:</label>
+            <input type="text" id="new-stu-grade" placeholder="e.g. 7th Grade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Initial Balance ($):</label>
+            <input type="number" step="1.00" id="new-stu-balance" value="10.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Daily Spending Limit ($):</label>
+            <input type="number" step="0.50" id="new-stu-limit" value="5.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Allergies / Special Dietary Needs:</label>
+          <input type="text" id="new-stu-allergies" placeholder="e.g. Peanuts, Tree nuts, Dairy, Gluten" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Parent / Account Notes:</label>
+          <input type="text" id="new-stu-notes" placeholder="e.g. Parent phone, allowed snacks only" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+        </div>
+      </div>
+
+      <button onclick="submitNewStudent()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="user-check" class="w-4 h-4"></i>
+        <span>Create Student Pass</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: RECHARGE STUDENT BALANCE -->
+  <!-- ==================================================== -->
+  <div id="modal-recharge" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-recharge')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl font-bold">
+          💳
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white" id="recharge-student-name">Reload Balance</h3>
+          <p class="text-xs text-slate-400" id="recharge-current-balance">Current: $0.00</p>
+        </div>
+      </div>
+
+      <input type="hidden" id="recharge-student-id" />
+
+      <!-- Quick Reload Buttons -->
+      <div class="space-y-2">
+        <span class="text-xs text-slate-400 font-semibold">Quick Amount:</span>
+        <div class="grid grid-cols-4 gap-2">
+          <button onclick="setRechargeAmount(5)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">+$5</button>
+          <button onclick="setRechargeAmount(10)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">+$10</button>
+          <button onclick="setRechargeAmount(20)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">+$20</button>
+          <button onclick="setRechargeAmount(50)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2.5 rounded-xl font-bold text-sm transition">+$50</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-400 font-semibold mb-1 block">Deposit Amount ($):</label>
+        <input
+          type="number"
+          step="1.00"
+          id="recharge-amount-input"
+          value="10.00"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-base font-bold text-white focus:outline-none focus:border-emerald-500 transition"
+        />
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-400 font-semibold mb-1 block">Payment Note / Source:</label>
+        <input
+          type="text"
+          id="recharge-note-input"
+          placeholder="e.g. Parent Cash / Venmo / Check"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+        />
+      </div>
+
+      <button onclick="submitRecharge()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>Add Funds to Account</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- App Logic Scripts -->
+  <script src="app.js"></script>
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>

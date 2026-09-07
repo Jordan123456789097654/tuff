@@ -1,0 +1,19 @@
+{
+  "name": "jordans-snack-shack-pos",
+  "version": "1.0.0",
+  "description": "Modern browser-based Point of Sale (POS) system for school snack shack with PostgreSQL support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.5"
+  },
+  "keywords": ["pos", "snack-shack", "school-pos", "postgres", "supabase"],
+  "author": "Jordan's Snack Shack",
+  "license": "MIT"
+}

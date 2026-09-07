@@ -1,0 +1,1481 @@
+// Jordan's Snack Shack POS - Complete Client Application Logic
+
+// ==========================================
+// STATE
+// ==========================================
+let products = [];
+let categories = [];
+let students = [];
+let orders = [];
+let cart = [];
+let currentCategory = null;
+let searchQuery = '';
+let activeShift = null;
+let selectedStudentForCheckout = null;
+let soundEnabled = true;
+
+// Audio Context Synthesizer for POS Sounds
+let audioCtx = null;
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+
+    if (type === 'beep') {
+      // Pleasant high register scan chirp
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'chaching') {
+      // Multi-tone cash register success chime
+      const freqs = [523.25, 659.25, 783.99, 1046.5];
+      freqs.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(ctx.destination);
+        const startTime = now + idx * 0.06;
+        g.gain.setValueAtTime(0.2, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
+        o.start(startTime);
+        o.stop(startTime + 0.25);
+      });
+    } else if (type === 'warning') {
+      // Alert warning tone
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.linearRampToValueAtTime(200, now + 0.15);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
+  } catch (e) {
+    console.warn('Audio not supported or permitted yet:', e);
+  }
+}
+
+function toggleAudio() {
+  soundEnabled = !soundEnabled;
+  const icon = document.getElementById('audio-icon');
+  if (soundEnabled) {
+    icon.setAttribute('data-lucide', 'volume-2');
+    showToast('Sound effects enabled 🔊');
+  } else {
+    icon.setAttribute('data-lucide', 'volume-x');
+    showToast('Sound effects muted 🔇');
+  }
+  lucide.createIcons();
+}
+
+// ==========================================
+// TOAST NOTIFICATIONS
+// ==========================================
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  
+  let bg = 'bg-slate-800 text-white border-slate-700';
+  let icon = '🔔';
+  if (type === 'success') {
+    bg = 'bg-emerald-950 text-emerald-100 border-emerald-500/50';
+    icon = '✅';
+  } else if (type === 'error') {
+    bg = 'bg-rose-950 text-rose-100 border-rose-500/50';
+    icon = '⚠️';
+  }
+
+  toast.className = `toast-item px-4 py-3 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-semibold backdrop-blur-md pointer-events-auto ${bg}`;
+  toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
+}
+
+// ==========================================
+// NAVIGATION & TABS
+// ==========================================
+function switchTab(tabId) {
+  // Hide all sections
+  document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+  // Show target section
+  const target = document.getElementById(`tab-${tabId}`);
+  if (target) target.classList.remove('hidden');
+
+  const btn = document.getElementById(`tab-btn-${tabId}`);
+  if (btn) btn.classList.add('active');
+
+  // Trigger tab-specific refresh
+  if (tabId === 'students') loadStudents();
+  if (tabId === 'inventory') loadProducts();
+  if (tabId === 'orders') loadOrders();
+  if (tabId === 'shifts') loadShiftData();
+  if (tabId === 'analytics') loadAnalytics();
+  
+  lucide.createIcons();
+}
+
+// ==========================================
+// DATA FETCHING & INITIALIZATION
+// ==========================================
+async function initApp() {
+  try {
+    await Promise.all([loadCategories(), loadProducts(), loadShiftStatus()]);
+  } catch (err) {
+    console.error('Initialization error:', err);
+    showToast('Failed to load initial snack shop data', 'error');
+  }
+}
+
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    categories = await res.json();
+    renderCategories();
+  } catch (err) {
+    console.error('Failed to load categories', err);
+  }
+}
+
+async function loadProducts() {
+  try {
+    const res = await fetch('/api/products');
+    products = await res.json();
+    renderProductGrid();
+    renderInventoryTable();
+  } catch (err) {
+    console.error('Failed to load products', err);
+  }
+}
+
+async function loadStudents() {
+  try {
+    const res = await fetch('/api/students');
+    students = await res.json();
+    renderStudentsTable();
+  } catch (err) {
+    console.error('Failed to load students', err);
+  }
+}
+
+async function loadOrders() {
+  try {
+    const res = await fetch('/api/orders?limit=50');
+    orders = await res.json();
+    renderOrdersTable();
+  } catch (err) {
+    console.error('Failed to load orders', err);
+  }
+}
+
+async function loadShiftStatus() {
+  try {
+    const res = await fetch('/api/shifts/current');
+    const data = await res.json();
+    activeShift = data.active ? data.shift : null;
+
+    const badge = document.getElementById('top-shift-badge');
+    const text = document.getElementById('top-shift-text');
+
+    if (activeShift) {
+      badge.className = 'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition';
+      text.textContent = 'Shift Open';
+    } else {
+      badge.className = 'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 font-semibold hover:bg-rose-500/20 transition';
+      text.textContent = 'Shift Closed';
+    }
+  } catch (err) {
+    console.error('Failed to load shift status', err);
+  }
+}
+
+// ==========================================
+// REGISTER VIEW LOGIC
+// ==========================================
+function renderCategories() {
+  const container = document.getElementById('categories-pill-container');
+  const catSelect = document.getElementById('prod-category');
+  
+  if (catSelect) {
+    catSelect.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  }
+
+  const pillsHtml = [
+    `<button onclick="filterCategory(null)" class="category-pill ${currentCategory === null ? 'active' : ''} flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap"><span>✨</span> All Items</button>`
+  ];
+
+  categories.forEach(c => {
+    pillsHtml.push(`
+      <button onclick="filterCategory(${c.id})" class="category-pill ${currentCategory === c.id ? 'active' : ''} flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap">
+        <span>${c.icon}</span> ${c.name}
+      </button>
+    `);
+  });
+
+  container.innerHTML = pillsHtml.join('');
+}
+
+function filterCategory(catId) {
+  currentCategory = catId;
+  renderCategories();
+  renderProductGrid();
+}
+
+function handleSearch(query) {
+  searchQuery = query.toLowerCase().trim();
+  const clearBtn = document.getElementById('clear-search-btn');
+  if (searchQuery.length > 0) {
+    clearBtn.classList.remove('hidden');
+  } else {
+    clearBtn.classList.add('hidden');
+  }
+  renderProductGrid();
+}
+
+function clearSearch() {
+  document.getElementById('product-search-input').value = '';
+  searchQuery = '';
+  document.getElementById('clear-search-btn').classList.add('hidden');
+  renderProductGrid();
+}
+
+function renderProductGrid() {
+  const grid = document.getElementById('products-grid');
+  const noMsg = document.getElementById('no-products-msg');
+
+  const filtered = products.filter(p => {
+    const matchesCat = currentCategory === null || p.category_id === currentCategory;
+    const matchesSearch = !searchQuery || 
+      p.name.toLowerCase().includes(searchQuery) ||
+      (p.barcode && p.barcode.toLowerCase().includes(searchQuery)) ||
+      (p.category_name && p.category_name.toLowerCase().includes(searchQuery));
+    return matchesCat && matchesSearch;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    noMsg.classList.remove('hidden');
+    return;
+  }
+
+  noMsg.classList.add('hidden');
+
+  grid.innerHTML = filtered.map(item => {
+    const isSoldOut = item.stock_quantity <= 0;
+    const isLowStock = item.stock_quantity > 0 && item.stock_quantity <= item.low_stock_threshold;
+
+    let badge = `<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">${item.stock_quantity} in stock</span>`;
+    if (isSoldOut) {
+      badge = `<span class="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md">SOLD OUT</span>`;
+    } else if (isLowStock) {
+      badge = `<span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">LOW: ${item.stock_quantity} left</span>`;
+    }
+
+    return `
+      <div 
+        onclick="${isSoldOut ? `showToast('Snack is currently sold out! Please restock.', 'error'); playSound('warning');` : `addToCart(${item.id})`}"
+        class="product-card group relative bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer transition ${isSoldOut ? 'opacity-50 grayscale cursor-not-allowed' : ''}"
+      >
+        <div>
+          <!-- Top Row: Emoji & Stock Badge -->
+          <div class="flex items-start justify-between gap-1 mb-2">
+            <span class="text-3xl p-1 bg-slate-900 rounded-xl border border-slate-800 shadow-sm">${item.emoji || '🍿'}</span>
+            ${badge}
+          </div>
+
+          <!-- Product Name -->
+          <h4 class="font-heading font-bold text-sm text-white group-hover:text-amber-400 transition line-clamp-2 leading-tight">
+            ${item.name}
+          </h4>
+
+          <!-- Category and Allergy info -->
+          <div class="mt-1 flex flex-wrap gap-1 items-center">
+            ${item.allergy_info ? `<span class="text-[9px] text-amber-300/90 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">⚠️ ${item.allergy_info}</span>` : ''}
+          </div>
+        </div>
+
+        <!-- Price & Quick Add -->
+        <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+          <span class="font-heading font-extrabold text-base text-amber-400">$${parseFloat(item.price).toFixed(2)}</span>
+          <button class="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-amber-500 text-slate-300 group-hover:text-slate-950 flex items-center justify-center font-bold text-sm transition">
+            +
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+// ==========================================
+// CART & PRICING
+// ==========================================
+function addToCart(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  const existing = cart.find(c => c.id === productId);
+  const currentInCart = existing ? existing.quantity : 0;
+
+  if (currentInCart + 1 > product.stock_quantity) {
+    showToast(`Only ${product.stock_quantity} available in stock!`, 'error');
+    playSound('warning');
+    return;
+  }
+
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.price),
+      cost_price: parseFloat(product.cost_price),
+      emoji: product.emoji,
+      allergy_info: product.allergy_info,
+      quantity: 1,
+      max_stock: product.stock_quantity
+    });
+  }
+
+  playSound('beep');
+  renderCart();
+}
+
+function updateCartQty(productId, delta) {
+  const item = cart.find(c => c.id === productId);
+  if (!item) return;
+
+  const newQty = item.quantity + delta;
+  if (newQty <= 0) {
+    removeFromCart(productId);
+    return;
+  }
+
+  if (newQty > item.max_stock) {
+    showToast(`Cannot add more than ${item.max_stock} in stock!`, 'error');
+    playSound('warning');
+    return;
+  }
+
+  item.quantity = newQty;
+  playSound('beep');
+  renderCart();
+}
+
+function removeFromCart(productId) {
+  cart = cart.filter(c => c.id !== productId);
+  renderCart();
+}
+
+function clearCart() {
+  if (cart.length === 0) return;
+  cart = [];
+  renderCart();
+  showToast('Cart cleared');
+}
+
+function renderCart() {
+  const container = document.getElementById('cart-items-list');
+  const countEl = document.getElementById('cart-item-count');
+  const emptyEl = document.getElementById('cart-empty-placeholder');
+  const btnCash = document.getElementById('btn-pay-cash');
+  const btnStudent = document.getElementById('btn-pay-student');
+
+  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  countEl.textContent = `${totalItemsCount} ${totalItemsCount === 1 ? 'item' : 'items'} in order`;
+
+  if (cart.length === 0) {
+    container.innerHTML = `
+      <div id="cart-empty-placeholder" class="flex flex-col items-center justify-center h-48 text-center text-slate-500">
+        <span class="text-4xl mb-2">🛒</span>
+        <p class="font-medium text-slate-400 text-sm">Cart is empty</p>
+        <p class="text-xs text-slate-600 mt-0.5">Click snack items on the left to add</p>
+      </div>
+    `;
+    btnCash.disabled = true;
+    btnStudent.disabled = true;
+  } else {
+    btnCash.disabled = false;
+    btnStudent.disabled = false;
+
+    container.innerHTML = cart.map(item => `
+      <div class="py-2.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="text-xl bg-slate-900 p-1 rounded-lg border border-slate-800">${item.emoji || '🍪'}</span>
+          <div class="min-w-0">
+            <h5 class="text-xs font-bold text-white truncate">${item.name}</h5>
+            <div class="text-[11px] text-slate-400">$${item.price.toFixed(2)} each</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Quantity Controls -->
+          <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">
+              -
+            </button>
+            <span class="w-6 text-center font-bold text-xs text-white">${item.quantity}</span>
+            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">
+              +
+            </button>
+          </div>
+
+          <!-- Total for item -->
+          <span class="font-bold text-xs text-amber-400 w-12 text-right">
+            $${(item.price * item.quantity).toFixed(2)}
+          </span>
+
+          <!-- Delete -->
+          <button onclick="removeFromCart(${item.id})" class="text-slate-500 hover:text-rose-400 p-1 transition">
+            <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  updateCartTotals();
+  lucide.createIcons();
+}
+
+function calculateTotals() {
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discountVal = document.getElementById('discount-select').value;
+  let discountAmt = 0;
+
+  if (discountVal.startsWith('pct-')) {
+    const pct = parseFloat(discountVal.replace('pct-', '')) / 100;
+    discountAmt = subtotal * pct;
+  } else {
+    discountAmt = parseFloat(discountVal) || 0;
+  }
+
+  discountAmt = Math.min(discountAmt, subtotal);
+  const total = Math.max(0, subtotal - discountAmt);
+
+  return { subtotal, discountAmt, total };
+}
+
+function updateCartTotals() {
+  const { subtotal, discountAmt, total } = calculateTotals();
+
+  document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+  
+  const discountRow = document.getElementById('discount-row');
+  const discountEl = document.getElementById('summary-discount');
+  if (discountAmt > 0) {
+    discountRow.classList.remove('hidden');
+    discountEl.textContent = `-$${discountAmt.toFixed(2)}`;
+  } else {
+    discountRow.classList.add('hidden');
+  }
+
+  document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
+}
+
+// ==========================================
+// CASH CHECKOUT FLOW
+// ==========================================
+let currentCashTendered = 0;
+
+function openCashCheckoutModal() {
+  if (cart.length === 0) return;
+  const { total } = calculateTotals();
+
+  document.getElementById('cash-modal-total-due').textContent = `$${total.toFixed(2)}`;
+  document.getElementById('cash-amount-input').value = total.toFixed(2);
+  currentCashTendered = total;
+  computeCashChange(total);
+
+  openModal('modal-cash-checkout');
+}
+
+function setCashTendered(val) {
+  const { total } = calculateTotals();
+  if (val === 'exact') {
+    currentCashTendered = total;
+  } else {
+    currentCashTendered = parseFloat(val);
+  }
+  document.getElementById('cash-amount-input').value = currentCashTendered.toFixed(2);
+  computeCashChange(currentCashTendered);
+}
+
+function addCashTendered(val) {
+  const current = parseFloat(document.getElementById('cash-amount-input').value) || 0;
+  currentCashTendered = current + parseFloat(val);
+  document.getElementById('cash-amount-input').value = currentCashTendered.toFixed(2);
+  computeCashChange(currentCashTendered);
+}
+
+function computeCashChange(givenStr) {
+  const { total } = calculateTotals();
+  const given = parseFloat(givenStr) || 0;
+  const change = given - total;
+
+  const changeBox = document.getElementById('cash-change-box');
+  const changeEl = document.getElementById('cash-modal-change-due');
+  const subtextEl = document.getElementById('cash-change-subtext');
+  const completeBtn = document.getElementById('btn-complete-cash');
+
+  if (change < 0) {
+    changeBox.className = 'bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl flex justify-between items-center';
+    changeEl.className = 'font-heading font-extrabold text-3xl text-rose-400';
+    changeEl.textContent = `-$${Math.abs(change).toFixed(2)}`;
+    subtextEl.textContent = 'Insufficient cash given!';
+    completeBtn.disabled = true;
+  } else {
+    changeBox.className = 'bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center';
+    changeEl.className = 'font-heading font-extrabold text-3xl text-emerald-400';
+    changeEl.textContent = `$${change.toFixed(2)}`;
+    subtextEl.textContent = change === 0 ? 'Exact change provided' : 'Give back change to student';
+    completeBtn.disabled = false;
+  }
+}
+
+async function submitCashCheckout() {
+  const { subtotal, discountAmt, total } = calculateTotals();
+  const paid = parseFloat(document.getElementById('cash-amount-input').value) || total;
+
+  if (paid < total) {
+    showToast('Paid amount is less than total due!', 'error');
+    playSound('warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: cart,
+        payment_method: 'cash',
+        discount: discountAmt,
+        tax: 0,
+        amount_paid: paid,
+        cashier_name: 'Cashier Volunteer'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Checkout failed');
+    }
+
+    playSound('chaching');
+    closeModal('modal-cash-checkout');
+    clearCart();
+    loadProducts(); // refresh stock numbers
+    showReceiptModal(data.order);
+    showToast(`Order ${data.order.order_number} completed! 🍿`, 'success');
+  } catch (err) {
+    console.error('Checkout error:', err);
+    showToast(err.message, 'error');
+    playSound('warning');
+  }
+}
+
+// ==========================================
+// STUDENT PASS CHECKOUT FLOW
+// ==========================================
+async function openStudentCheckoutModal() {
+  if (cart.length === 0) return;
+  const { total } = calculateTotals();
+
+  document.getElementById('student-modal-total-due').textContent = `$${total.toFixed(2)}`;
+  document.getElementById('student-lookup-input').value = '';
+  document.getElementById('selected-student-card').classList.add('hidden');
+  document.getElementById('student-allergy-alert').classList.add('hidden');
+  document.getElementById('btn-complete-student').disabled = true;
+  selectedStudentForCheckout = null;
+
+  if (students.length === 0) {
+    await loadStudents();
+  }
+
+  searchStudentsForCheckout('');
+  openModal('modal-student-checkout');
+}
+
+function searchStudentsForCheckout(query) {
+  const q = query.toLowerCase().trim();
+  const matchesContainer = document.getElementById('student-matches-list');
+
+  const matches = students.filter(s => 
+    !q || s.name.toLowerCase().includes(q) || s.student_id.toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    matchesContainer.innerHTML = `<div class="text-xs text-slate-500 p-2 text-center">No matching students found</div>`;
+    return;
+  }
+
+  matchesContainer.innerHTML = matches.slice(0, 6).map(s => `
+    <div 
+      onclick="selectStudentForCheckout(${s.id})"
+      class="p-2 rounded-lg bg-slate-900 hover:bg-blue-600/20 border border-slate-800 hover:border-blue-500/50 cursor-pointer flex items-center justify-between transition"
+    >
+      <div>
+        <div class="font-bold text-xs text-white">${s.name} <span class="text-[10px] text-blue-300 font-normal">(${s.student_id} - ${s.grade})</span></div>
+        ${s.allergies ? `<div class="text-[10px] text-rose-300">⚠️ ${s.allergies}</div>` : ''}
+      </div>
+      <div class="text-right">
+        <span class="font-bold text-xs text-emerald-400">$${parseFloat(s.balance).toFixed(2)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectStudentForCheckout(studentId) {
+  const student = students.find(s => s.id === studentId);
+  if (!student) return;
+
+  selectedStudentForCheckout = student;
+  const { total } = calculateTotals();
+
+  const card = document.getElementById('selected-student-card');
+  const alertBox = document.getElementById('student-allergy-alert');
+  const alertText = document.getElementById('student-allergy-text');
+  const completeBtn = document.getElementById('btn-complete-student');
+
+  const balance = parseFloat(student.balance);
+  const remaining = balance - total;
+
+  card.classList.remove('hidden');
+  card.innerHTML = `
+    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+      <div>
+        <h4 class="font-bold text-sm text-white">${student.name}</h4>
+        <span class="text-xs text-blue-300">${student.student_id} • ${student.grade}</span>
+      </div>
+      <div class="text-right">
+        <span class="text-[10px] text-slate-400 block">Current Balance</span>
+        <span class="font-heading font-extrabold text-lg text-emerald-400">$${balance.toFixed(2)}</span>
+      </div>
+    </div>
+
+    <div class="flex justify-between text-xs pt-1">
+      <span class="text-slate-400">Balance after order:</span>
+      <span class="font-bold ${remaining < 0 ? 'text-rose-400' : 'text-slate-200'}">$${remaining.toFixed(2)}</span>
+    </div>
+  `;
+
+  // Allergy Check with Cart Items
+  let hasAllergyMatch = false;
+  let matchingAllergens = [];
+
+  if (student.allergies && student.allergies.toLowerCase() !== 'none') {
+    const studentAllergyWords = student.allergies.toLowerCase().split(/[\s,]+/);
+    cart.forEach(item => {
+      if (item.allergy_info) {
+        studentAllergyWords.forEach(word => {
+          if (word.length > 3 && item.allergy_info.toLowerCase().includes(word)) {
+            hasAllergyMatch = true;
+            matchingAllergens.push(`"${item.name}" (${item.allergy_info})`);
+          }
+        });
+      }
+    });
+  }
+
+  if (hasAllergyMatch) {
+    alertBox.classList.remove('hidden');
+    alertText.textContent = `Caution! Student allergy (${student.allergies}) flags snack: ${matchingAllergens.join(', ')}`;
+    playSound('warning');
+  } else if (student.allergies && student.allergies.toLowerCase() !== 'none') {
+    alertBox.classList.remove('hidden');
+    alertText.textContent = `Student has documented restrictions: ${student.allergies}. Please verify with student.`;
+  } else {
+    alertBox.classList.add('hidden');
+  }
+
+  if (balance < total) {
+    completeBtn.disabled = true;
+    showToast(`Insufficient balance ($${balance.toFixed(2)}) for total ($${total.toFixed(2)})`, 'error');
+    playSound('warning');
+  } else {
+    completeBtn.disabled = false;
+    playSound('beep');
+  }
+}
+
+async function submitStudentCheckout() {
+  if (!selectedStudentForCheckout) return;
+  const { subtotal, discountAmt, total } = calculateTotals();
+
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: cart,
+        payment_method: 'student_account',
+        student_id: selectedStudentForCheckout.id,
+        discount: discountAmt,
+        tax: 0,
+        amount_paid: total,
+        cashier_name: 'Cashier Volunteer'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Student checkout failed');
+    }
+
+    playSound('chaching');
+    closeModal('modal-student-checkout');
+    clearCart();
+    loadProducts();
+    loadStudents();
+    showReceiptModal(data.order);
+    showToast(`Student Pass charged! Order completed 🍿`, 'success');
+  } catch (err) {
+    console.error('Student checkout error:', err);
+    showToast(err.message, 'error');
+    playSound('warning');
+  }
+}
+
+// ==========================================
+// OTHER CHECKOUT (CARD / MEAL TOKEN)
+// ==========================================
+async function quickOtherCheckout(methodName) {
+  if (cart.length === 0) return;
+  const { subtotal, discountAmt, total } = calculateTotals();
+
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: cart,
+        payment_method: methodName,
+        discount: discountAmt,
+        tax: 0,
+        amount_paid: total,
+        cashier_name: 'Cashier Volunteer'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Checkout failed');
+
+    playSound('chaching');
+    clearCart();
+    loadProducts();
+    showReceiptModal(data.order);
+    showToast(`Order completed via ${methodName}! 🍿`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+    playSound('warning');
+  }
+}
+
+// ==========================================
+// RECEIPT MODAL
+// ==========================================
+function showReceiptModal(order) {
+  const container = document.getElementById('printable-receipt');
+  const dateStr = new Date(order.created_at || Date.now()).toLocaleString();
+
+  let itemsHtml = '';
+  if (order.items && order.items.length > 0) {
+    itemsHtml = order.items.map(item => `
+      <div style="display: flex; justify-content: space-between; margin: 3px 0;">
+        <span>${item.quantity}x ${item.product_name}</span>
+        <span>$${parseFloat(item.total_price).toFixed(2)}</span>
+      </div>
+    `).join('');
+  }
+
+  container.innerHTML = `
+    <div style="text-align: center; border-bottom: 1px dashed #4b5563; padding-bottom: 8px; margin-bottom: 8px;">
+      <h3 style="font-size: 14px; font-weight: bold; margin: 0;">JORDAN'S SNACK SHACK</h3>
+      <p style="font-size: 10px; color: #4b5563; margin: 2px 0;">School Snack Bar & Fundraiser</p>
+      <p style="font-size: 10px; color: #4b5563; margin: 2px 0;">${dateStr}</p>
+      <p style="font-size: 11px; font-weight: bold; margin-top: 4px;"># ${order.order_number}</p>
+    </div>
+
+    <div style="margin: 8px 0; border-bottom: 1px dashed #4b5563; padding-bottom: 8px;">
+      ${itemsHtml}
+    </div>
+
+    <div style="space-y: 2px; font-size: 11px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span>Subtotal:</span>
+        <span>$${parseFloat(order.subtotal).toFixed(2)}</span>
+      </div>
+      ${parseFloat(order.discount) > 0 ? `
+        <div style="display: flex; justify-content: space-between; color: #059669;">
+          <span>Discount:</span>
+          <span>-$${parseFloat(order.discount).toFixed(2)}</span>
+        </div>` : ''}
+      <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; border-top: 1px solid #111827; padding-top: 4px;">
+        <span>TOTAL DUE:</span>
+        <span>$${parseFloat(order.total).toFixed(2)}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 10px; color: #4b5563; margin-top: 6px;">
+        <span>Payment Method:</span>
+        <span style="text-transform: uppercase;">${order.payment_method.replace('_', ' ')}</span>
+      </div>
+      ${order.payment_method === 'cash' ? `
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #4b5563;">
+          <span>Cash Paid:</span>
+          <span>$${parseFloat(order.amount_paid).toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; color: #059669;">
+          <span>Change Returned:</span>
+          <span>$${parseFloat(order.change_due).toFixed(2)}</span>
+        </div>` : ''}
+    </div>
+
+    <div style="text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #4b5563; font-size: 10px; color: #4b5563;">
+      <p>Thank you for supporting our school!</p>
+      <p style="font-size: 8px; margin-top: 4px;">★ HAVE A GREAT DAY ★</p>
+    </div>
+  `;
+
+  openModal('modal-receipt');
+}
+
+function printReceipt() {
+  window.print();
+}
+
+// ==========================================
+// STUDENT PASS MANAGEMENT
+// ==========================================
+function renderStudentsTable(filterText = '') {
+  const tbody = document.getElementById('students-table-body');
+  const q = (filterText || document.getElementById('student-search-input')?.value || '').toLowerCase().trim();
+
+  const filtered = students.filter(s => 
+    !q || s.name.toLowerCase().includes(q) || s.student_id.toLowerCase().includes(q) || s.grade.toLowerCase().includes(q)
+  );
+
+  document.getElementById('stat-total-students').textContent = students.length;
+  const totalPool = students.reduce((sum, s) => sum + parseFloat(s.balance), 0);
+  document.getElementById('stat-total-balance').textContent = `$${totalPool.toFixed(2)}`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No student accounts found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s => {
+    const bal = parseFloat(s.balance);
+    const limit = parseFloat(s.daily_limit);
+    return `
+      <tr class="hover:bg-slate-900/60 transition">
+        <td class="p-3.5 font-bold text-white">${s.student_id}</td>
+        <td class="p-3.5">
+          <div class="font-bold text-slate-100">${s.name}</div>
+          <div class="text-[11px] text-slate-400">${s.grade}</div>
+        </td>
+        <td class="p-3.5">
+          <span class="font-heading font-extrabold text-sm ${bal <= 2.0 ? 'text-rose-400' : 'text-emerald-400'}">
+            $${bal.toFixed(2)}
+          </span>
+        </td>
+        <td class="p-3.5 text-slate-300">$${limit.toFixed(2)} / day</td>
+        <td class="p-3.5">
+          ${s.allergies && s.allergies.toLowerCase() !== 'none'
+            ? `<span class="bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full text-[10px] font-semibold">⚠️ ${s.allergies}</span>`
+            : `<span class="text-slate-500 text-[11px]">None</span>`}
+        </td>
+        <td class="p-3.5 text-right space-x-1">
+          <button onclick="openRechargeModal(${s.id})" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-emerald-500/30 text-xs font-semibold transition">
+            + Reload $
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openNewStudentModal() {
+  document.getElementById('new-stu-name').value = '';
+  document.getElementById('new-stu-id').value = `STU${Math.floor(100 + Math.random() * 900)}`;
+  document.getElementById('new-stu-grade').value = '7th Grade';
+  document.getElementById('new-stu-balance').value = '10.00';
+  document.getElementById('new-stu-limit').value = '5.00';
+  document.getElementById('new-stu-allergies').value = '';
+  document.getElementById('new-stu-notes').value = '';
+
+  openModal('modal-student-new');
+}
+
+async function submitNewStudent() {
+  const name = document.getElementById('new-stu-name').value.trim();
+  const student_id = document.getElementById('new-stu-id').value.trim();
+  const grade = document.getElementById('new-stu-grade').value.trim();
+  const balance = parseFloat(document.getElementById('new-stu-balance').value) || 0;
+  const limit = parseFloat(document.getElementById('new-stu-limit').value) || 5;
+  const allergies = document.getElementById('new-stu-allergies').value.trim();
+  const notes = document.getElementById('new-stu-notes').value.trim();
+
+  if (!name || !student_id) {
+    showToast('Name and Student ID are required', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_id,
+        name,
+        grade,
+        balance,
+        daily_limit: limit,
+        allergies,
+        notes
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create student');
+
+    playSound('beep');
+    closeModal('modal-student-new');
+    loadStudents();
+    showToast(`Student pass created for ${name}! 🎒`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function openRechargeModal(studentId) {
+  const student = students.find(s => s.id === studentId);
+  if (!student) return;
+
+  document.getElementById('recharge-student-id').value = student.id;
+  document.getElementById('recharge-student-name').textContent = `Reload: ${student.name}`;
+  document.getElementById('recharge-current-balance').textContent = `Current Balance: $${parseFloat(student.balance).toFixed(2)}`;
+  document.getElementById('recharge-amount-input').value = '10.00';
+  document.getElementById('recharge-note-input').value = 'Parent Deposit';
+
+  openModal('modal-recharge');
+}
+
+function setRechargeAmount(val) {
+  document.getElementById('recharge-amount-input').value = parseFloat(val).toFixed(2);
+}
+
+async function submitRecharge() {
+  const studentId = document.getElementById('recharge-student-id').value;
+  const amount = parseFloat(document.getElementById('recharge-amount-input').value);
+  const notes = document.getElementById('recharge-note-input').value;
+
+  if (isNaN(amount) || amount <= 0) {
+    showToast('Please enter a valid deposit amount', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/students/${studentId}/recharge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, notes })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Recharge failed');
+
+    playSound('chaching');
+    closeModal('modal-recharge');
+    loadStudents();
+    showToast(`Added $${amount.toFixed(2)} to account! New balance: $${parseFloat(data.balance).toFixed(2)}`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ==========================================
+// INVENTORY & RESTOCK MANAGEMENT
+// ==========================================
+function renderInventoryTable(filterText = '') {
+  const tbody = document.getElementById('inventory-table-body');
+  const q = (filterText || document.getElementById('inventory-search-input')?.value || '').toLowerCase().trim();
+
+  const filtered = products.filter(p => 
+    !q || p.name.toLowerCase().includes(q) || (p.category_name && p.category_name.toLowerCase().includes(q))
+  );
+
+  document.getElementById('stat-total-products').textContent = products.length;
+  const lowCount = products.filter(p => p.stock_quantity <= p.low_stock_threshold).length;
+  document.getElementById('stat-low-stock-count').textContent = `${lowCount} items`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No items match your inventory search</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const price = parseFloat(p.price);
+    const cost = parseFloat(p.cost_price);
+    const profit = price - cost;
+    const margin = price > 0 ? ((profit / price) * 100).toFixed(0) : 0;
+    const isLow = p.stock_quantity <= p.low_stock_threshold;
+    const isOut = p.stock_quantity <= 0;
+
+    return `
+      <tr class="hover:bg-slate-900/60 transition">
+        <td class="p-3.5">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">${p.emoji || '🍿'}</span>
+            <div>
+              <div class="font-bold text-white">${p.name}</div>
+              ${p.allergy_info ? `<div class="text-[10px] text-amber-300">⚠️ ${p.allergy_info}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td class="p-3.5 text-slate-400">${p.category_name || 'General'}</td>
+        <td class="p-3.5 font-bold text-white">$${price.toFixed(2)}</td>
+        <td class="p-3.5 text-slate-400">$${cost.toFixed(2)}</td>
+        <td class="p-3.5">
+          <span class="text-emerald-400 font-bold">$${profit.toFixed(2)}</span>
+          <span class="text-[10px] text-slate-500">(${margin}%)</span>
+        </td>
+        <td class="p-3.5">
+          ${isOut 
+            ? `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold text-[10px]">0 (SOLD OUT)</span>`
+            : isLow
+              ? `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold text-[10px]">LOW: ${p.stock_quantity} left</span>`
+              : `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold text-[10px]">${p.stock_quantity} in stock</span>`
+          }
+        </td>
+        <td class="p-3.5 text-right space-x-1">
+          <button onclick="openRestockModal(${p.id})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 px-2.5 py-1.5 rounded-lg border border-amber-500/30 text-xs font-semibold transition">
+            + Restock Case
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openRestockModal(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  document.getElementById('restock-product-id').value = product.id;
+  document.getElementById('restock-item-title').textContent = `Restock: ${product.name}`;
+  document.getElementById('restock-current-count').textContent = `Current Stock: ${product.stock_quantity} units`;
+  document.getElementById('restock-qty-input').value = 24;
+  document.getElementById('restock-reason-input').value = 'Costco Bulk Restock';
+
+  openModal('modal-restock');
+}
+
+function setRestockQty(qty) {
+  document.getElementById('restock-qty-input').value = qty;
+}
+
+async function submitRestock() {
+  const productId = document.getElementById('restock-product-id').value;
+  const add_quantity = parseInt(document.getElementById('restock-qty-input').value, 10);
+  const reason = document.getElementById('restock-reason-input').value;
+
+  if (isNaN(add_quantity) || add_quantity <= 0) {
+    showToast('Please enter a valid restock quantity', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/products/${productId}/restock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ add_quantity, reason })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to restock');
+
+    playSound('chaching');
+    closeModal('modal-restock');
+    loadProducts();
+    showToast(`Added +${add_quantity} units to stock! New total: ${data.stock_quantity} 📦`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function openNewProductModal() {
+  document.getElementById('prod-name').value = '';
+  document.getElementById('prod-price').value = '1.50';
+  document.getElementById('prod-cost').value = '0.65';
+  document.getElementById('prod-stock').value = '48';
+  document.getElementById('prod-low').value = '10';
+  document.getElementById('prod-emoji').value = '🍿';
+  document.getElementById('prod-allergy').value = '';
+
+  renderCategories();
+  openModal('modal-product');
+}
+
+function openCustomItemModal() {
+  openNewProductModal();
+}
+
+async function submitProductForm() {
+  const name = document.getElementById('prod-name').value.trim();
+  const category_id = parseInt(document.getElementById('prod-category').value, 10);
+  const emoji = document.getElementById('prod-emoji').value.trim() || '🍪';
+  const price = parseFloat(document.getElementById('prod-price').value) || 1.0;
+  const cost_price = parseFloat(document.getElementById('prod-cost').value) || 0.5;
+  const stock_quantity = parseInt(document.getElementById('prod-stock').value, 10) || 0;
+  const low_stock_threshold = parseInt(document.getElementById('prod-low').value, 10) || 10;
+  const allergy_info = document.getElementById('prod-allergy').value.trim();
+
+  if (!name) {
+    showToast('Product name is required', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        category_id,
+        emoji,
+        price,
+        cost_price,
+        stock_quantity,
+        low_stock_threshold,
+        allergy_info
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create product');
+
+    playSound('beep');
+    closeModal('modal-product');
+    loadProducts();
+    showToast(`Added ${name} to snack shop catalog! ✨`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ==========================================
+// ORDERS & SALES HISTORY
+// ==========================================
+function renderOrdersTable() {
+  const tbody = document.getElementById('orders-table-body');
+  if (orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No orders logged yet</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = orders.map(o => {
+    const timeStr = new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = new Date(o.created_at).toLocaleDateString();
+    const itemsSummary = o.items ? o.items.map(i => `${i.quantity}x ${i.product_name}`).join(', ') : 'Items';
+
+    return `
+      <tr class="hover:bg-slate-900/60 transition">
+        <td class="p-3.5 font-bold text-white">${o.order_number}</td>
+        <td class="p-3.5 text-slate-400">
+          <div>${timeStr}</div>
+          <div class="text-[10px] text-slate-500">${dateStr}</div>
+        </td>
+        <td class="p-3.5 text-slate-300 max-w-xs truncate">${itemsSummary}</td>
+        <td class="p-3.5">
+          <span class="capitalize px-2 py-0.5 rounded-md text-[10px] font-bold ${
+            o.payment_method === 'cash' 
+              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+              : o.payment_method === 'student_account'
+                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+          }">
+            ${o.payment_method.replace('_', ' ')}
+          </span>
+        </td>
+        <td class="p-3.5 text-slate-300">${o.student_name || 'Walk-in Student'}</td>
+        <td class="p-3.5 font-heading font-bold text-amber-400">$${parseFloat(o.total).toFixed(2)}</td>
+        <td class="p-3.5 text-right">
+          <button onclick='showReceiptModal(${JSON.stringify(o)})' class="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition" title="View & Print Receipt">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+// ==========================================
+// SHIFT DRAWER AUDIT LOGIC
+// ==========================================
+async function loadShiftData() {
+  await loadShiftStatus();
+  const card = document.getElementById('active-shift-card');
+
+  if (!activeShift) {
+    card.innerHTML = `
+      <div class="text-center py-6 space-y-4">
+        <div class="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-3xl mx-auto">
+          🔒
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-lg text-white">No Register Shift Currently Open</h3>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Start a new cashier shift with your initial cash drawer float (e.g. $50.00 for making change).</p>
+        </div>
+
+        <div class="max-w-xs mx-auto space-y-3 pt-2">
+          <div>
+            <label class="text-xs text-slate-400 block text-left font-semibold mb-1">Cashier Name:</label>
+            <input type="text" id="open-cashier-name" value="Student Volunteer" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block text-left font-semibold mb-1">Starting Cash Float ($):</label>
+            <input type="number" step="5.00" id="open-start-cash" value="50.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
+          </div>
+          <button onclick="startNewShift()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Open Cashier Shift</span>
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    const openedTime = new Date(activeShift.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    card.innerHTML = `
+      <div class="space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Register Shift in Progress
+            </span>
+            <h3 class="font-heading font-extrabold text-xl text-white mt-0.5">Cashier: ${activeShift.cashier_name}</h3>
+            <p class="text-xs text-slate-400">Shift started at ${openedTime}</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-400">Starting Drawer Float</span>
+            <div class="font-heading font-bold text-lg text-slate-200">$${parseFloat(activeShift.start_cash).toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">Cash Sales This Shift</span>
+            <div class="font-heading font-extrabold text-xl text-emerald-400">$${parseFloat(activeShift.cash_sales).toFixed(2)}</div>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">Total Cash Orders</span>
+            <div class="font-heading font-extrabold text-xl text-white">${activeShift.orders_count}</div>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">Expected in Drawer</span>
+            <div class="font-heading font-extrabold text-xl text-amber-400">$${parseFloat(activeShift.expected_cash).toFixed(2)}</div>
+          </div>
+        </div>
+
+        <!-- Shift Closing Form -->
+        <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h4 class="font-bold text-sm text-white flex items-center gap-2">
+            <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i>
+            End-of-Shift Cash Drawer Reconciliation
+          </h4>
+          <p class="text-xs text-slate-400">Count all physical currency in the cash box and enter the total below:</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-400 font-semibold mb-1 block">Counted Cash in Drawer ($):</label>
+              <input
+                type="number"
+                step="0.01"
+                id="close-actual-cash"
+                placeholder="${parseFloat(activeShift.expected_cash).toFixed(2)}"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-base font-bold text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-semibold mb-1 block">Shift Audit Notes:</label>
+              <input
+                type="text"
+                id="close-shift-notes"
+                placeholder="e.g. Lunch rush balanced / rolled coins"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          <button onclick="closeActiveShift()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2 transition">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            <span>Close Shift & Record Cash Audit</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  lucide.createIcons();
+}
+
+async function startNewShift() {
+  const cashier_name = document.getElementById('open-cashier-name').value.trim() || 'Volunteer';
+  const start_cash = parseFloat(document.getElementById('open-start-cash').value) || 50.0;
+
+  try {
+    const res = await fetch('/api/shifts/open', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cashier_name, start_cash })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to open shift');
+
+    playSound('chaching');
+    loadShiftData();
+    showToast(`Shift opened for ${cashier_name} with $${start_cash.toFixed(2)} float! 🟢`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function closeActiveShift() {
+  const actual_cash = parseFloat(document.getElementById('close-actual-cash').value);
+  const notes = document.getElementById('close-shift-notes').value;
+
+  if (isNaN(actual_cash)) {
+    showToast('Please enter the counted cash amount in the drawer', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/shifts/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actual_cash, notes })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to close shift');
+
+    playSound('chaching');
+    loadShiftData();
+    showToast(`Shift closed! Result: ${data.summary.status}`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ==========================================
+// ANALYTICS & REPORTS
+// ==========================================
+async function loadAnalytics() {
+  try {
+    const res = await fetch('/api/analytics/summary');
+    const data = await res.json();
+
+    document.getElementById('metric-today-rev').textContent = `$${data.today.revenue.toFixed(2)}`;
+    document.getElementById('metric-today-profit').textContent = `$${data.today.profit.toFixed(2)}`;
+    document.getElementById('metric-today-orders').textContent = data.today.orders;
+    document.getElementById('metric-all-rev').textContent = `$${data.all_time.revenue.toFixed(2)}`;
+
+    // Render Top Snacks
+    const topList = document.getElementById('top-snacks-list');
+    if (data.top_items.length === 0) {
+      topList.innerHTML = `<p class="text-xs text-slate-500">No sales logged yet to calculate top items</p>`;
+    } else {
+      topList.innerHTML = data.top_items.map((item, idx) => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 font-extrabold text-xs flex items-center justify-center">${idx + 1}</span>
+            <span class="font-bold text-xs text-white">${item.product_name}</span>
+          </div>
+          <div class="text-right">
+            <span class="font-bold text-xs text-emerald-400">${item.total_sold} sold</span>
+            <span class="text-[10px] text-slate-500 block">$${parseFloat(item.total_revenue).toFixed(2)} rev</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Payment Breakdown
+    const payList = document.getElementById('payment-breakdown-list');
+    if (data.payments.length === 0) {
+      payList.innerHTML = `<p class="text-xs text-slate-500">No orders logged yet</p>`;
+    } else {
+      payList.innerHTML = data.payments.map(p => `
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs font-semibold">
+            <span class="capitalize text-slate-300">${p.payment_method.replace('_', ' ')} (${p.count} orders)</span>
+            <span class="text-amber-400 font-bold">$${parseFloat(p.amount).toFixed(2)}</span>
+          </div>
+          <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+            <div class="bg-amber-500 h-full rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Analytics load error:', err);
+  }
+}
+
+// ==========================================
+// MODAL HELPERS
+// ==========================================
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('hidden');
+}
+
+// Close modals when clicking backdrop
+window.addEventListener('click', (e) => {
+  if (e.target.classList.contains('fixed') && e.target.classList.contains('backdrop-blur-sm')) {
+    e.target.classList.add('hidden');
+  }
+});
+
+// App Startup
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+});
