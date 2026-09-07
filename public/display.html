@@ -62,11 +62,17 @@
       </div>
     </div>
 
-    <!-- Live Clock & Connection Pill -->
-    <div class="flex items-center gap-3">
+    <!-- Live Clock, Spin Wheel Button & Sync Status -->
+    <div class="flex items-center gap-2.5">
+      <!-- Lucky Spin Wheel Trigger -->
+      <button onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+        <span>🎟️</span>
+        <span class="hidden sm:inline">Lucky Spin Wheel</span>
+      </button>
+
       <div id="sync-status-badge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span>Live Register Sync</span>
+        <span class="hidden md:inline">Live Register Sync</span>
       </div>
       <div id="live-clock" class="text-xs sm:text-sm font-mono font-bold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
         --:-- --
@@ -116,13 +122,16 @@
           <p class="text-xs text-slate-400">Give your Student ID at checkout. Every 10 orders earns <strong>1 FREE snack reward</strong>!</p>
         </div>
 
-        <!-- Card 3: Payment Methods -->
-        <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-emerald-500/40 transition shadow-lg">
-          <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xl">
-            📱
+        <!-- Card 3: Interactive Lucky Wheel -->
+        <div onclick="openSpinWheel()" class="bg-slate-900/80 border border-amber-500/30 p-5 rounded-3xl text-left space-y-2 relative overflow-hidden group hover:border-amber-500 transition shadow-lg cursor-pointer">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl">
+            🎟️
           </div>
-          <h3 class="font-heading font-bold text-base text-white">Ways to Pay</h3>
-          <p class="text-xs text-slate-400">We accept <strong>Cash</strong>, <strong>Prepaid Student Balance</strong>, and <strong>Venmo / CashApp</strong>.</p>
+          <h3 class="font-heading font-bold text-base text-amber-400 flex items-center gap-1.5">
+            <span>Lucky Prize Wheel</span>
+            <span class="text-[9px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold">TAP TO PLAY</span>
+          </h3>
+          <p class="text-xs text-slate-400">Spin the wheel to win bonus candy, extra stamps, or mystery snack passes!</p>
         </div>
       </div>
 
@@ -162,7 +171,7 @@
           </div>
 
           <!-- Items Table Container -->
-          <div id="display-items-container" class="max-h-[340px] sm:max-h-[400px] overflow-y-auto space-y-2 pr-1 scrollbar-none">
+          <div id="display-items-container" class="max-h-[300px] sm:max-h-[360px] overflow-y-auto space-y-2 pr-1 scrollbar-none">
             <!-- Dynamically populated rows -->
           </div>
         </div>
@@ -188,10 +197,10 @@
         </div>
       </div>
 
-      <!-- RIGHT: PAYMENT TOTAL & VENMO/CASHAPP SCANNABLE QR (6 cols) -->
+      <!-- RIGHT: PAYMENT TOTAL, DONATION TIP JAR & QR CODE (6 cols) -->
       <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
         
-        <!-- Totals Card -->
+        <!-- Totals & Interactive Tip Jar Card -->
         <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/40 rounded-3xl p-5 shadow-2xl space-y-4 flex flex-col justify-between glow-pulse">
           <div class="space-y-3">
             
@@ -217,6 +226,11 @@
                 <span id="display-discount-label" class="flex items-center gap-1"><span>🏷️</span> Discount:</span>
                 <span id="display-discount-amount" class="font-mono font-bold">-$0.00</span>
               </div>
+
+              <div id="display-tip-row" class="hidden flex justify-between items-center text-pink-400 font-semibold text-xs bg-pink-500/10 px-2.5 py-1.5 rounded-xl border border-pink-500/20">
+                <span class="flex items-center gap-1"><span>🍯</span> School Fund Donation:</span>
+                <span id="display-tip-amount" class="font-mono font-bold">+$0.00</span>
+              </div>
             </div>
           </div>
 
@@ -228,8 +242,26 @@
             </div>
           </div>
 
-          <div class="text-center text-[11px] text-slate-400 font-medium">
-            💵 Cash in hand or 🎒 Student Pass accepted
+          <!-- Interactive Tip / School Donation Selector -->
+          <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+            <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold">
+              <span>Support School Activities Tip Jar 🍯:</span>
+              <span id="tip-selected-label" class="text-pink-400 font-bold">Optional</span>
+            </div>
+            <div class="grid grid-cols-4 gap-1 text-[11px] font-bold">
+              <button onclick="selectCustomerTip('roundup')" id="tip-btn-roundup" class="tip-pill bg-slate-900 hover:bg-pink-500/20 text-slate-300 hover:text-pink-300 border border-slate-800 py-1.5 rounded-xl transition">
+                Round Up
+              </button>
+              <button onclick="selectCustomerTip(0.50)" id="tip-btn-50" class="tip-pill bg-slate-900 hover:bg-pink-500/20 text-slate-300 hover:text-pink-300 border border-slate-800 py-1.5 rounded-xl transition">
+                +$0.50
+              </button>
+              <button onclick="selectCustomerTip(1.00)" id="tip-btn-100" class="tip-pill bg-slate-900 hover:bg-pink-500/20 text-slate-300 hover:text-pink-300 border border-slate-800 py-1.5 rounded-xl transition">
+                +$1.00
+              </button>
+              <button onclick="selectCustomerTip(0)" id="tip-btn-none" class="tip-pill bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 py-1.5 rounded-xl transition">
+                No Tip
+              </button>
+            </div>
           </div>
         </div>
 
@@ -243,12 +275,12 @@
 
           <!-- White Scannable QR Container -->
           <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-inner flex flex-col items-center justify-center space-y-2 text-slate-900">
-            <div id="display-qr-wrapper" class="w-full flex items-center justify-center min-h-[160px]">
-              <img id="display-qr-img" src="" alt="Payment QR Code" class="max-h-40 max-w-full object-contain rounded-lg shadow-sm hidden" />
+            <div id="display-qr-wrapper" class="w-full flex items-center justify-center min-h-[150px]">
+              <img id="display-qr-img" src="" alt="Payment QR Code" class="max-h-36 max-w-full object-contain rounded-lg shadow-sm hidden" />
               <div id="display-qr-empty" class="text-slate-400 text-xs py-6 flex flex-col items-center">
                 <span class="text-3xl mb-1">📸</span>
                 <p class="font-bold text-slate-700">QR Code Ready</p>
-                <p class="text-[10px] text-slate-500">Scan with your camera app</p>
+                <p class="text-[10px] text-slate-500">Scan with phone camera</p>
               </div>
             </div>
 
@@ -268,19 +300,19 @@
     </div>
 
     <!-- ==================================================== -->
-    <!-- VIEW 3: CELEBRATION / THANK YOU MODE -->
+    <!-- VIEW 3: CELEBRATION, THANK YOU & CUSTOMER REVIEW MODE -->
     <!-- ==================================================== -->
-    <div id="view-celebrate" class="hidden w-full flex-1 flex flex-col justify-center items-center text-center max-w-2xl mx-auto space-y-6 animate-in fade-in zoom-in duration-300 py-6">
+    <div id="view-celebrate" class="hidden w-full flex-1 flex flex-col justify-center items-center text-center max-w-2xl mx-auto space-y-5 animate-in fade-in zoom-in duration-300 py-4">
       
       <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 flex items-center justify-center text-4xl sm:text-5xl shadow-2xl float-anim">
         🎉
       </div>
 
-      <div class="space-y-2">
+      <div class="space-y-1.5">
         <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-1 rounded-full">
           Payment Received • Order Complete
         </span>
-        <h2 class="font-heading font-extrabold text-3xl sm:text-5xl text-white">
+        <h2 class="font-heading font-extrabold text-3xl sm:text-4xl text-white">
           Thank You for Supporting <br>
           <span class="text-amber-400">Jordan's Snack Shack!</span>
         </h2>
@@ -288,8 +320,8 @@
       </div>
 
       <!-- Receipt Summary Card -->
-      <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full text-left space-y-4 shadow-2xl">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl w-full text-left space-y-3.5 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
           <div>
             <span class="text-[10px] text-slate-500 uppercase font-bold">Order Number</span>
             <div id="celebrate-order-num" class="font-mono font-bold text-base text-amber-400">ORD-123456</div>
@@ -300,22 +332,85 @@
           </div>
         </div>
 
-        <div id="celebrate-change-box" class="hidden bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-2xl flex justify-between items-center text-sm font-bold text-emerald-300">
+        <div id="celebrate-change-box" class="hidden bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl flex justify-between items-center text-sm font-bold text-emerald-300">
           <span>Change Due Back:</span>
           <span id="celebrate-change-amount" class="text-lg font-heading text-emerald-400">$0.00</span>
         </div>
 
-        <div id="celebrate-reward-alert" class="hidden bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 p-3.5 rounded-2xl text-center font-bold text-amber-300 text-sm">
+        <div id="celebrate-reward-alert" class="hidden bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 p-3 rounded-2xl text-center font-bold text-amber-300 text-xs">
           🎁 FREE SNACK REWARD UNLOCKED FOR NEXT VISIT! 🎁
+        </div>
+
+        <!-- Interactive Customer Smile Review / Rating -->
+        <div id="celebrate-feedback-box" class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-center space-y-2">
+          <span class="text-xs text-slate-300 font-bold block">How was your Snack Shack service today?</span>
+          <div class="grid grid-cols-4 gap-2">
+            <button onclick="submitCustomerFeedback(5, '🤩', 'Awesome!')" class="feedback-btn bg-slate-900 hover:bg-amber-500/20 border border-slate-800 hover:border-amber-500/50 p-2 rounded-xl transition flex flex-col items-center">
+              <span class="text-2xl">🤩</span>
+              <span class="text-[10px] text-slate-300 font-bold mt-1">Awesome!</span>
+            </button>
+            <button onclick="submitCustomerFeedback(5, '😊', 'Great Snacks!')" class="feedback-btn bg-slate-900 hover:bg-emerald-500/20 border border-slate-800 hover:border-emerald-500/50 p-2 rounded-xl transition flex flex-col items-center">
+              <span class="text-2xl">😊</span>
+              <span class="text-[10px] text-slate-300 font-bold mt-1">Great!</span>
+            </button>
+            <button onclick="submitCustomerFeedback(5, '⚡', 'Super Fast!')" class="feedback-btn bg-slate-900 hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-500/50 p-2 rounded-xl transition flex flex-col items-center">
+              <span class="text-2xl">⚡</span>
+              <span class="text-[10px] text-slate-300 font-bold mt-1">Super Fast</span>
+            </button>
+            <button onclick="submitCustomerFeedback(5, '🍿', 'Legend!')" class="feedback-btn bg-slate-900 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-500/50 p-2 rounded-xl transition flex flex-col items-center">
+              <span class="text-2xl">🍿</span>
+              <span class="text-[10px] text-slate-300 font-bold mt-1">Legend!</span>
+            </button>
+          </div>
+          <div id="feedback-thankyou-msg" class="hidden text-xs text-emerald-400 font-bold pt-1">
+            ⭐ Thanks for your review! You make our school great! ⭐
+          </div>
         </div>
       </div>
 
-      <div class="text-xs text-slate-500 font-semibold animate-pulse">
+      <div class="text-[11px] text-slate-500 font-semibold animate-pulse">
         Screen will reset for the next student in a few seconds...
       </div>
     </div>
 
   </main>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: "LUCKY SNACK" INTERACTIVE SPIN WHEEL -->
+  <!-- ==================================================== -->
+  <div id="modal-spin-wheel" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl w-full max-w-md p-6 text-center space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+      <button onclick="closeSpinWheel()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="space-y-1">
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-0.5 rounded-full">Recess Bonus Game</span>
+        <h3 class="font-heading font-extrabold text-2xl text-white">🎟️ Lucky Snack Prize Wheel</h3>
+        <p class="text-xs text-slate-400">Spin the wheel to win exciting snack treats & rewards!</p>
+      </div>
+
+      <!-- Canvas Wheel Viewport with Pointer -->
+      <div class="relative w-64 h-64 mx-auto my-2 flex items-center justify-center">
+        <!-- Center Pointer -->
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-3xl filter drop-shadow">
+          🔻
+        </div>
+        <canvas id="wheel-canvas" width="250" height="250" class="rounded-full shadow-2xl border-4 border-amber-500/60"></canvas>
+      </div>
+
+      <!-- Result Banner -->
+      <div id="wheel-result-banner" class="hidden bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 p-3 rounded-2xl text-center space-y-1">
+        <span class="text-xs text-amber-300 font-bold uppercase block">🎉 YOU WON!</span>
+        <h4 id="wheel-prize-text" class="font-heading font-extrabold text-lg text-white">Free Airhead Candy!</h4>
+        <p class="text-[10px] text-slate-400">Show this screen to your volunteer cashier to claim your prize!</p>
+      </div>
+
+      <button onclick="spinWheel()" id="btn-spin-now" class="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold py-3.5 rounded-2xl text-base shadow-xl shadow-amber-500/20 transition active:scale-98">
+        🎲 SPIN THE WHEEL!
+      </button>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <footer class="bg-slate-900/60 border-t border-slate-800/80 px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0">
@@ -333,6 +428,8 @@
     let currentState = 'idle';
     let celebrationTimer = null;
     let storeSettings = {};
+    let activeCartData = null;
+    let currentCustomerTip = 0;
 
     // Live Clock
     function updateClock() {
@@ -375,9 +472,73 @@
       }
     }
 
+    // Customer Interactive Tip / School Donation
+    function selectCustomerTip(val) {
+      if (!activeCartData) return;
+      const baseTotal = parseFloat(activeCartData.subtotal || 0) - parseFloat(activeCartData.discountAmount || 0) - parseFloat(activeCartData.comboDiscount || 0);
+      
+      let tipAmt = 0;
+      if (val === 'roundup') {
+        const ceil = Math.ceil(baseTotal);
+        tipAmt = (ceil > baseTotal) ? (ceil - baseTotal) : 1.00;
+      } else {
+        tipAmt = parseFloat(val) || 0;
+      }
+
+      currentCustomerTip = tipAmt;
+      const newTotal = Math.max(0, baseTotal + tipAmt);
+
+      const tipRow = document.getElementById('display-tip-row');
+      const tipLabel = document.getElementById('tip-selected-label');
+      if (tipAmt > 0) {
+        tipRow.classList.remove('hidden');
+        document.getElementById('display-tip-amount').textContent = `+$${tipAmt.toFixed(2)}`;
+        tipLabel.textContent = `+$${tipAmt.toFixed(2)} added! Thank you! 💖`;
+      } else {
+        tipRow.classList.add('hidden');
+        tipLabel.textContent = 'No tip added';
+      }
+
+      document.getElementById('display-total-amount').textContent = `$${newTotal.toFixed(2)}`;
+      updateQRDisplay(newTotal);
+
+      // Broadcast tip to register
+      const updatePayload = {
+        ...activeCartData,
+        tipAmount: tipAmt,
+        total: newTotal
+      };
+      if (typeof BroadcastChannel !== 'undefined') {
+        try { new BroadcastChannel('snack_display_sync').postMessage(updatePayload); } catch(e){}
+      }
+      fetch('/api/display/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      }).catch(()=>{});
+    }
+
+    // Customer Feedback Submission
+    async function submitCustomerFeedback(rating, emoji, comment) {
+      try {
+        await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating, emoji, comment })
+        });
+        document.getElementById('feedback-thankyou-msg').classList.remove('hidden');
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+        }
+      } catch (err) {
+        console.warn('Feedback submit note:', err);
+      }
+    }
+
     // Render Display State
     function renderState(data) {
       if (!data) return;
+      activeCartData = data;
 
       const viewIdle = document.getElementById('view-idle');
       const viewActive = document.getElementById('view-active');
@@ -388,6 +549,7 @@
         viewIdle.classList.add('hidden');
         viewActive.classList.add('hidden');
         viewCelebrate.classList.remove('hidden');
+        document.getElementById('feedback-thankyou-msg').classList.add('hidden');
 
         document.getElementById('celebrate-order-num').textContent = data.order.order_number || 'ORD-COMPLETE';
         document.getElementById('celebrate-total-paid').textContent = `$${parseFloat(data.order.total || data.total || 0).toFixed(2)}`;
@@ -420,7 +582,7 @@
         if (celebrationTimer) clearTimeout(celebrationTimer);
         celebrationTimer = setTimeout(() => {
           renderState({ state: 'idle', cart: [] });
-        }, 7000);
+        }, 8500);
 
         lucide.createIcons();
         return;
@@ -556,6 +718,131 @@
           renderState(event.data);
         }
       };
+    }
+
+    // ==========================================
+    // "LUCKY SNACK" PRIZE WHEEL LOGIC
+    // ==========================================
+    const PRIZES = [
+      { label: "🍬 Free Airhead", color: "#f59e0b" },
+      { label: "⭐ 2x Punch Stamps", color: "#3b82f6" },
+      { label: "🍿 Free Popcorn Bag", color: "#10b981" },
+      { label: "🏷️ 50¢ Off Snack", color: "#8b5cf6" },
+      { label: "🎁 Mystery Snack", color: "#ec4899" },
+      { label: "🏆 School Hero High-Five", color: "#f97316" }
+    ];
+
+    let wheelCanvas, wheelCtx;
+    let wheelAngle = 0;
+    let isSpinning = false;
+
+    function openSpinWheel() {
+      document.getElementById('modal-spin-wheel').classList.remove('hidden');
+      document.getElementById('wheel-result-banner').classList.add('hidden');
+      document.getElementById('btn-spin-now').disabled = false;
+      document.getElementById('btn-spin-now').textContent = "🎲 SPIN THE WHEEL!";
+
+      wheelCanvas = document.getElementById('wheel-canvas');
+      wheelCtx = wheelCanvas.getContext('2d');
+      drawWheel(wheelAngle);
+      lucide.createIcons();
+    }
+
+    function closeSpinWheel() {
+      document.getElementById('modal-spin-wheel').classList.add('hidden');
+    }
+
+    function drawWheel(angle) {
+      if (!wheelCtx) return;
+      const numSlices = PRIZES.length;
+      const sliceAngle = (2 * Math.PI) / numSlices;
+      const radius = wheelCanvas.width / 2;
+
+      wheelCtx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+      wheelCtx.save();
+      wheelCtx.translate(radius, radius);
+      wheelCtx.rotate(angle);
+
+      for (let i = 0; i < numSlices; i++) {
+        wheelCtx.beginPath();
+        wheelCtx.moveTo(0, 0);
+        wheelCtx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
+        wheelCtx.fillStyle = PRIZES[i].color;
+        wheelCtx.fill();
+        wheelCtx.strokeStyle = "#0f172a";
+        wheelCtx.lineWidth = 3;
+        wheelCtx.stroke();
+
+        // Draw Prize Label Text
+        wheelCtx.save();
+        wheelCtx.rotate(i * sliceAngle + sliceAngle / 2);
+        wheelCtx.textAlign = "right";
+        wheelCtx.fillStyle = "#ffffff";
+        wheelCtx.font = "bold 11px Plus Jakarta Sans, sans-serif";
+        wheelCtx.shadowColor = "rgba(0,0,0,0.6)";
+        wheelCtx.shadowBlur = 4;
+        wheelCtx.fillText(PRIZES[i].label, radius - 15, 4);
+        wheelCtx.restore();
+      }
+
+      // Center decorative pin
+      wheelCtx.beginPath();
+      wheelCtx.arc(0, 0, 16, 0, 2 * Math.PI);
+      wheelCtx.fillStyle = "#0f172a";
+      wheelCtx.fill();
+      wheelCtx.strokeStyle = "#f59e0b";
+      wheelCtx.lineWidth = 3;
+      wheelCtx.stroke();
+
+      wheelCtx.restore();
+    }
+
+    function spinWheel() {
+      if (isSpinning) return;
+      isSpinning = true;
+      document.getElementById('btn-spin-now').disabled = true;
+      document.getElementById('btn-spin-now').textContent = "Spinning...";
+      document.getElementById('wheel-result-banner').classList.add('hidden');
+
+      const extraRotations = 5 + Math.floor(Math.random() * 4);
+      const randomStopAngle = Math.random() * 2 * Math.PI;
+      const totalRotation = extraRotations * 2 * Math.PI + randomStopAngle;
+      
+      const startTime = performance.now();
+      const duration = 4000;
+      const startAngle = wheelAngle;
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic deceleration
+        const ease = 1 - Math.pow(1 - progress, 3);
+        
+        wheelAngle = startAngle + totalRotation * ease;
+        drawWheel(wheelAngle);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isSpinning = false;
+          // Determine winning slice (pointer is at top: 3*PI/2)
+          const numSlices = PRIZES.length;
+          const sliceAngle = (2 * Math.PI) / numSlices;
+          const normalizedAngle = (2 * Math.PI - (wheelAngle % (2 * Math.PI)) + (3 * Math.PI / 2)) % (2 * Math.PI);
+          const winningIndex = Math.floor(normalizedAngle / sliceAngle);
+          const prize = PRIZES[winningIndex] || PRIZES[0];
+
+          document.getElementById('wheel-prize-text').textContent = prize.label;
+          document.getElementById('wheel-result-banner').classList.remove('hidden');
+          document.getElementById('btn-spin-now').textContent = "✨ SPIN AGAIN";
+          document.getElementById('btn-spin-now').disabled = false;
+
+          if (typeof confetti !== 'undefined') {
+            confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } });
+          }
+        }
+      }
+      requestAnimationFrame(animate);
     }
 
     // Initial Load

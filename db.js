@@ -147,6 +147,17 @@ async function initDB() {
         notes TEXT,
         is_open BOOLEAN DEFAULT TRUE
       );
+
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS tip_amount NUMERIC(10, 2) DEFAULT 0.00;
+
+      CREATE TABLE IF NOT EXISTS feedback_reviews (
+        id SERIAL PRIMARY KEY,
+        order_id INT REFERENCES orders(id) ON DELETE SET NULL,
+        rating INT NOT NULL,
+        emoji VARCHAR(20),
+        comment TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Ensure standard categories exist

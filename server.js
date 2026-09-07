@@ -875,6 +875,151 @@ app.get('/api/analytics/export', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// OFFICIAL SCHOOL ADVISOR / PRINCIPAL FINANCIAL REPORT
+// ----------------------------------------------------
+
+app.get('/api/reports/advisor-statement', async (req, res) => {
+  try {
+    const { start_date, end_date } = req.query;
+    let dateFilter = '';
+    const params = [];
+
+    if (start_date && end_date) {
+      dateFilter = ' WHERE o.created_at >= $1 AND o.created_at <= $2';
+      params.push(new Date(start_date + 'T00:00:00Z'), new Date(end_date + 'T23:59:59Z'));
+    } else if (start_date) {
+      dateFilter = ' WHERE o.created_at >= $1';
+      params.push(new Date(start_date + 'T00:00:00Z'));
+    }
+
+    const totalsRes = await db.query(`
+      SELECT 
+        COUNT(DISTINCT o.id) as total_orders,
+        COALESCE(SUM(o.total), 0) as gross_revenue,
+        COALESCE(SUM(o.subtotal), 0) as subtotal_sales,
+        COALESCE(SUM(o.discount), 0) as total_discounts,
+        COALESCE(SUM(o.tip_amount), 0) as total_donations,
+        COALESCE(SUM(oi.unit_cost * oi.quantity), 0) as total_cogs
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      ${dateFilter}
+    `, params);
+
+    const grossRev = parseFloat(totalsRes.rows[0].gross_revenue || 0);
+    const cogs = parseFloat(totalsRes.rows[0].total_cogs || 0);
+    const netProfit = grossRev - cogs;
+    const profitMargin = grossRev > 0 ? ((netProfit / grossRev) * 100).toFixed(1) : '0.0';
+
+    const paymentsRes = await db.query(`
+      SELECT payment_method, COUNT(*) as count, COALESCE(SUM(total), 0) as amount
+      FROM orders o
+      ${dateFilter}
+      GROUP BY payment_method
+      ORDER BY amount DESC
+    `, params);
+
+    const topItemsRes = await db.query(`
+      SELECT 
+        oi.product_name,
+        SUM(oi.quantity) as units_sold,
+        SUM(oi.total_price) as gross_sales,
+        SUM(oi.unit_cost * oi.quantity) as total_cost,
+        SUM(oi.total_price - (oi.unit_cost * oi.quantity)) as profit
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      ${dateFilter}
+      GROUP BY oi.product_name
+      ORDER BY gross_sales DESC
+      LIMIT 10
+    `, params);
+
+    const shiftsRes = await db.query(`
+      SELECT * FROM shifts 
+      ORDER BY opened_at DESC 
+      LIMIT 15
+    `);
+
+    const studentPoolRes = await db.query(`
+      SELECT COUNT(*) as total_students, COALESCE(SUM(balance), 0) as prepaid_pool, COALESCE(SUM(punch_card), 0) as total_punches
+      FROM students
+    `);
+
+    const feedbackRes = await db.query(`
+      SELECT COUNT(*) as count, AVG(rating) as avg_rating FROM feedback_reviews
+    `);
+
+    res.json({
+      school_name: "Jordan's Snack Shack School Fund",
+      period: {
+        start: start_date || 'Inception',
+        end: end_date || 'Present',
+        generated_at: new Date().toISOString()
+      },
+      summary: {
+        total_orders: parseInt(totalsRes.rows[0].total_orders, 10),
+        gross_revenue: grossRev,
+        total_cogs: cogs,
+        net_profit: netProfit,
+        profit_margin: profitMargin,
+        total_discounts: parseFloat(totalsRes.rows[0].total_discounts || 0),
+        total_donations: parseFloat(totalsRes.rows[0].total_donations || 0)
+      },
+      student_funds: {
+        total_students: parseInt(studentPoolRes.rows[0].total_students, 10),
+        prepaid_pool: parseFloat(studentPoolRes.rows[0].prepaid_pool || 0),
+        total_punches: parseInt(studentPoolRes.rows[0].total_punches, 10)
+      },
+      customer_satisfaction: {
+        total_reviews: parseInt(feedbackRes.rows[0].count || 0, 10),
+        avg_rating: parseFloat(feedbackRes.rows[0].avg_rating || 5.0).toFixed(1)
+      },
+      payments: paymentsRes.rows,
+      top_items: topItemsRes.rows,
+      shifts: shiftsRes.rows
+    });
+  } catch (err) {
+    console.error('Error generating advisor report:', err);
+    res.status(500).json({ error: 'Failed to generate financial report' });
+  }
+});
+
+// ----------------------------------------------------
+// CUSTOMER FEEDBACK & SATISFACTION REVIEWS
+// ----------------------------------------------------
+
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { rating, emoji, comment, order_id } = req.body;
+    const result = await db.query(
+      `INSERT INTO feedback_reviews (rating, emoji, comment, order_id)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [parseInt(rating, 10) || 5, emoji || '🤩', comment || '', order_id || null]
+    );
+    res.status(201).json({ success: true, feedback: result.rows[0] });
+  } catch (err) {
+    console.error('Error recording feedback:', err);
+    res.status(500).json({ error: 'Failed to record feedback' });
+  }
+});
+
+app.get('/api/feedback/summary', async (req, res) => {
+  try {
+    const countRes = await db.query('SELECT COUNT(*) as total_reviews, AVG(rating) as avg_rating FROM feedback_reviews');
+    const breakdown = await db.query('SELECT emoji, rating, COUNT(*) as count FROM feedback_reviews GROUP BY emoji, rating ORDER BY count DESC');
+    const recent = await db.query('SELECT * FROM feedback_reviews ORDER BY created_at DESC LIMIT 10');
+    res.json({
+      total_reviews: parseInt(countRes.rows[0].total_reviews, 10),
+      avg_rating: parseFloat(countRes.rows[0].avg_rating || 5.0).toFixed(1),
+      breakdown: breakdown.rows,
+      recent: recent.rows
+    });
+  } catch (err) {
+    console.error('Error fetching feedback summary:', err);
+    res.status(500).json({ error: 'Failed to fetch feedback' });
+  }
+});
+
+// ----------------------------------------------------
 // CUSTOMER-FACING SECOND SCREEN (/display)
 // ----------------------------------------------------
 let displayState = {

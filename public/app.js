@@ -2120,6 +2120,297 @@ async function updatePreorderStatus(id, newStatus) {
 }
 
 // ==========================================
+// PRINTABLE SNACK BIN & COOLER STICKY LABELS
+// ==========================================
+function openPrintLabelsModal() {
+  const catSelect = document.getElementById('label-category-select');
+  if (catSelect) {
+    catSelect.innerHTML = `<option value="all">All Snack Shack Items (${products.length})</option>` +
+      categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  }
+  renderPrintLabelsPreview();
+  openModal('modal-print-labels');
+}
+
+function renderPrintLabelsPreview() {
+  const container = document.getElementById('labels-sheet-printable');
+  const catFilter = document.getElementById('label-category-select')?.value || 'all';
+  const format = document.getElementById('label-format-select')?.value || 'shelf';
+
+  if (!container) return;
+
+  const filtered = products.filter(p => catFilter === 'all' || p.category_id.toString() === catFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 font-semibold">No items match category filter.</div>`;
+    return;
+  }
+
+  // Adjust container columns based on format
+  if (format === 'compact') {
+    container.className = 'grid grid-cols-3 gap-2 bg-white p-4 rounded-xl text-slate-950 min-h-[400px]';
+  } else if (format === 'large') {
+    container.className = 'grid grid-cols-2 gap-4 bg-white p-6 rounded-xl text-slate-950 min-h-[400px]';
+  } else {
+    container.className = 'grid grid-cols-2 md:grid-cols-3 gap-3.5 bg-white p-6 rounded-xl text-slate-950 min-h-[400px]';
+  }
+
+  container.innerHTML = filtered.map(item => {
+    const barcodeCode = item.barcode || `SNK${item.id.toString().padStart(4, '0')}`;
+    const svgId = `label-barcode-${item.id}`;
+    const priceText = item.is_open_price || parseFloat(item.price) === 0 ? 'CUSTOM $' : `$${parseFloat(item.price).toFixed(2)}`;
+
+    let cardContent = '';
+
+    if (format === 'compact') {
+      // 1x2.6" Avery 30-up sticker
+      cardContent = `
+        <div class="border border-slate-300 rounded-lg p-2 flex flex-col justify-between items-center text-center bg-white shadow-sm space-y-1">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xs font-bold text-slate-900 truncate max-w-[90px]">${item.name}</span>
+            <span class="font-extrabold text-xs text-amber-700 font-mono">${priceText}</span>
+          </div>
+          <svg id="${svgId}" class="max-w-full h-8"></svg>
+        </div>
+      `;
+    } else if (format === 'large') {
+      // Large 4x3" Bin Station Sign
+      cardContent = `
+        <div class="border-2 border-slate-800 rounded-2xl p-4 flex flex-col justify-between items-center text-center bg-white shadow-md space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-3xl">${item.emoji || '🍿'}</span>
+            <div class="text-left">
+              <span class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">JORDAN'S SNACK SHACK</span>
+              <h4 class="font-heading font-extrabold text-lg text-slate-950 leading-tight">${item.name}</h4>
+            </div>
+          </div>
+          <div class="bg-amber-500/10 border border-amber-500/40 px-4 py-1.5 rounded-xl">
+            <span class="font-heading font-extrabold text-2xl text-amber-800">${priceText}</span>
+          </div>
+          ${item.allergy_info ? `<div class="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded font-bold">⚠️ ${item.allergy_info}</div>` : ''}
+          <svg id="${svgId}" class="max-w-full h-12"></svg>
+        </div>
+      `;
+    } else {
+      // Shelf / Bin Tag (Medium)
+      cardContent = `
+        <div class="border-2 border-slate-700 rounded-xl p-3 flex flex-col justify-between items-center text-center bg-white shadow-sm space-y-1.5">
+          <div class="flex items-center justify-between w-full border-b border-slate-200 pb-1">
+            <span class="text-lg">${item.emoji || '🍿'}</span>
+            <span class="font-heading font-extrabold text-base text-amber-700">${priceText}</span>
+          </div>
+          <div class="w-full">
+            <h4 class="font-bold text-xs text-slate-900 truncate leading-tight">${item.name}</h4>
+            ${item.allergy_info ? `<span class="text-[9px] text-rose-700 block font-semibold truncate">⚠️ ${item.allergy_info}</span>` : ''}
+          </div>
+          <svg id="${svgId}" class="max-w-full h-10"></svg>
+        </div>
+      `;
+    }
+
+    return cardContent;
+  }).join('');
+
+  // Render Barcode SVGs via JsBarcode
+  setTimeout(() => {
+    if (typeof JsBarcode !== 'undefined') {
+      filtered.forEach(item => {
+        const barcodeCode = item.barcode || `SNK${item.id.toString().padStart(4, '0')}`;
+        const svgEl = document.getElementById(`label-barcode-${item.id}`);
+        if (svgEl) {
+          try {
+            JsBarcode(svgEl, barcodeCode, {
+              format: "CODE128",
+              lineColor: "#000000",
+              width: format === 'compact' ? 1.2 : 1.5,
+              height: format === 'compact' ? 24 : format === 'large' ? 36 : 28,
+              displayValue: true,
+              fontSize: format === 'compact' ? 9 : 10,
+              font: "monospace",
+              margin: 0
+            });
+          } catch(e){}
+        }
+      });
+    }
+  }, 50);
+}
+
+function printLabels() {
+  window.print();
+}
+
+// ==========================================
+// OFFICIAL ADVISOR & PRINCIPAL FINANCIAL REPORT
+// ==========================================
+async function openAdvisorReportModal() {
+  const startInput = document.getElementById('report-start-date');
+  const endInput = document.getElementById('report-end-date');
+
+  if (!startInput.value) {
+    const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+    startInput.value = firstDay;
+    endInput.value = today;
+  }
+
+  await loadAdvisorReport();
+  openModal('modal-advisor-report');
+}
+
+async function loadAdvisorReport() {
+  const start = document.getElementById('report-start-date')?.value || '';
+  const end = document.getElementById('report-end-date')?.value || '';
+  const container = document.getElementById('advisor-printable-statement');
+  if (!container) return;
+
+  container.innerHTML = `<div class="py-12 text-center text-slate-500 font-semibold">Generating official financial statement...</div>`;
+
+  try {
+    const query = (start && end) ? `?start_date=${start}&end_date=${end}` : '';
+    const res = await fetch(`/api/reports/advisor-statement${query}`);
+    const data = await res.json();
+
+    const genDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    container.innerHTML = `
+      <!-- Header with School Seal Branding -->
+      <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🍿</span>
+            <h2 class="font-heading font-extrabold text-xl text-slate-900 uppercase tracking-tight">JORDAN'S SNACK SHACK FUNDRAISER</h2>
+          </div>
+          <p class="text-xs text-slate-600 font-medium">Official School Activity Account & Snack Bar Financial Statement</p>
+          <div class="text-[11px] text-slate-500">
+            <strong>Statement Period:</strong> ${data.period.start} to ${data.period.end}
+          </div>
+        </div>
+        <div class="text-right text-xs space-y-0.5">
+          <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded font-bold text-[10px] uppercase">Verified Record</span>
+          <div class="text-[10px] text-slate-500 pt-1">Generated: ${genDate}</div>
+          <div class="text-[10px] text-slate-500">Document ID: STMT-${Date.now().toString().slice(-6)}</div>
+        </div>
+      </div>
+
+      <!-- Executive Financial Summary Table -->
+      <div class="space-y-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-1">1. Executive Fundraiser Performance</h3>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold block">Gross Snack Sales</span>
+            <div class="font-heading font-bold text-lg text-slate-900">$${data.summary.gross_revenue.toFixed(2)}</div>
+            <span class="text-[9px] text-slate-400">${data.summary.total_orders} total orders</span>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold block">Wholesale Costs (COGS)</span>
+            <div class="font-heading font-bold text-lg text-rose-700">-$${data.summary.total_cogs.toFixed(2)}</div>
+            <span class="text-[9px] text-slate-400">Inventory acquisition</span>
+          </div>
+
+          <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-300">
+            <span class="text-[10px] text-emerald-800 font-semibold block">Net School Fund Profit</span>
+            <div class="font-heading font-extrabold text-xl text-emerald-700">$${data.summary.net_profit.toFixed(2)}</div>
+            <span class="text-[9px] text-emerald-700 font-bold">${data.summary.profit_margin}% Profit Margin</span>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span class="text-[10px] text-slate-500 font-semibold block">Prepaid Student Balances</span>
+            <div class="font-heading font-bold text-lg text-blue-700">$${data.student_funds.prepaid_pool.toFixed(2)}</div>
+            <span class="text-[9px] text-slate-400">${data.student_funds.total_students} student accounts</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue by Payment Channel -->
+      <div class="space-y-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-1">2. Payment Channel Audit</h3>
+        <table class="w-full text-left text-xs border border-slate-200">
+          <thead class="bg-slate-100 text-slate-700 font-semibold text-[10px] uppercase">
+            <tr>
+              <th class="p-2 border-b">Payment Method</th>
+              <th class="p-2 border-b text-center">Transactions</th>
+              <th class="p-2 border-b text-right">Amount Collected</th>
+              <th class="p-2 border-b text-right">% of Gross</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            ${data.payments.map(p => {
+              const pct = data.summary.gross_revenue > 0 ? ((parseFloat(p.amount) / data.summary.gross_revenue) * 100).toFixed(1) : '0.0';
+              return `
+                <tr>
+                  <td class="p-2 font-semibold capitalize">${p.payment_method.replace('_', ' ')}</td>
+                  <td class="p-2 text-center text-slate-600">${p.count}</td>
+                  <td class="p-2 text-right font-mono font-bold">$${parseFloat(p.amount).toFixed(2)}</td>
+                  <td class="p-2 text-right text-slate-500">${pct}%</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Top Selling Fundraiser Items -->
+      <div class="space-y-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-1">3. Top Selling Snacks & Margins</h3>
+        <table class="w-full text-left text-xs border border-slate-200">
+          <thead class="bg-slate-100 text-slate-700 font-semibold text-[10px] uppercase">
+            <tr>
+              <th class="p-2 border-b">Snack Item</th>
+              <th class="p-2 border-b text-center">Units Sold</th>
+              <th class="p-2 border-b text-right">Gross Sales</th>
+              <th class="p-2 border-b text-right">Wholesale Cost</th>
+              <th class="p-2 border-b text-right text-emerald-800">Net Profit</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            ${data.top_items.map(it => `
+              <tr>
+                <td class="p-2 font-bold">${it.product_name}</td>
+                <td class="p-2 text-center text-slate-600">${it.units_sold}</td>
+                <td class="p-2 text-right font-mono">$${parseFloat(it.gross_sales).toFixed(2)}</td>
+                <td class="p-2 text-right font-mono text-slate-500">-$${parseFloat(it.total_cost).toFixed(2)}</td>
+                <td class="p-2 text-right font-mono font-bold text-emerald-700">$${parseFloat(it.profit).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Official Sign-off & Verification Section -->
+      <div class="pt-6 border-t-2 border-slate-900 space-y-6">
+        <div class="grid grid-cols-2 gap-8 text-xs text-slate-700">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-500 block mb-3">Student Store Manager / Volunteer Lead:</span>
+            <div class="border-b border-slate-900 h-6"></div>
+            <div class="flex justify-between text-[10px] text-slate-500 pt-1">
+              <span>Signature</span>
+              <span>Date</span>
+            </div>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-500 block mb-3">School Faculty Advisor / Principal Approval:</span>
+            <div class="border-b border-slate-900 h-6"></div>
+            <div class="flex justify-between text-[10px] text-slate-500 pt-1">
+              <span>Signature</span>
+              <span>Date</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[9px] text-slate-400 text-center italic">
+          This document is generated automatically by Jordan's Snack Shack POS for school bookkeeping, audit compliance, and student activity fund reconciliation.
+        </p>
+      </div>
+    `;
+    lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = `<div class="py-8 text-center text-rose-600 font-bold">Failed to load financial report: ${err.message}</div>`;
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {

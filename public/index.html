@@ -417,10 +417,16 @@
             </h2>
             <p class="text-xs text-slate-400">Track real-time snack counts, barcodes, wholesale costs, and open-price items.</p>
           </div>
-          <button onclick="openNewProductModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/30 flex items-center gap-2 transition">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>Add New Snack / Item</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="openPrintLabelsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <i data-lucide="tag" class="w-4 h-4 text-amber-400"></i>
+              <span>Print Bin & Cooler Labels</span>
+            </button>
+            <button onclick="openNewProductModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/30 flex items-center gap-2 transition">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Add New Snack / Item</span>
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -552,10 +558,16 @@
             </h2>
             <p class="text-xs text-slate-400">Track profit margins, top selling snacks, and export records for school advisors.</p>
           </div>
-          <a href="/api/analytics/export" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-cyan-900/30 flex items-center gap-2 transition">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Export CSV for School</span>
-          </a>
+          <div class="flex items-center gap-2">
+            <button onclick="openAdvisorReportModal()" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-cyan-900/30 flex items-center gap-2 transition">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>Advisor & Principal Financial Statement</span>
+            </button>
+            <a href="/api/analytics/export" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Export CSV</span>
+            </a>
+          </div>
         </div>
 
         <!-- Metric KPI Cards -->
@@ -1344,6 +1356,114 @@
         <i data-lucide="plus" class="w-4 h-4"></i>
         <span>Add Funds to Account</span>
       </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: PRINTABLE SNACK BIN & COOLER STICKY LABELS -->
+  <!-- ==================================================== -->
+  <div id="modal-print-labels" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl p-6 space-y-4 shadow-2xl relative max-h-[92vh] flex flex-col justify-between">
+      
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl">
+            🏷️
+          </div>
+          <div>
+            <h3 class="font-heading font-bold text-lg text-white">Printable Snack Bin & Cooler Barcode Labels</h3>
+            <p class="text-xs text-slate-400">Generate scannable sticker price tags for snack bins, candy baskets, and drink coolers.</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-print-labels')" class="text-slate-400 hover:text-white print:hidden">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Controls & Filter Toolbar (hidden during print) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 print:hidden">
+        <div>
+          <label class="text-xs text-slate-400 font-semibold mb-1 block">Label Format / Size:</label>
+          <select id="label-format-select" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" onchange="renderPrintLabelsPreview()">
+            <option value="shelf">Cooler Shelf / Bin Tags (Medium - 2x3")</option>
+            <option value="compact">Avery 30-Per-Sheet Sticker Labels (1x2.6")</option>
+            <option value="large">Snack Station Signs (Large 4x3")</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 font-semibold mb-1 block">Category Filter:</label>
+          <select id="label-category-select" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" onchange="renderPrintLabelsPreview()">
+            <option value="all">All Snack Shack Items</option>
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <div class="flex items-end gap-2">
+          <button onclick="printLabels()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Print Label Sheet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable Sheet Container (styled for paper print) -->
+      <div class="flex-1 overflow-y-auto bg-slate-950 p-4 rounded-2xl border border-slate-800">
+        <div id="labels-sheet-printable" class="grid grid-cols-2 md:grid-cols-3 gap-3.5 bg-white p-6 rounded-xl text-slate-950 min-h-[400px]">
+          <!-- Dynamically populated label tags -->
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800 print:hidden">
+        <span>Tip: Use standard sticker paper or Avery label sheets in your school printer.</span>
+        <button onclick="closeModal('modal-print-labels')" class="text-slate-400 hover:text-white font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: OFFICIAL ADVISOR & PRINCIPAL FINANCIAL REPORT -->
+  <!-- ==================================================== -->
+  <div id="modal-advisor-report" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl p-6 space-y-4 shadow-2xl relative max-h-[94vh] flex flex-col justify-between">
+      
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 print:hidden">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl">
+            📊
+          </div>
+          <div>
+            <h3 class="font-heading font-bold text-lg text-white">Official School Fundraiser Financial Statement</h3>
+            <p class="text-xs text-slate-400">Formal financial statement formatted for school principals, club advisors, and PTO boards.</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-advisor-report')" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Date Filters & Actions (print:hidden) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 print:hidden bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-semibold">Report Period:</span>
+          <input type="date" id="report-start-date" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white" />
+          <span class="text-slate-500">to</span>
+          <input type="date" id="report-end-date" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white" />
+          <button onclick="loadAdvisorReport()" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold px-3 py-1.5 rounded-xl border border-slate-700 transition">
+            Filter
+          </button>
+        </div>
+        <button onclick="window.print()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-1.5 shadow-md transition">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Print / Save as PDF Statement</span>
+        </button>
+      </div>
+
+      <!-- Formal Statement Document View -->
+      <div class="flex-1 overflow-y-auto bg-slate-950 p-4 rounded-2xl border border-slate-800">
+        <div id="advisor-printable-statement" class="bg-white text-slate-900 p-8 rounded-xl shadow-inner font-sans text-xs space-y-6">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
     </div>
   </div>
 
