@@ -4154,15 +4154,21 @@
           const tagText = tagEl ? tagEl.textContent : null;
           const stu = (typeof kioskCustomer !== 'undefined' && kioskCustomer) ? kioskCustomer : null;
 
+          // Hostile Audio Analysis (Loud shouted speech / aggressive acoustic decibels > 75dB)
+          const isHostile = (currentDisplayAudioLevel || 0) > 75;
+          const hostileConf = isHostile ? Math.min(99, Math.round(80 + (currentDisplayAudioLevel - 75) * 0.8)) : 0;
+
           const packet = {
             type: 'cctv_customer_frame',
             timestamp: Date.now(),
             frame: frameData,
-            tag: tagText,
+            tag: isHostile ? '🚨 HOSTILE AUDIO' : tagText,
             student: stu,
             isHumanDetected: tagText && !tagText.includes('SCANNING'),
             hasAudio: !!(cctvStream && cctvStream.getAudioTracks().length > 0),
             audioLevel: currentDisplayAudioLevel || 0,
+            isHostileAudio: isHostile,
+            hostileConfidence: hostileConf,
             isCrowded: !!isDisplayCrowded,
             crowdCount: isDisplayCrowded ? 2 : 1
           };
@@ -4187,12 +4193,14 @@
     }
 
     function sendDisplayHeartbeat() {
+      const isHostile = (currentDisplayAudioLevel || 0) > 75;
       const hb = { 
         type: 'display_heartbeat', 
         timestamp: Date.now(),
         hasAudio: !!(cctvStream && cctvStream.getAudioTracks().length > 0),
         audioLevel: currentDisplayAudioLevel || 0,
-        isCrowded: !!isDisplayCrowded
+        isCrowded: !!isDisplayCrowded,
+        isHostileAudio: isHostile
       };
       if (typeof BroadcastChannel !== 'undefined') {
         try {

@@ -84,6 +84,64 @@ async function initDB() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS incident_reports (
+        id SERIAL PRIMARY KEY,
+        report_number VARCHAR(50) NOT NULL UNIQUE,
+        incident_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        incident_time VARCHAR(20) NOT NULL,
+        location VARCHAR(100) DEFAULT 'Table 4B',
+        incident_type VARCHAR(50) NOT NULL,
+        student_id INT REFERENCES students(id) ON DELETE SET NULL,
+        student_name VARCHAR(150),
+        severity VARCHAR(20) DEFAULT 'MEDIUM',
+        description TEXT NOT NULL,
+        action_taken TEXT DEFAULT '',
+        status VARCHAR(20) DEFAULT 'PENDING',
+        reported_by VARCHAR(100) DEFAULT 'Cashier Station',
+        manager_notes TEXT DEFAULT '',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS daily_logs (
+        id SERIAL PRIMARY KEY,
+        log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        shift_period VARCHAR(50) DEFAULT 'Morning Operational Window',
+        cashier_name VARCHAR(100) NOT NULL,
+        manager_name VARCHAR(100) DEFAULT 'Manager Lead',
+        opening_cash NUMERIC(10, 2) DEFAULT 50.00,
+        closing_cash NUMERIC(10, 2) DEFAULT 0.00,
+        cash_discrepancy NUMERIC(10, 2) DEFAULT 0.00,
+        weather_summary VARCHAR(100) DEFAULT 'Clear, 72°F',
+        incidents_count INT DEFAULT 0,
+        operational_notes TEXT DEFAULT '',
+        manager_signoff BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS sop_documents (
+        id SERIAL PRIMARY KEY,
+        doc_title VARCHAR(150) NOT NULL DEFAULT 'Master Enterprise Standard Operating Procedures',
+        version VARCHAR(20) NOT NULL DEFAULT '6.0',
+        content TEXT NOT NULL,
+        updated_by VARCHAR(100) DEFAULT 'Operations Manager',
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS security_settings (
+        id SERIAL PRIMARY KEY,
+        crowd_ai_sensitivity VARCHAR(20) DEFAULT 'NORMAL',
+        hostile_audio_threshold INT DEFAULT 75,
+        hostile_audio_enabled BOOLEAN DEFAULT TRUE,
+        dvr_retention_minutes INT DEFAULT 60,
+        auto_bookmark_hostile BOOLEAN DEFAULT TRUE,
+        weather_hot_temp NUMERIC(5, 1) DEFAULT 75.0,
+        weather_cold_temp NUMERIC(5, 1) DEFAULT 50.0,
+        weather_hot_discount NUMERIC(5, 2) DEFAULT 0.25,
+        weather_cold_discount NUMERIC(5, 2) DEFAULT 0.25,
+        manual_weather_override VARCHAR(20) DEFAULT 'AUTO',
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE TABLE IF NOT EXISTS preorders (
         id SERIAL PRIMARY KEY,
         order_number VARCHAR(50) NOT NULL UNIQUE,
@@ -356,6 +414,47 @@ async function initDB() {
           cat.sort,
         ]);
       }
+    }
+
+    // Ensure default security settings exist
+    const secCheck = await client.query('SELECT COUNT(*) FROM security_settings');
+    if (parseInt(secCheck.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO security_settings (
+          crowd_ai_sensitivity, hostile_audio_threshold, hostile_audio_enabled,
+          dvr_retention_minutes, auto_bookmark_hostile, weather_hot_temp,
+          weather_cold_temp, weather_hot_discount, weather_cold_discount, manual_weather_override
+        ) VALUES ('NORMAL', 75, TRUE, 60, TRUE, 75.0, 50.0, 0.25, 0.25, 'AUTO')
+      `);
+    }
+
+    // Ensure default sample incident report exists
+    const incCheck = await client.query('SELECT COUNT(*) FROM incident_reports');
+    if (parseInt(incCheck.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO incident_reports (
+          report_number, incident_time, location, incident_type, student_name, severity, description, action_taken, status, reported_by
+        ) VALUES (
+          'INC-REP-2026-001', '08:14 AM', 'Station Table 4B', 'hostile_audio', 'Marcus Vance', 'MEDIUM',
+          'Acoustic spike and raised aggressive voice detected at counter during item selection.',
+          'Cashier de-escalated conversation and reminded student of single-file queue policy.',
+          'RESOLVED', 'Station Table 4B Counter Mic'
+        )
+      `);
+    }
+
+    // Ensure default daily log exists
+    const logCheck = await client.query('SELECT COUNT(*) FROM daily_logs');
+    if (parseInt(logCheck.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO daily_logs (
+          cashier_name, manager_name, opening_cash, closing_cash, cash_discrepancy, weather_summary, incidents_count, operational_notes, manager_signoff
+        ) VALUES (
+          'Jordan Daniels', 'Store Lead & Manager', 50.00, 114.50, 0.00, 'Sunny & Mild, 74°F', 1,
+          'Morning operational session completed with balanced register drawer. High snack demand for Flamin Hot chips and ice cold sparkling drinks.',
+          TRUE
+        )
+      `);
     }
 
     console.log('🎉 Database initialized with preorders, store settings, barcodes & QR support.');

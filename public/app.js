@@ -4726,6 +4726,17 @@ function handleIncomingCustomerCctvPacket(packet) {
     }
   }
 
+  // Toggle Hostile Audio Threat Badge on Cashier CCTV HUD
+  const hostileBadge = document.getElementById('cctv-hostile-audio-badge');
+  if (hostileBadge) {
+    if (packet.isHostileAudio) {
+      hostileBadge.classList.remove('hidden');
+      handleHostileAudioThreatDetected(packet);
+    } else {
+      hostileBadge.classList.add('hidden');
+    }
+  }
+
   const now = packet.timestamp || Date.now();
 
   // Create image object for rendering
@@ -5803,12 +5814,606 @@ async function deleteSecurityIncident(id) {
 }
 
 // ==========================================
+// 🚨 HOSTILE AUDIO THREAT ACOUSTIC HANDLER
+// ==========================================
+let lastHostileAudioBookmarkTime = 0;
+function handleHostileAudioThreatDetected(packet) {
+  const now = Date.now();
+  if (now - lastHostileAudioBookmarkTime > 15000) { // 15-second debounce
+    lastHostileAudioBookmarkTime = now;
+    if (typeof playTone === 'function') {
+      playTone(180, 0.4, 'sawtooth'); // Alert buzzer tone
+    }
+    showToast('🚨 Hostile / Aggressive Audio Detected at Table 4B counter!', 'error');
+
+    // Auto-save incident to Evidence Vault
+    const incTag = `HOSTILE-${Math.floor(1000 + Math.random() * 9000)}`;
+    const snapshot = (packet && packet.frame) ? packet.frame : null;
+    fetch('/api/security/incidents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        incident_tag: incTag,
+        label: 'Hostile / Aggressive Counter Audio',
+        zone: 'Table 4B',
+        severity: 'high',
+        clip_url: snapshot,
+        notes: `Acoustic threat alert: volume spike ${(packet && packet.audioLevel) || 85} dB detected by counter mic.`
+      })
+    }).then(r => r.json()).then(() => {
+      loadSecurityIncidentsVault();
+    }).catch(err => console.warn('Auto-bookmark hostile audio error:', err));
+  }
+}
+
+// ==========================================
+// 👔 OPERATIONS MANAGER DASHBOARD CONTROLLER
+// ==========================================
+let activeManagerTab = 'security';
+let managerWatchlistStudents = [];
+let managerAllStudents = [];
+
+function openManagerDashboard() {
+  openModal('modal-manager-dashboard');
+  switchManagerTab('security');
+  loadManagerSecurityIncidents();
+  loadManagerWatchlist();
+  loadManagerSecuritySettings();
+  loadManagerSopEditor();
+  loadHistoricalDailyLogs();
+}
+
+function switchManagerTab(tab) {
+  activeManagerTab = tab || 'security';
+  const tabs = ['security', 'watchlist', 'diagnostics', 'settings', 'sop', 'logs'];
+
+  tabs.forEach(t => {
+    const btn = document.getElementById(`btn-mgr-tab-${t}`);
+    const panel = document.getElementById(`panel-mgr-${t}`);
+
+    if (t === activeManagerTab) {
+      if (btn) btn.className = 'flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-purple-600 text-white shadow transition flex items-center justify-center gap-1.5';
+      if (panel) panel.classList.remove('hidden');
+    } else {
+      if (btn) btn.className = 'flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5';
+      if (panel) panel.classList.add('hidden');
+    }
+  });
+
+  if (activeManagerTab === 'security') loadManagerSecurityIncidents();
+  if (activeManagerTab === 'watchlist') loadManagerWatchlist();
+  if (activeManagerTab === 'settings') loadManagerSecuritySettings();
+  if (activeManagerTab === 'sop') loadManagerSopEditor();
+  if (activeManagerTab === 'logs') loadHistoricalDailyLogs();
+
+  if (window.lucide) lucide.createIcons();
+}
+
+// --- TAB 1: SECURITY ALERTS & EVIDENCE VAULT ---
+async function loadManagerSecurityIncidents() {
+  const container = document.getElementById('mgr-security-incidents-list');
+  if (!container) return;
+
+  try {
+    const [cctvRes, formalRes] = await Promise.all([
+      fetch('/api/security/incidents'),
+      fetch('/api/manager/incidents')
+    ]);
+
+    const cctvIncidents = await cctvRes.json();
+    const formalIncidents = await formalRes.json();
+
+    const allIncidents = [
+      ...(Array.isArray(cctvIncidents) ? cctvIncidents.map(i => ({ ...i, source: 'cctv' })) : []),
+      ...(Array.isArray(formalIncidents) ? formalIncidents.map(i => ({ ...i, source: 'formal' })) : [])
+    ];
+
+    if (allIncidents.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-full text-center text-slate-500 text-xs py-10">
+          🔒 No security incidents recorded yet.<br>
+          <span class="text-[10px]">Hostile audio, duress alarms, and filed reports appear here.</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = allIncidents.map(inc => {
+      const isCctv = inc.source === 'cctv';
+      const timeStr = new Date(parseInt(inc.timestamp_ms || (inc.created_at ? new Date(inc.created_at).getTime() : Date.now()), 10)).toLocaleString();
+      const statusBadge = inc.status === 'RESOLVED' 
+        ? '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[10px] font-bold font-mono">RESOLVED</span>'
+        : (inc.status === 'REVIEWED'
+            ? '<span class="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded text-[10px] font-bold font-mono">REVIEWED</span>'
+            : '<span class="bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded text-[10px] font-bold font-mono animate-pulse">PENDING</span>');
+
+      return `
+        <div class="bg-slate-900 p-3.5 rounded-2xl border ${inc.severity === 'high' || inc.severity === 'CRITICAL' ? 'border-rose-500/50' : 'border-slate-800'} space-y-2 hover:border-purple-500/50 transition">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-bold text-xs text-purple-300 bg-purple-500/20 border border-purple-500/40 px-2 py-0.5 rounded">
+                ${inc.report_number || inc.incident_tag || 'INCIDENT'}
+              </span>
+              ${statusBadge}
+            </div>
+            <span class="text-[10px] font-mono text-slate-400">${timeStr}</span>
+          </div>
+
+          <div class="space-y-1">
+            <h5 class="font-bold text-xs text-white">${inc.label || inc.incident_type || 'Security Incident'}</h5>
+            <p class="text-xs text-slate-300 leading-relaxed">${inc.description || inc.notes || 'No details recorded.'}</p>
+            ${inc.student_name ? `<div class="text-[11px] text-amber-300 font-semibold">Subject: ${inc.student_name}</div>` : ''}
+            ${inc.action_taken ? `<div class="text-[11px] text-emerald-400 font-semibold">Action: ${inc.action_taken}</div>` : ''}
+          </div>
+
+          ${inc.snapshot_url || inc.clip_url ? `
+            <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 max-h-32">
+              <img src="${inc.snapshot_url || inc.clip_url}" alt="Incident Snapshot" class="w-full h-full object-cover" />
+            </div>
+          ` : ''}
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[11px]">
+            ${isCctv ? `
+              <button onclick="jumpToIncidentTimestamp(${inc.timestamp_ms}); closeModal('modal-manager-dashboard'); openCashierSecurityCamera();" class="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1">
+                <span>⏪ Scrub 1-Hr DVR</span>
+              </button>
+            ` : `
+              <div class="flex items-center gap-1">
+                <button onclick="updateIncidentReportStatus(${inc.id}, 'REVIEWED')" class="text-blue-400 hover:text-blue-300 font-bold px-1.5 py-0.5 bg-blue-500/10 rounded">
+                  Mark Reviewed
+                </button>
+                <button onclick="updateIncidentReportStatus(${inc.id}, 'RESOLVED')" class="text-emerald-400 hover:text-emerald-300 font-bold px-1.5 py-0.5 bg-emerald-500/10 rounded">
+                  Mark Resolved
+                </button>
+              </div>
+            `}
+
+            <button onclick="${isCctv ? `deleteSecurityIncident(${inc.id})` : `deleteIncidentReportRecord(${inc.id})`}" class="text-slate-500 hover:text-rose-400 font-bold transition">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    console.error('Manager incidents load error:', err);
+  }
+}
+
+async function updateIncidentReportStatus(id, newStatus) {
+  try {
+    const res = await fetch(`/api/manager/incidents/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      showToast(`Incident status updated to ${newStatus}`, 'success');
+      loadManagerSecurityIncidents();
+    }
+  } catch (err) {
+    showToast('Failed to update incident status', 'error');
+  }
+}
+
+async function deleteIncidentReportRecord(id) {
+  if (!confirm('Delete this formal incident report?')) return;
+  try {
+    const res = await fetch(`/api/manager/incidents/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Incident report deleted', 'info');
+      loadManagerSecurityIncidents();
+    }
+  } catch (err) {
+    showToast('Failed to delete incident report', 'error');
+  }
+}
+
+// --- TAB 2: STUDENT WATCHLIST & DEBT MANAGER ---
+async function loadManagerWatchlist() {
+  const tbody = document.getElementById('mgr-watchlist-table-body');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/manager/watchlist');
+    const data = await res.json();
+    managerAllStudents = data.all || [];
+    renderManagerWatchlistTable(managerAllStudents);
+  } catch (err) {
+    console.error('Watchlist fetch error:', err);
+  }
+}
+
+function filterManagerWatchlist(query = '') {
+  const q = (query || '').toLowerCase().trim();
+  const filtered = managerAllStudents.filter(s => 
+    s.name.toLowerCase().includes(q) || 
+    s.student_id.toLowerCase().includes(q) ||
+    (s.watchlist_reason && s.watchlist_reason.toLowerCase().includes(q))
+  );
+  renderManagerWatchlistTable(filtered);
+}
+
+function renderManagerWatchlistTable(list) {
+  const tbody = document.getElementById('mgr-watchlist-table-body');
+  if (!tbody) return;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No matching student accounts found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(stu => {
+    const isFlagged = !!stu.is_flagged;
+    const unpaidBal = parseFloat(stu.unpaid_balance || 0);
+
+    return `
+      <tr class="hover:bg-slate-900/60 transition ${isFlagged ? 'bg-rose-950/20' : ''}">
+        <td class="p-3">
+          <div class="font-bold text-white">${stu.name}</div>
+          <div class="text-[11px] font-mono text-slate-400">${stu.student_id}</div>
+        </td>
+        <td class="p-3 text-slate-300">${stu.grade || '9th Grade'}</td>
+        <td class="p-3 font-mono font-bold ${parseFloat(stu.balance) > 0 ? 'text-emerald-400' : 'text-slate-400'}">
+          $${parseFloat(stu.balance || 0).toFixed(2)}
+        </td>
+        <td class="p-3 font-mono font-bold ${unpaidBal > 0 ? 'text-rose-400' : 'text-slate-500'}">
+          $${unpaidBal.toFixed(2)}
+        </td>
+        <td class="p-3">
+          <span class="${isFlagged ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-slate-800 text-slate-400'} px-2 py-0.5 rounded-full text-[10px] font-bold font-mono">
+            ${isFlagged ? '🚨 FLAGGED' : 'CLEAR'}
+          </span>
+        </td>
+        <td class="p-3 text-[11px] text-slate-300 max-w-xs truncate">
+          ${stu.watchlist_reason || '<span class="text-slate-600 italic">None</span>'}
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="promptToggleWatchlist(${stu.id}, ${isFlagged}, '${(stu.watchlist_reason || '').replace(/'/g, "\\'")}', ${unpaidBal})" class="${isFlagged ? 'bg-slate-800 hover:bg-slate-700 text-slate-200' : 'bg-rose-600 hover:bg-rose-500 text-white'} px-2.5 py-1 rounded-xl text-xs font-bold transition shadow">
+            ${isFlagged ? 'Edit / Clear' : '🚩 Flag Account'}
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function promptToggleWatchlist(studentId, currentlyFlagged, currentReason, currentDebt) {
+  const newFlagState = currentlyFlagged ? confirm('Unflag this student account? (Click Cancel to edit details instead)') === false : true;
+  const reason = prompt('Enter watchlist flag reason or debt notes:', currentReason || 'Disputed balance / Counter conduct note');
+  if (reason === null) return;
+  const unpaidStr = prompt('Enter outstanding unpaid debt amount ($):', currentDebt || '0.00');
+  if (unpaidStr === null) return;
+
+  try {
+    const res = await fetch('/api/manager/watchlist/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_id: studentId,
+        is_flagged: newFlagState,
+        watchlist_reason: reason.trim(),
+        unpaid_balance: parseFloat(unpaidStr) || 0.00
+      })
+    });
+
+    if (res.ok) {
+      showToast('Student watchlist status updated successfully!', 'success');
+      loadManagerWatchlist();
+    }
+  } catch (err) {
+    showToast('Failed to update student watchlist status', 'error');
+  }
+}
+
+// --- TAB 3: DIAGNOSTICS & HARDWARE SIMULATOR ---
+async function triggerDiagnosticTest(testType) {
+  try {
+    const res = await fetch('/api/manager/security/test_alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test_type: testType })
+    });
+    const data = await res.json();
+
+    if (testType === 'hostile_audio') {
+      const audioBar = document.getElementById('mgr-diag-audio-bar');
+      const audioVal = document.getElementById('mgr-diag-audio-val');
+      if (audioBar) {
+        audioBar.style.width = '92%';
+        audioBar.className = 'h-full bg-rose-500 rounded-full transition-all duration-75';
+      }
+      if (audioVal) {
+        audioVal.textContent = '88 dB (HOSTILE)';
+        audioVal.className = 'font-mono font-bold text-xs text-rose-400';
+      }
+      setTimeout(() => {
+        if (audioBar) {
+          audioBar.style.width = '25%';
+          audioBar.className = 'h-full bg-emerald-400 rounded-full transition-all duration-75';
+        }
+        if (audioVal) {
+          audioVal.textContent = '42 dB';
+          audioVal.className = 'font-mono font-bold text-xs text-emerald-400';
+        }
+      }, 4000);
+    }
+
+    showToast(data.message || `Diagnostic alert broadcast: ${testType}`, 'success');
+  } catch (err) {
+    showToast('Diagnostic test dispatch failed', 'error');
+  }
+}
+
+// --- TAB 4: SECURITY ENGINE & WEATHER SETTINGS ---
+async function loadManagerSecuritySettings() {
+  try {
+    const res = await fetch('/api/manager/security_settings');
+    const cfg = await res.json();
+
+    const threshInput = document.getElementById('cfg-hostile-audio-threshold');
+    const crowdSelect = document.getElementById('cfg-crowd-sensitivity');
+    const dvrInput = document.getElementById('cfg-dvr-retention');
+    const autoHostileChk = document.getElementById('cfg-auto-bookmark-hostile');
+    const hotTempInput = document.getElementById('cfg-weather-hot-temp');
+    const coldTempInput = document.getElementById('cfg-weather-cold-temp');
+    const hotDiscInput = document.getElementById('cfg-weather-hot-discount');
+    const coldDiscInput = document.getElementById('cfg-weather-cold-discount');
+    const overrideSelect = document.getElementById('cfg-weather-override');
+
+    if (threshInput) threshInput.value = cfg.hostile_audio_threshold || 75;
+    if (crowdSelect) crowdSelect.value = cfg.crowd_ai_sensitivity || 'NORMAL';
+    if (dvrInput) dvrInput.value = cfg.dvr_retention_minutes || 60;
+    if (autoHostileChk) autoHostileChk.checked = cfg.auto_bookmark_hostile !== false;
+    if (hotTempInput) hotTempInput.value = cfg.weather_hot_temp || 75.0;
+    if (coldTempInput) coldTempInput.value = cfg.weather_cold_temp || 50.0;
+    if (hotDiscInput) hotDiscInput.value = cfg.weather_hot_discount || 0.25;
+    if (coldDiscInput) coldDiscInput.value = cfg.weather_cold_discount || 0.25;
+    if (overrideSelect) overrideSelect.value = cfg.manual_weather_override || 'AUTO';
+  } catch (err) {
+    console.error('Settings fetch error:', err);
+  }
+}
+
+async function saveManagerSecuritySettings() {
+  const payload = {
+    hostile_audio_threshold: parseInt(document.getElementById('cfg-hostile-audio-threshold')?.value, 10) || 75,
+    crowd_ai_sensitivity: document.getElementById('cfg-crowd-sensitivity')?.value || 'NORMAL',
+    dvr_retention_minutes: parseInt(document.getElementById('cfg-dvr-retention')?.value, 10) || 60,
+    auto_bookmark_hostile: document.getElementById('cfg-auto-bookmark-hostile')?.checked !== false,
+    weather_hot_temp: parseFloat(document.getElementById('cfg-weather-hot-temp')?.value) || 75.0,
+    weather_cold_temp: parseFloat(document.getElementById('cfg-weather-cold-temp')?.value) || 50.0,
+    weather_hot_discount: parseFloat(document.getElementById('cfg-weather-hot-discount')?.value) || 0.25,
+    weather_cold_discount: parseFloat(document.getElementById('cfg-weather-cold-discount')?.value) || 0.25,
+    manual_weather_override: document.getElementById('cfg-weather-override')?.value || 'AUTO'
+  };
+
+  try {
+    const res = await fetch('/api/manager/security_settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast('⚙️ Security Engine & Weather Rules Saved Successfully!', 'success');
+    }
+  } catch (err) {
+    showToast('Failed to save security settings', 'error');
+  }
+}
+
+// --- TAB 5: MASTER SOP LIVE EDITOR ---
+async function loadManagerSopEditor() {
+  try {
+    const res = await fetch('/api/manager/sop');
+    const data = await res.json();
+
+    const titleEl = document.getElementById('mgr-sop-title');
+    const verEl = document.getElementById('mgr-sop-version');
+    const authEl = document.getElementById('mgr-sop-author');
+    const contentEl = document.getElementById('mgr-sop-content-editor');
+
+    if (titleEl) titleEl.value = data.doc_title || 'Master Enterprise Standard Operating Procedures';
+    if (verEl) verEl.value = data.version || '6.0';
+    if (authEl) authEl.value = data.updated_by || 'Operations Manager';
+    if (contentEl) contentEl.value = data.content || '';
+  } catch (err) {
+    console.error('SOP load error:', err);
+  }
+}
+
+async function loadDefaultSopTemplate() {
+  try {
+    const res = await fetch('/sop.html');
+    const htmlText = await res.text();
+    const contentEl = document.getElementById('mgr-sop-content-editor');
+    if (contentEl) {
+      contentEl.value = htmlText;
+      showToast('Loaded latest Master SOP template into editor', 'info');
+    }
+  } catch (err) {
+    showToast('Failed to load default SOP template', 'error');
+  }
+}
+
+async function saveManagerSopDocument() {
+  const title = document.getElementById('mgr-sop-title')?.value || 'Master Enterprise Standard Operating Procedures';
+  const version = document.getElementById('mgr-sop-version')?.value || '6.0';
+  const updated_by = document.getElementById('mgr-sop-author')?.value || 'Operations Manager';
+  const content = document.getElementById('mgr-sop-content-editor')?.value || '';
+
+  if (!content.trim()) {
+    return alert('SOP content cannot be empty.');
+  }
+
+  try {
+    const res = await fetch('/api/manager/sop', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doc_title: title, version, updated_by, content })
+    });
+
+    if (res.ok) {
+      showToast(`📝 Master Enterprise SOP v${version} Published Successfully!`, 'success');
+    }
+  } catch (err) {
+    showToast('Failed to publish SOP updates', 'error');
+  }
+}
+
+// --- TAB 6: DIGITAL INCIDENT FORMS & DAILY SHIFT LOGS ---
+async function submitDigitalIncidentReport() {
+  const type = document.getElementById('form-inc-type')?.value;
+  const severity = document.getElementById('form-inc-severity')?.value;
+  const student = document.getElementById('form-inc-student')?.value.trim();
+  const location = document.getElementById('form-inc-loc')?.value.trim() || 'Station Table 4B';
+  const description = document.getElementById('form-inc-desc')?.value.trim();
+  const action = document.getElementById('form-inc-action')?.value.trim();
+
+  if (!description) {
+    return alert('Please enter a description for the incident report.');
+  }
+
+  const payload = {
+    incident_type: type,
+    severity,
+    student_name: student,
+    location,
+    description,
+    action_taken: action,
+    reported_by: 'Cashier Station Table 4B'
+  };
+
+  try {
+    const res = await fetch('/api/manager/incidents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      showToast('Incident Report Filed and Logged to Evidence Vault!', 'success');
+      document.getElementById('form-inc-desc').value = '';
+      document.getElementById('form-inc-action').value = '';
+      document.getElementById('form-inc-student').value = '';
+      loadManagerSecurityIncidents();
+    }
+  } catch (err) {
+    showToast('Failed to file incident report', 'error');
+  }
+}
+
+async function submitDailyShiftLog() {
+  const cashier = document.getElementById('form-log-cashier')?.value.trim() || 'Jordan Daniels';
+  const manager = document.getElementById('form-log-manager')?.value.trim() || 'Store Lead & Manager';
+  const openCash = parseFloat(document.getElementById('form-log-open-cash')?.value) || 50.00;
+  const closeCash = parseFloat(document.getElementById('form-log-close-cash')?.value) || 0.00;
+  const discrepancy = parseFloat(document.getElementById('form-log-diff')?.value) || 0.00;
+  const weather = document.getElementById('form-log-weather')?.value.trim();
+  const notes = document.getElementById('form-log-notes')?.value.trim();
+  const signoff = document.getElementById('form-log-signoff')?.checked !== false;
+
+  const payload = {
+    cashier_name: cashier,
+    manager_name: manager,
+    opening_cash: openCash,
+    closing_cash: closeCash,
+    cash_discrepancy: discrepancy,
+    weather_summary: weather,
+    operational_notes: notes,
+    manager_signoff: signoff,
+    shift_period: 'Morning Operational Window'
+  };
+
+  try {
+    const res = await fetch('/api/manager/daily_logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      showToast('📋 Daily Operational Shift Log Submitted Successfully!', 'success');
+      document.getElementById('form-log-notes').value = '';
+      loadHistoricalDailyLogs();
+    }
+  } catch (err) {
+    showToast('Failed to submit daily shift log', 'error');
+  }
+}
+
+async function loadHistoricalDailyLogs() {
+  const container = document.getElementById('mgr-historical-logs-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/manager/daily_logs');
+    const list = await res.json();
+
+    if (!Array.isArray(list) || list.length === 0) {
+      container.innerHTML = `<div class="text-center text-slate-500 py-4">No historical shift logs on record yet.</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(log => {
+      const dateStr = new Date(log.log_date || log.created_at).toLocaleDateString();
+      const diff = parseFloat(log.cash_discrepancy || 0);
+
+      return `
+        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-slate-700 transition">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white">${dateStr}</span>
+              <span class="bg-slate-800 text-purple-300 font-mono text-[10px] px-2 py-0.5 rounded">${log.shift_period}</span>
+              ${log.manager_signoff ? '<span class="text-emerald-400 font-bold text-[10px]">✓ Signed Off</span>' : ''}
+            </div>
+            <div class="text-[11px] text-slate-400">
+              Cashier: <strong class="text-slate-200">${log.cashier_name}</strong> • Manager: <strong class="text-slate-200">${log.manager_name}</strong> • ${log.weather_summary || 'Weather: Clear'}
+            </div>
+            ${log.operational_notes ? `<div class="text-xs text-slate-300 italic">${log.operational_notes}</div>` : ''}
+          </div>
+
+          <div class="flex items-center gap-4 shrink-0">
+            <div class="text-right font-mono text-xs">
+              <div class="text-slate-400">Close: <strong class="text-white">$${parseFloat(log.closing_cash || 0).toFixed(2)}</strong></div>
+              <div class="${diff === 0 ? 'text-emerald-400' : (diff > 0 ? 'text-cyan-400' : 'text-rose-400')} font-bold">
+                Diff: ${diff >= 0 ? '+' : ''}$${diff.toFixed(2)}
+              </div>
+            </div>
+            <button onclick="deleteDailyShiftLog(${log.id})" class="text-slate-500 hover:text-rose-400 font-bold text-xs" title="Delete Log">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Historical logs error:', err);
+  }
+}
+
+async function deleteDailyShiftLog(id) {
+  if (!confirm('Delete this historical daily shift log?')) return;
+  try {
+    const res = await fetch(`/api/manager/daily_logs/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Shift log deleted', 'info');
+      loadHistoricalDailyLogs();
+    }
+  } catch (err) {
+    showToast('Failed to delete shift log', 'error');
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {
   const el = document.getElementById(id);
   if (el) el.classList.remove('hidden');
-  lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
 }
 
 function closeModal(id) {
@@ -5817,7 +6422,7 @@ function closeModal(id) {
 }
 
 window.addEventListener('click', (e) => {
-  if (e.target.classList.contains('fixed') && e.target.classList.contains('backdrop-blur-sm')) {
+  if (e.target.classList.contains('fixed') && e.target.classList.contains('backdrop-blur-md')) {
     e.target.classList.add('hidden');
   }
 });
@@ -5836,3 +6441,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }).catch(()=>{});
 });
+

@@ -2162,11 +2162,15 @@ let latestCustomerCctv = {
   student: null,
   isHumanDetected: false,
   hasAudio: false,
-  audioLevel: 0
+  audioLevel: 0,
+  isHostileAudio: false,
+  hostileConfidence: 0,
+  isCrowded: false,
+  crowdCount: 1
 };
 
 app.post('/api/display/cctv_frame', (req, res) => {
-  const { frame, tag, student, isHumanDetected, hasAudio, audioLevel } = req.body;
+  const { frame, tag, student, isHumanDetected, hasAudio, audioLevel, isHostileAudio, hostileConfidence, isCrowded, crowdCount } = req.body;
   const now = Date.now();
   latestCustomerCctv = {
     online: true,
@@ -2177,7 +2181,11 @@ app.post('/api/display/cctv_frame', (req, res) => {
     student: student || null,
     isHumanDetected: !!isHumanDetected,
     hasAudio: !!hasAudio,
-    audioLevel: typeof audioLevel === 'number' ? audioLevel : (latestCustomerCctv.audioLevel || 0)
+    audioLevel: typeof audioLevel === 'number' ? audioLevel : (latestCustomerCctv.audioLevel || 0),
+    isHostileAudio: !!isHostileAudio,
+    hostileConfidence: hostileConfidence || 0,
+    isCrowded: !!isCrowded,
+    crowdCount: crowdCount || 1
   };
 
   broadcastToDisplayClients({
@@ -2188,25 +2196,33 @@ app.post('/api/display/cctv_frame', (req, res) => {
     student: latestCustomerCctv.student,
     isHumanDetected: latestCustomerCctv.isHumanDetected,
     hasAudio: latestCustomerCctv.hasAudio,
-    audioLevel: latestCustomerCctv.audioLevel
+    audioLevel: latestCustomerCctv.audioLevel,
+    isHostileAudio: latestCustomerCctv.isHostileAudio,
+    hostileConfidence: latestCustomerCctv.hostileConfidence,
+    isCrowded: latestCustomerCctv.isCrowded,
+    crowdCount: latestCustomerCctv.crowdCount
   });
 
   res.json({ success: true, timestamp: now });
 });
 
 app.post('/api/display/heartbeat', (req, res) => {
-  const { hasAudio, audioLevel } = req.body || {};
+  const { hasAudio, audioLevel, isCrowded, isHostileAudio } = req.body || {};
   const now = Date.now();
   latestCustomerCctv.lastHeartbeat = now;
   latestCustomerCctv.online = true;
   if (typeof hasAudio !== 'undefined') latestCustomerCctv.hasAudio = !!hasAudio;
   if (typeof audioLevel === 'number') latestCustomerCctv.audioLevel = audioLevel;
+  if (typeof isCrowded !== 'undefined') latestCustomerCctv.isCrowded = !!isCrowded;
+  if (typeof isHostileAudio !== 'undefined') latestCustomerCctv.isHostileAudio = !!isHostileAudio;
 
   broadcastToDisplayClients({ 
     type: 'display_heartbeat', 
     timestamp: now,
     hasAudio: latestCustomerCctv.hasAudio,
-    audioLevel: latestCustomerCctv.audioLevel
+    audioLevel: latestCustomerCctv.audioLevel,
+    isCrowded: latestCustomerCctv.isCrowded,
+    isHostileAudio: latestCustomerCctv.isHostileAudio
   });
   res.json({ success: true, timestamp: now });
 });
@@ -2222,8 +2238,343 @@ app.get('/api/display/cctv_status', (req, res) => {
     student: isOnline ? latestCustomerCctv.student : null,
     isHumanDetected: isOnline ? latestCustomerCctv.isHumanDetected : false,
     hasAudio: isOnline ? latestCustomerCctv.hasAudio : false,
-    audioLevel: isOnline ? latestCustomerCctv.audioLevel : 0
+    audioLevel: isOnline ? latestCustomerCctv.audioLevel : 0,
+    isHostileAudio: isOnline ? latestCustomerCctv.isHostileAudio : false,
+    isCrowded: isOnline ? latestCustomerCctv.isCrowded : false
   });
+});
+
+// ====================================================
+// 👔 MANAGER DASHBOARD APIS
+// ====================================================
+
+// 1. SOP Document Management
+app.get('/api/manager/sop', async (req, res) => {
+  try {
+    const sopFilePath = path.join(__dirname, 'public', 'sop.html');
+    let content = '';
+    if (fs.existsSync(sopFilePath)) {
+      content = fs.readFileSync(sopFilePath, 'utf8');
+    }
+    const dbSop = await db.query('SELECT * FROM sop_documents ORDER BY updated_at DESC LIMIT 1');
+    res.json({
+      content: content || (dbSop.rows[0] ? dbSop.rows[0].content : ''),
+      version: dbSop.rows[0] ? dbSop.rows[0].version : '6.0',
+      doc_title: dbSop.rows[0] ? dbSop.rows[0].doc_title : 'Master Enterprise Standard Operating Procedures',
+      updated_at: dbSop.rows[0] ? dbSop.rows[0].updated_at : new Date()
+    });
+  } catch (err) {
+    console.error('Error fetching SOP:', err);
+    res.status(500).json({ error: 'Failed to fetch SOP document' });
+  }
+});
+
+app.put('/api/manager/sop', async (req, res) => {
+  try {
+    const { content, version, doc_title, updated_by } = req.body;
+    if (!content) return res.status(400).json({ error: 'Content cannot be empty' });
+
+    // 1. Save to public/sop.html
+    const sopFilePath = path.join(__dirname, 'public', 'sop.html');
+    fs.writeFileSync(sopFilePath, content, 'utf8');
+
+    // 2. Save to database
+    await db.query(
+      `INSERT INTO sop_documents (doc_title, version, content, updated_by, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
+      [doc_title || 'Master Enterprise SOP', version || '6.0', content, updated_by || 'Operations Manager']
+    );
+
+    res.json({ success: true, message: 'SOP document successfully updated & published!' });
+  } catch (err) {
+    console.error('Error saving SOP:', err);
+    res.status(500).json({ error: 'Failed to save SOP document' });
+  }
+});
+
+// 2. Incident Reports Management
+app.get('/api/manager/incidents', async (req, res) => {
+  try {
+    const reportsRes = await db.query('SELECT * FROM incident_reports ORDER BY created_at DESC');
+    const bookmarksRes = await db.query('SELECT * FROM security_incidents ORDER BY created_at DESC');
+    res.json({
+      reports: reportsRes.rows,
+      bookmarks: bookmarksRes.rows
+    });
+  } catch (err) {
+    console.error('Error fetching incidents:', err);
+    res.status(500).json({ error: 'Failed to fetch incidents' });
+  }
+});
+
+app.post('/api/manager/incidents', async (req, res) => {
+  try {
+    const { incident_date, incident_time, location, incident_type, student_id, student_name, severity, description, action_taken, status, reported_by } = req.body;
+    const reportNum = `INC-${Date.now().toString().slice(-6)}`;
+    
+    const result = await db.query(
+      `INSERT INTO incident_reports (
+        report_number, incident_date, incident_time, location, incident_type,
+        student_id, student_name, severity, description, action_taken, status, reported_by
+      ) VALUES ($1, COALESCE($2, CURRENT_DATE), $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, 'PENDING'), $12)
+      RETURNING *`,
+      [
+        reportNum, incident_date || null, incident_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        location || 'Table 4B', incident_type || 'other', student_id || null, student_name || '',
+        severity || 'MEDIUM', description || 'Incident logged', action_taken || '', status || 'PENDING', reported_by || 'Cashier Station'
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating incident report:', err);
+    res.status(500).json({ error: 'Failed to create incident report' });
+  }
+});
+
+app.put('/api/manager/incidents/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, manager_notes, action_taken, severity } = req.body;
+    
+    const result = await db.query(
+      `UPDATE incident_reports
+       SET status = COALESCE($1, status),
+           manager_notes = COALESCE($2, manager_notes),
+           action_taken = COALESCE($3, action_taken),
+           severity = COALESCE($4, severity)
+       WHERE id = $5 RETURNING *`,
+      [status, manager_notes, action_taken, severity, id]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Incident report not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating incident report:', err);
+    res.status(500).json({ error: 'Failed to update incident report' });
+  }
+});
+
+app.delete('/api/manager/incidents/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query('DELETE FROM incident_reports WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting incident report:', err);
+    res.status(500).json({ error: 'Failed to delete incident report' });
+  }
+});
+
+// 3. Daily Shift Operational Logs
+app.get('/api/manager/daily_logs', async (req, res) => {
+  try {
+    const logsRes = await db.query('SELECT * FROM daily_logs ORDER BY log_date DESC, created_at DESC');
+    res.json(logsRes.rows);
+  } catch (err) {
+    console.error('Error fetching daily logs:', err);
+    res.status(500).json({ error: 'Failed to fetch daily logs' });
+  }
+});
+
+app.post('/api/manager/daily_logs', async (req, res) => {
+  try {
+    const { log_date, cashier_name, manager_name, opening_cash, closing_cash, cash_discrepancy, weather_summary, incidents_count, operational_notes, manager_signoff } = req.body;
+    const result = await db.query(
+      `INSERT INTO daily_logs (
+        log_date, cashier_name, manager_name, opening_cash, closing_cash, cash_discrepancy, weather_summary, incidents_count, operational_notes, manager_signoff
+      ) VALUES (COALESCE($1, CURRENT_DATE), $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        log_date || null, cashier_name || 'Cashier', manager_name || 'Manager',
+        parseFloat(opening_cash) || 50.00, parseFloat(closing_cash) || 0.00,
+        parseFloat(cash_discrepancy) || 0.00, weather_summary || 'Clear',
+        parseInt(incidents_count, 10) || 0, operational_notes || '', !!manager_signoff
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating daily log:', err);
+    res.status(500).json({ error: 'Failed to create daily log' });
+  }
+});
+
+app.put('/api/manager/daily_logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { operational_notes, manager_signoff, closing_cash, cash_discrepancy } = req.body;
+    const result = await db.query(
+      `UPDATE daily_logs
+       SET operational_notes = COALESCE($1, operational_notes),
+           manager_signoff = COALESCE($2, manager_signoff),
+           closing_cash = COALESCE($3, closing_cash),
+           cash_discrepancy = COALESCE($4, cash_discrepancy)
+       WHERE id = $5 RETURNING *`,
+      [operational_notes, manager_signoff, closing_cash, cash_discrepancy, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Daily log not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating daily log:', err);
+    res.status(500).json({ error: 'Failed to update daily log' });
+  }
+});
+
+app.delete('/api/manager/daily_logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query('DELETE FROM daily_logs WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting daily log:', err);
+    res.status(500).json({ error: 'Failed to delete daily log' });
+  }
+});
+
+// 4. Security & Weather Engine Settings
+app.get('/api/manager/security_settings', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM security_settings ORDER BY id DESC LIMIT 1');
+    if (result.rows.length === 0) {
+      return res.json({
+        crowd_ai_sensitivity: 'NORMAL',
+        hostile_audio_threshold: 75,
+        hostile_audio_enabled: true,
+        dvr_retention_minutes: 60,
+        auto_bookmark_hostile: true,
+        weather_hot_temp: 75.0,
+        weather_cold_temp: 50.0,
+        weather_hot_discount: 0.25,
+        weather_cold_discount: 0.25,
+        manual_weather_override: 'AUTO'
+      });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching security settings:', err);
+    res.status(500).json({ error: 'Failed to fetch security settings' });
+  }
+});
+
+app.put('/api/manager/security_settings', async (req, res) => {
+  try {
+    const { crowd_ai_sensitivity, hostile_audio_threshold, hostile_audio_enabled, dvr_retention_minutes, auto_bookmark_hostile, weather_hot_temp, weather_cold_temp, weather_hot_discount, weather_cold_discount, manual_weather_override } = req.body;
+    
+    await db.query(`DELETE FROM security_settings`);
+    const result = await db.query(
+      `INSERT INTO security_settings (
+        crowd_ai_sensitivity, hostile_audio_threshold, hostile_audio_enabled,
+        dvr_retention_minutes, auto_bookmark_hostile, weather_hot_temp,
+        weather_cold_temp, weather_hot_discount, weather_cold_discount, manual_weather_override, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+      RETURNING *`,
+      [
+        crowd_ai_sensitivity || 'NORMAL', parseInt(hostile_audio_threshold, 10) || 75,
+        hostile_audio_enabled !== undefined ? !!hostile_audio_enabled : true,
+        parseInt(dvr_retention_minutes, 10) || 60,
+        auto_bookmark_hostile !== undefined ? !!auto_bookmark_hostile : true,
+        parseFloat(weather_hot_temp) || 75.0, parseFloat(weather_cold_temp) || 50.0,
+        parseFloat(weather_hot_discount) || 0.25, parseFloat(weather_cold_discount) || 0.25,
+        manual_weather_override || 'AUTO'
+      ]
+    );
+
+    // Broadcast updated settings to displays
+    broadcastToDisplayClients({
+      type: 'security_settings_updated',
+      settings: result.rows[0]
+    });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating security settings:', err);
+    res.status(500).json({ error: 'Failed to update security settings' });
+  }
+});
+
+// 5. Watchlist & Flagging Manager
+app.get('/api/manager/watchlist', async (req, res) => {
+  try {
+    const flaggedRes = await db.query(
+      `SELECT * FROM students WHERE is_flagged = TRUE OR unpaid_balance > 0 ORDER BY name ASC`
+    );
+    const allStudentsRes = await db.query(
+      `SELECT id, student_id, name, grade, balance, is_flagged, watchlist_reason, unpaid_balance FROM students ORDER BY name ASC`
+    );
+    res.json({
+      flagged: flaggedRes.rows,
+      all: allStudentsRes.rows
+    });
+  } catch (err) {
+    console.error('Error fetching watchlist:', err);
+    res.status(500).json({ error: 'Failed to fetch watchlist' });
+  }
+});
+
+app.post('/api/manager/watchlist/toggle', async (req, res) => {
+  try {
+    const { student_id, is_flagged, watchlist_reason, unpaid_balance } = req.body;
+    const result = await db.query(
+      `UPDATE students
+       SET is_flagged = $1,
+           watchlist_reason = $2,
+           unpaid_balance = $3
+       WHERE id = $4 RETURNING *`,
+      [!!is_flagged, watchlist_reason || '', parseFloat(unpaid_balance) || 0.00, student_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error toggling watchlist:', err);
+    res.status(500).json({ error: 'Failed to toggle watchlist status' });
+  }
+});
+
+// 6. Security Diagnostics & Test Simulator
+app.post('/api/manager/security/test_alert', (req, res) => {
+  const { test_type } = req.body;
+  const now = Date.now();
+  const timeStr = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  if (test_type === 'hostile_audio') {
+    broadcastToDisplayClients({
+      type: 'cctv_customer_frame',
+      timestamp: now,
+      isHostileAudio: true,
+      hostileConfidence: 98,
+      audioLevel: 88,
+      tag: 'TEST-HOSTILE',
+      isHumanDetected: true
+    });
+    res.json({ success: true, message: `🚨 Simulated Hostile Audio Alert broadcast at ${timeStr}` });
+  } else if (test_type === 'crowd_warning') {
+    broadcastToDisplayClients({
+      type: 'cctv_customer_frame',
+      timestamp: now,
+      isCrowded: true,
+      crowdCount: 4,
+      audioLevel: 65,
+      tag: 'TEST-CROWD',
+      isHumanDetected: true
+    });
+    res.json({ success: true, message: `⚠️ Simulated Multi-Person Crowd Warning broadcast at ${timeStr}` });
+  } else if (test_type === 'silent_duress') {
+    broadcastToDisplayClients({
+      type: 'security_alert',
+      timestamp: now,
+      alert_type: 'silent_duress',
+      zone: 'Table 4B',
+      notes: 'Diagnostic Test Alarm'
+    });
+    res.json({ success: true, message: `🚨 Simulated Silent Duress Alarm broadcast at ${timeStr}` });
+  } else {
+    broadcastToDisplayClients({
+      type: 'display_heartbeat',
+      timestamp: now,
+      ping: true
+    });
+    res.json({ success: true, message: `📡 2nd Display Connectivity Ping sent at ${timeStr}` });
+  }
 });
 
 app.get('/api/network-info', (req, res) => {

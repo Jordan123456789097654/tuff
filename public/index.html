@@ -152,6 +152,11 @@
         <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
         <span>CCTV (1-Hr DVR)</span>
       </button>
+
+      <!-- Manager Dashboard Button -->
+      <button onclick="openManagerDashboard()" class="flex items-center gap-1.5 text-xs text-purple-200 hover:text-white bg-purple-600/30 hover:bg-purple-600/40 border border-purple-500/50 px-3 py-1.5 rounded-xl transition font-black shadow-md shadow-purple-950/40" title="Open Manager Operations Dashboard & Security Center">
+        <span>👔 Manager Hub</span>
+      </button>
     </div>
 
     <!-- Group 3: Store Utilities & Portals Dropdown Hub -->
@@ -3015,6 +3020,9 @@
               <span id="cctv-crowd-badge" class="bg-amber-950/90 border border-amber-500/60 text-amber-300 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shadow hidden animate-pulse">
                 ⚠️ Multi-Person Crowd
               </span>
+              <span id="cctv-hostile-audio-badge" class="bg-rose-950/90 border border-rose-500 text-rose-200 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shadow hidden animate-bounce">
+                🚨 HOSTILE AUDIO DETECTED
+              </span>
             </div>
 
             <!-- Top Right Audio VU Decibel Meter -->
@@ -3411,6 +3419,469 @@
 
   <!-- Hidden Corner Hotspot Trigger for Stealth Mode -->
   <div id="stealth-hotspot-pos" onclick="toggleStealthMode()" class="fixed top-0 left-0 w-8 h-8 z-50 opacity-0 cursor-default" title="Secret Trigger"></div>
+
+  <!-- ==================================================== -->
+  <!-- 👔 OPERATIONS MANAGER HUB & SECURITY CENTER MODAL     -->
+  <!-- ==================================================== -->
+  <div id="modal-manager-dashboard" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-slate-900 border-2 border-purple-500/50 rounded-3xl w-full max-w-6xl p-4 sm:p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[96vh] flex flex-col">
+      <button onclick="closeModal('modal-manager-dashboard')" class="absolute right-4 top-4 text-slate-400 hover:text-white z-10">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 pr-8">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-400 shrink-0 shadow-lg shadow-purple-950/40">
+            👑
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
+              <span>Operations Manager Hub &amp; Security Command Center</span>
+              <span class="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full">ADMIN ACCESS</span>
+            </h3>
+            <p class="text-xs text-slate-400 font-mono">Master SOP Editor • Security Alert Review • Student Watchlist • Live Camera Diagnostics • Daily Shift Logs</p>
+          </div>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-2">
+          <span class="text-xs text-purple-300 font-mono bg-purple-950/80 border border-purple-500/30 px-3 py-1.5 rounded-xl font-bold">Node Table 4B • Vault #314</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Bar -->
+      <div class="flex flex-wrap items-center gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shrink-0">
+        <button onclick="switchManagerTab('security')" id="btn-mgr-tab-security" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-purple-600 text-white shadow transition flex items-center justify-center gap-1.5">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+          <span>🚨 Security Alerts</span>
+        </button>
+        <button onclick="switchManagerTab('watchlist')" id="btn-mgr-tab-watchlist" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          <span>👥 Watchlist &amp; Flags</span>
+        </button>
+        <button onclick="switchManagerTab('diagnostics')" id="btn-mgr-tab-diagnostics" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+          <span>🧪 Diagnostics &amp; Cams</span>
+        </button>
+        <button onclick="switchManagerTab('settings')" id="btn-mgr-tab-settings" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+          <span>⚙️ System &amp; Weather</span>
+        </button>
+        <button onclick="switchManagerTab('sop')" id="btn-mgr-tab-sop" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+          <span>📝 Master SOP Editor</span>
+        </button>
+        <button onclick="switchManagerTab('logs')" id="btn-mgr-tab-logs" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
+          <span>📋 Forms &amp; Daily Logs</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Panels Container -->
+      <div class="flex-1 overflow-y-auto pr-1 space-y-4 min-h-[420px]">
+        
+        <!-- ========================================== -->
+        <!-- TAB 1: 🚨 SECURITY ALERTS & EVIDENCE VAULT -->
+        <!-- ========================================== -->
+        <div id="panel-mgr-security" class="space-y-4">
+          <div class="flex items-center justify-between bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+            <div>
+              <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                <span>🚨 Evidence Vault &amp; Live Security Incident Ledger</span>
+              </h4>
+              <p class="text-xs text-slate-400">Review silent duress triggers, hostile audio alarms, and bookmark evidence with 1-click status updates.</p>
+            </div>
+            <button onclick="loadManagerSecurityIncidents()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Refresh Feed</span>
+            </button>
+          </div>
+
+          <div id="mgr-security-incidents-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="col-span-full text-center text-slate-500 py-10">Loading security incidents &amp; evidence bookmarks...</div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: 👥 STUDENT WATCHLIST & DEBT MANAGER -->
+        <!-- ========================================== -->
+        <div id="panel-mgr-watchlist" class="hidden space-y-4">
+          <div class="flex items-center justify-between bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+            <div>
+              <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                <span>👥 Student Account Watchlist &amp; Disputed Debt Management</span>
+              </h4>
+              <p class="text-xs text-slate-400">Flag accounts with notes or unpaid balance debt. Flagged accounts automatically trigger POS alert banners.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="mgr-watchlist-search" placeholder="Filter student accounts..." oninput="filterManagerWatchlist(this.value)" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" />
+            </div>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-950 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900/90 text-slate-400 font-mono text-[11px] uppercase border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Student Name &amp; ID</th>
+                  <th class="p-3">Grade</th>
+                  <th class="p-3">Prepaid Balance</th>
+                  <th class="p-3">Unpaid Owed ($)</th>
+                  <th class="p-3">Watchlist Flag</th>
+                  <th class="p-3">Violation Reason</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="mgr-watchlist-table-body" class="divide-y divide-slate-800">
+                <tr><td colspan="7" class="p-6 text-center text-slate-500">Loading student accounts...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: 🧪 CAMERA & SECURITY DIAGNOSTICS   -->
+        <!-- ========================================== -->
+        <div id="panel-mgr-diagnostics" class="hidden space-y-4">
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <span>🧪 Live Security &amp; Camera Hardware Diagnostics Suite</span>
+            </h4>
+            <p class="text-xs text-slate-400">Simulate triggers, test acoustic thresholds, and verify live connectivity across 2nd screen and cashier POS.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+              <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-rose-300">🚨 Hostile Audio Test</span>
+                  <span class="text-xl">🎙️</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Simulates aggressive high-decibel speech (&gt;85dB) at Table 4B counter.</p>
+                <button onclick="triggerDiagnosticTest('hostile_audio')" class="w-full bg-rose-600/30 hover:bg-rose-600 text-rose-300 hover:text-white font-bold py-2 rounded-xl text-xs transition border border-rose-500/40">
+                  Simulate Hostile Audio
+                </button>
+              </div>
+
+              <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-amber-300">⚠️ Crowd Spread Test</span>
+                  <span class="text-xl">👥</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Simulates optical multi-person crowding spread at Customer Screen.</p>
+                <button onclick="triggerDiagnosticTest('crowd_warning')" class="w-full bg-amber-600/30 hover:bg-amber-600 text-amber-300 hover:text-slate-950 font-bold py-2 rounded-xl text-xs transition border border-amber-500/40">
+                  Simulate Crowd Warning
+                </button>
+              </div>
+
+              <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-rose-400">🚨 Silent Duress Test</span>
+                  <span class="text-xl">🛡️</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Simulates 1-click duress/theft bookmark &amp; red pin DVR placement.</p>
+                <button onclick="triggerDiagnosticTest('silent_duress')" class="w-full bg-rose-700/30 hover:bg-rose-700 text-rose-200 hover:text-white font-bold py-2 rounded-xl text-xs transition border border-rose-600/50">
+                  Simulate Duress Alarm
+                </button>
+              </div>
+
+              <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-cyan-300">📡 2nd Screen Ping</span>
+                  <span class="text-xl">🖥️</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Tests 0ms BroadcastChannel &amp; SSE keepalive handshake.</p>
+                <button onclick="triggerDiagnosticTest('display_ping')" class="w-full bg-cyan-600/30 hover:bg-cyan-600 text-cyan-300 hover:text-white font-bold py-2 rounded-xl text-xs transition border border-cyan-500/40">
+                  Send Display Ping
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-bold text-xs text-white uppercase tracking-wider">Live Audio VU Sensitivity Test</h4>
+            <div class="flex items-center gap-4">
+              <div class="flex-1 bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+                <span class="text-sm font-mono text-slate-400">Counter Mic VU:</span>
+                <div class="flex-1 h-4 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                  <div id="mgr-diag-audio-bar" class="h-full bg-emerald-400 rounded-full transition-all duration-75" style="width: 25%;"></div>
+                </div>
+                <span id="mgr-diag-audio-val" class="font-mono font-bold text-xs text-emerald-400">42 dB</span>
+              </div>
+              <button onclick="openCashierSecurityCamera()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-3 rounded-xl text-xs transition">
+                Open Full CCTV Modal
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: ⚙️ SECURITY ENGINE & WEATHER CONFIG -->
+        <!-- ========================================== -->
+        <div id="panel-mgr-settings" class="hidden space-y-4">
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h4 class="font-bold text-sm text-white">⚙️ Security Engine &amp; Weather Smart Pricing Calibration</h4>
+                <p class="text-xs text-slate-400">Tune audio hostility decibels, crowd sensitivity, DVR retention buffer, and weather trigger rules.</p>
+              </div>
+              <button onclick="saveManagerSecuritySettings()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span>Save System Settings</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <!-- Security System Settings -->
+              <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <h5 class="font-bold text-xs text-amber-400 uppercase tracking-wider">🛡️ Security &amp; Optical AI Configuration</h5>
+                
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Hostile Audio Trigger Threshold (dB):</label>
+                  <input type="number" id="cfg-hostile-audio-threshold" value="75" min="50" max="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                  <p class="text-[10px] text-slate-500 mt-0.5">Counter audio levels above this threshold trigger Hostile Audio alarms.</p>
+                </div>
+
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Crowd AI Optical Spread Sensitivity:</label>
+                  <select id="cfg-crowd-sensitivity" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold">
+                    <option value="LOW">Low (Requires &gt;4 people)</option>
+                    <option value="NORMAL" selected>Normal (Standard Table 4B Queue)</option>
+                    <option value="HIGH">High (Strict Single-File Alert)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Time-Machine DVR Retention Buffer (Minutes):</label>
+                  <input type="number" id="cfg-dvr-retention" value="60" min="15" max="120" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                </div>
+
+                <div class="pt-1 flex items-center gap-2">
+                  <input type="checkbox" id="cfg-auto-bookmark-hostile" checked class="rounded text-purple-600" />
+                  <label for="cfg-auto-bookmark-hostile" class="font-semibold text-slate-300">Auto-bookmark hostile audio events to Evidence Vault</label>
+                </div>
+              </div>
+
+              <!-- Weather Smart Pricing Settings -->
+              <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <h5 class="font-bold text-xs text-cyan-400 uppercase tracking-wider">🌤️ Dynamic Weather Protocol Calibration</h5>
+                
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="font-semibold text-slate-300 block mb-1">Warm Day Temp (&deg;F):</label>
+                    <input type="number" id="cfg-weather-hot-temp" value="75.0" step="0.5" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                  </div>
+                  <div>
+                    <label class="font-semibold text-slate-300 block mb-1">Cold Day Temp (&deg;F):</label>
+                    <input type="number" id="cfg-weather-cold-temp" value="50.0" step="0.5" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="font-semibold text-slate-300 block mb-1">Cold Drink Discount ($):</label>
+                    <input type="number" id="cfg-weather-hot-discount" value="0.25" step="0.05" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                  </div>
+                  <div>
+                    <label class="font-semibold text-slate-300 block mb-1">Warm Snack Discount ($):</label>
+                    <input type="number" id="cfg-weather-cold-discount" value="0.25" step="0.05" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Manual Weather Mode Override:</label>
+                  <select id="cfg-weather-override" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold">
+                    <option value="AUTO" selected>Auto (Live National Weather API)</option>
+                    <option value="FORCE_HOT">Force Warm Day Mode (☀️ 78°F Promo)</option>
+                    <option value="FORCE_COLD">Force Chilly Morning Mode (❄️ 48°F Promo)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: 📝 MASTER SOP LIVE EDITOR          -->
+        <!-- ========================================== -->
+        <div id="panel-mgr-sop" class="hidden space-y-4">
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h4 class="font-bold text-sm text-white">📝 Master SOP Manual Live Editor &amp; Publisher</h4>
+                <p class="text-xs text-slate-400">Edit, revise, and publish the Master Standard Operating Procedures document. Updates take effect immediately at <code>/sop</code>.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <a href="/sop" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition border border-slate-700">
+                  🔗 View Live /sop
+                </a>
+                <button onclick="saveManagerSopDocument()" class="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5">
+                  <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                  <span>Publish SOP v6.0</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Document Title:</label>
+                <input type="text" id="mgr-sop-title" value="Master Enterprise Standard Operating Procedures" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Version Number:</label>
+                <input type="text" id="mgr-sop-version" value="6.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono" />
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Publishing Lead:</label>
+                <input type="text" id="mgr-sop-author" value="Operations Manager" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Template Action:</label>
+                <button onclick="loadDefaultSopTemplate()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2 rounded-xl text-xs transition border border-slate-700">
+                  Reload Latest Template
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 font-semibold mb-1 block">SOP Document HTML / Source Content:</label>
+              <textarea id="mgr-sop-content-editor" rows="14" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500 leading-relaxed"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 6: 📋 INCIDENT FORMS & DAILY LOGS      -->
+        <!-- ========================================== -->
+        <div id="panel-mgr-logs" class="hidden space-y-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            <!-- Left: Digital Incident Filing Form -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 class="font-bold text-sm text-white flex items-center gap-1.5">
+                  <span>📝</span> File Formal Security Incident Report
+                </h4>
+                <span class="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30">Form JSS-INC-01</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Incident Type:</label>
+                  <select id="form-inc-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+                    <option value="hostile_audio">🚨 Hostile Audio / Aggressive Speech</option>
+                    <option value="silent_duress">🚨 Silent Duress / Theft Attempt</option>
+                    <option value="disputed_debt">💳 Disputed Balance / Counterfeit Note</option>
+                    <option value="crowd_disorder">⚠️ Queue Disorder / Perimeter Breach</option>
+                    <option value="other">📌 Other General Incident</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Severity Level:</label>
+                  <select id="form-inc-severity" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold">
+                    <option value="LOW">Low (Informational)</option>
+                    <option value="MEDIUM" selected>Medium (Standard Intervention)</option>
+                    <option value="HIGH">High (Admin Escalation)</option>
+                    <option value="CRITICAL">Critical (Immediate Response)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Student / Subject Name:</label>
+                  <input type="text" id="form-inc-student" placeholder="e.g. Student Name or Unknown" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+                </div>
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Incident Location:</label>
+                  <input type="text" id="form-inc-loc" value="Station Table 4B" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+                </div>
+              </div>
+
+              <div>
+                <label class="font-semibold text-slate-300 block mb-1">Incident Description &amp; Details:</label>
+                <textarea id="form-inc-desc" rows="3" placeholder="Describe the sequence of events, verbal tone, and items involved..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white"></textarea>
+              </div>
+
+              <div>
+                <label class="font-semibold text-slate-300 block mb-1">Immediate Action Taken:</label>
+                <input type="text" id="form-inc-action" placeholder="e.g. De-escalated conversation, verified register count..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+              </div>
+
+              <button onclick="submitDigitalIncidentReport()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-1.5">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>File Incident Report</span>
+              </button>
+            </div>
+
+            <!-- Right: Daily Operational Shift Log Submission -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 class="font-bold text-sm text-white flex items-center gap-1.5">
+                  <span>📋</span> Submit Daily Shift Operational Log
+                </h4>
+                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">Form JSS-LOG-01</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Cashier Name:</label>
+                  <input type="text" id="form-log-cashier" value="Jordan Daniels" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+                </div>
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Manager Lead:</label>
+                  <input type="text" id="form-log-manager" value="Store Lead &amp; Manager" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Opening Float ($):</label>
+                  <input type="number" step="0.01" id="form-log-open-cash" value="50.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                </div>
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Closing Count ($):</label>
+                  <input type="number" step="0.01" id="form-log-close-cash" placeholder="114.50" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold" />
+                </div>
+                <div>
+                  <label class="font-semibold text-slate-300 block mb-1">Discrepancy ($):</label>
+                  <input type="number" step="0.01" id="form-log-diff" value="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold" />
+                </div>
+              </div>
+
+              <div>
+                <label class="font-semibold text-slate-300 block mb-1">Weather &amp; Environmental Summary:</label>
+                <input type="text" id="form-log-weather" value="Sunny &amp; Mild, 74°F (Normal Beverage Demand)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+              </div>
+
+              <div>
+                <label class="font-semibold text-slate-300 block mb-1">Shift Operational &amp; Stock Notes:</label>
+                <textarea id="form-log-notes" rows="2" placeholder="Note any product sellouts, restock needs for Locker Vault #314, or queue observations..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white"></textarea>
+              </div>
+
+              <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="form-log-signoff" checked class="rounded text-emerald-600" />
+                <label for="form-log-signoff" class="font-semibold text-slate-300">Manager Verification &amp; Drawer Signoff Verified</label>
+              </div>
+
+              <button onclick="submitDailyShiftLog()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-1.5">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span>Submit Daily Operational Log</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Existing Daily Logs Table -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-bold text-xs text-white uppercase tracking-wider">Historical Shift Logs Archive</h4>
+            <div id="mgr-historical-logs-list" class="space-y-2 text-xs">
+              <div class="text-center text-slate-500 py-4">Loading operational shift logs...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
 
   <!-- Seasonal Particle Overlay Canvas -->
   <canvas id="theme-particles-canvas"></canvas>
