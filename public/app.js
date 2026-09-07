@@ -4569,6 +4569,34 @@ offscreenAiCanvas.width = 120;
 offscreenAiCanvas.height = 90;
 const offscreenAiCtx = offscreenAiCanvas.getContext('2d', { willReadFrequently: true });
 
+let selectedCashierCctvDeviceId = localStorage.getItem('snack_cashier_cctv_device') || null;
+
+async function populateCashierCameraList() {
+  const select = document.getElementById('cashier-cctv-camera-select');
+  if (!select || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+    if (videoDevices.length > 0) {
+      select.innerHTML = videoDevices.map((dev, idx) => `
+        <option value="${dev.deviceId}" ${selectedCashierCctvDeviceId === dev.deviceId ? 'selected' : ''}>
+          📷 ${dev.label || `Camera ${idx + 1}`}
+        </option>
+      `).join('');
+    }
+  } catch(e){}
+}
+
+async function changeCashierCctvCamera(deviceId) {
+  selectedCashierCctvDeviceId = deviceId;
+  localStorage.setItem('snack_cashier_cctv_device', deviceId);
+  if (cashierCctvStream) {
+    cashierCctvStream.getTracks().forEach(t => t.stop());
+    cashierCctvStream = null;
+  }
+  await startCashierCctvFeed();
+}
+
 async function startCashierCctvFeed() {
   const video = document.getElementById('cashier-cctv-video');
   const pipVideo = document.getElementById('cashier-pip-video');
@@ -4576,10 +4604,19 @@ async function startCashierCctvFeed() {
 
   try {
     if (!cashierCctvStream) {
-      cashierCctvStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      const constraints = {
+        video: selectedCashierCctvDeviceId 
+          ? { deviceId: { exact: selectedCashierCctvDeviceId }, width: { ideal: 640 }, height: { ideal: 480 } }
+          : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false
-      });
+      };
+      try {
+        cashierCctvStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch(e) {
+        // Fallback if specific deviceId failed
+        cashierCctvStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+      populateCashierCameraList();
     }
     video.srcObject = cashierCctvStream;
     if (pipVideo) pipVideo.srcObject = cashierCctvStream;

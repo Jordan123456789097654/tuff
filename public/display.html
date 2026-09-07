@@ -1812,7 +1812,7 @@
         </button>
       </div>
     </div>
-    <div id="cctv-viewport-container" class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-slate-800">
+    <div id="cctv-viewport-container" class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-slate-800 space-y-1">
       <video id="cctv-live-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
       <canvas id="display-cctv-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
       <div class="absolute top-1 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-red-400 font-bold flex items-center gap-1">
@@ -1824,6 +1824,14 @@
       </div>
       <div id="cctv-timestamp" class="absolute bottom-1 right-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-white">08:00:00</div>
     </div>
+    
+    <!-- Camera Source Switcher Dropdown -->
+    <div class="pt-0.5">
+      <select id="display-cctv-camera-select" onchange="changeDisplayCctvCamera(this.value)" class="w-full bg-slate-900 border border-slate-700 text-slate-300 text-[9px] rounded-lg px-1.5 py-0.5 font-mono focus:outline-none focus:border-red-500 truncate" title="Select Display Camera Source">
+        <option value="">📷 Default / Front Camera</option>
+      </select>
+    </div>
+
     <div class="text-[9px] text-slate-400 text-center font-medium leading-tight">
       Jordan's Snack Shack Security & Loss Prevention
     </div>
@@ -4006,17 +4014,57 @@
     let displayRecordedChunks = [];
     let isDisplayRecordingClip = false;
 
+    let selectedDisplayCctvDeviceId = localStorage.getItem('snack_display_cctv_device') || null;
+
+    async function populateDisplayCameraList() {
+      const select = document.getElementById('display-cctv-camera-select');
+      if (!select || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        if (videoDevices.length > 0) {
+          select.innerHTML = videoDevices.map((dev, idx) => `
+            <option value="${dev.deviceId}" ${selectedDisplayCctvDeviceId === dev.deviceId ? 'selected' : ''}>
+              📷 ${dev.label || `Camera ${idx + 1}`}
+            </option>
+          `).join('');
+        }
+      } catch(e){}
+    }
+
+    async function changeDisplayCctvCamera(deviceId) {
+      selectedDisplayCctvDeviceId = deviceId;
+      localStorage.setItem('snack_display_cctv_device', deviceId);
+      if (cctvStream) {
+        cctvStream.getTracks().forEach(t => t.stop());
+        cctvStream = null;
+      }
+      await startSecurityCctv();
+    }
+
     async function startSecurityCctv() {
       const video = document.getElementById('cctv-live-video');
       if (!video) return;
       try {
-        cctvStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: 320, height: 320 }
-        });
+        if (cctvStream) {
+          cctvStream.getTracks().forEach(t => t.stop());
+          cctvStream = null;
+        }
+        const constraints = {
+          video: selectedDisplayCctvDeviceId 
+            ? { deviceId: { exact: selectedDisplayCctvDeviceId }, width: 320, height: 320 }
+            : { facingMode: 'user', width: 320, height: 320 }
+        };
+        try {
+          cctvStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch(err) {
+          cctvStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
         video.srcObject = cctvStream;
         video.play().catch(()=>{});
         startDisplayCctvAiLoop();
-    } catch (err) {
+        populateDisplayCameraList();
+      } catch (err) {
         console.warn('Security CCTV stream notice:', err);
       }
     }
@@ -4680,172 +4728,6 @@
           </div>
         </div>
       `).join('');
-    }
-
-    // ==========================================
-    // 👤 BIOMETRIC FACE ID SCANNER ENGINE (DISPLAY)
-    // ==========================================
-    let displayFaceStream = null;
-
-    async function openDisplayFaceScanner() {
-      const modal = document.getElementById('modal-display-face-scanner');
-      if (modal) modal.classList.remove('hidden');
-      const video = document.getElementById('display-face-video');
-      const statusEl = document.getElementById('display-face-status');
-      if (statusEl) statusEl.textContent = 'Optical Sensor Active • Scanning...';
-
-      try {
-        if (!displayFaceStream) {
-          displayFaceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        }
-        if (video) {
-          video.srcObject = displayFaceStream;
-          video.play().catch(()=>{});
-        }
-      } catch(e){
-        console.warn('Face scanner notice:', e);
-      }
-    }
-
-    function closeDisplayFaceScanner() {
-      const modal = document.getElementById('modal-display-face-scanner');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    async function simulateFaceScanMatch() {
-      const statusEl = document.getElementById('display-face-status');
-      if (statusEl) statusEl.textContent = 'Analyzing Facial Features...';
-
-      try {
-        const res = await fetch('/api/students');
-        const list = await res.json();
-        if (list && list.length > 0) {
-          const matched = list[0];
-          kioskCustomer = matched;
-          if (statusEl) statusEl.textContent = `✅ Pass Verified: ${matched.name} ($${parseFloat(matched.balance||0).toFixed(2)})`;
-          setTimeout(() => {
-            closeDisplayFaceScanner();
-            if (isKioskActive) {
-              const nameEl = document.getElementById('kiosk-student-name');
-              const infoEl = document.getElementById('kiosk-student-info');
-              const avEl = document.getElementById('kiosk-student-avatar');
-              if (nameEl) nameEl.textContent = matched.name;
-              if (infoEl) infoEl.textContent = `Balance: $${parseFloat(matched.balance || 0).toFixed(2)}`;
-              if (avEl && matched.photo_data) {
-                avEl.innerHTML = `<img src="${matched.photo_data}" class="w-full h-full object-cover rounded-full" />`;
-              }
-            } else {
-              openAppleWalletPassModal(matched);
-            }
-          }, 800);
-        } else {
-          if (statusEl) statusEl.textContent = '⚠️ No student records found. Please Register Pass.';
-        }
-      } catch(e){}
-    }
-
-    // ==========================================
-    // 📝 STUDENT SELF-REGISTRATION ENGINE (DISPLAY)
-    // ==========================================
-    let displayRegStream = null;
-    let capturedPhotoData = null;
-
-    async function openDisplayRegisterModal() {
-      const modal = document.getElementById('modal-display-register');
-      if (modal) modal.classList.remove('hidden');
-      capturedPhotoData = null;
-      const preview = document.getElementById('display-reg-preview');
-      const placeholder = document.getElementById('display-reg-placeholder');
-      const video = document.getElementById('display-reg-video');
-      const snapBtnText = document.getElementById('btn-snap-photo-text');
-
-      if (preview) preview.classList.add('hidden');
-      if (placeholder) placeholder.classList.remove('hidden');
-      if (video) video.classList.add('hidden');
-      if (snapBtnText) snapBtnText.textContent = 'Take Face Photo';
-
-      const pinEl = document.getElementById('display-reg-pin');
-      if (pinEl) pinEl.value = Math.floor(1000 + Math.random() * 9000);
-    }
-
-    function closeDisplayRegisterModal() {
-      const modal = document.getElementById('modal-display-register');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    async function captureRegistrationPhoto() {
-      const video = document.getElementById('display-reg-video');
-      const preview = document.getElementById('display-reg-preview');
-      const placeholder = document.getElementById('display-reg-placeholder');
-      const snapBtnText = document.getElementById('btn-snap-photo-text');
-
-      if (!displayRegStream) {
-        try {
-          displayRegStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 320 } });
-          if (video) {
-            video.srcObject = displayRegStream;
-            video.classList.remove('hidden');
-            if (placeholder) placeholder.classList.add('hidden');
-            if (preview) preview.classList.add('hidden');
-            video.play().catch(()=>{});
-            if (snapBtnText) snapBtnText.textContent = 'Snap Picture Now';
-          }
-        } catch(e) {
-          alert('Camera could not be started for photo capture.');
-        }
-      } else {
-        // Capture snapshot from video
-        const canvas = document.createElement('canvas');
-        canvas.width = 240;
-        canvas.height = 240;
-        const ctx = canvas.getContext('2d');
-        ctx.translate(240, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, 240, 240);
-
-        capturedPhotoData = canvas.toDataURL('image/jpeg', 0.85);
-        if (preview) {
-          preview.src = capturedPhotoData;
-          preview.classList.remove('hidden');
-        }
-        if (video) video.classList.add('hidden');
-        if (snapBtnText) snapBtnText.textContent = 'Retake Photo';
-      }
-    }
-
-    async function saveDisplayRegistration() {
-      const name = document.getElementById('display-reg-name').value.trim();
-      const grade = document.getElementById('display-reg-grade').value;
-      const pin = document.getElementById('display-reg-pin').value.trim();
-      const balance = parseFloat(document.getElementById('display-reg-balance').value) || 0;
-
-      if (!name) return alert('Please enter your full name.');
-      if (!pin || pin.length < 4) return alert('Please set a 4-digit PIN.');
-
-      const studentId = 'STU-' + Math.floor(10000 + Math.random() * 90000);
-      const payload = {
-        student_id: studentId,
-        name: name,
-        grade: grade,
-        pin: pin,
-        balance: balance,
-        punch_card: 1,
-        photo_data: capturedPhotoData || null
-      };
-
-      try {
-        const res = await fetch('/api/students', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const saved = await res.json();
-        alert(`🎉 Pass Registered Successfully! Welcome, ${saved.name} (ID: ${saved.student_id}).`);
-        closeDisplayRegisterModal();
-        openAppleWalletPassModal(saved);
-      } catch(e) {
-        alert('Failed to register student pass. Please ask the cashier.');
-      }
     }
 
     // ==========================================
