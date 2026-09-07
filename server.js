@@ -1749,6 +1749,23 @@ app.post('/api/display/birthday', (req, res) => {
   res.json({ success: true, message: 'Birthday alert broadcasted to 2nd screen' });
 });
 
+app.post('/api/display/face_match', (req, res) => {
+  const { student } = req.body;
+  const payload = `data: ${JSON.stringify({ type: 'student_face_identified', student })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+  res.json({ success: true, message: 'Student face identification broadcasted' });
+});
+
+app.post('/api/display/scan_face_request', (req, res) => {
+  const payload = `data: ${JSON.stringify({ type: 'request_display_face_scan' })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+  res.json({ success: true, message: 'Face scan request sent to 2nd monitor' });
+});
+
 // Customer Service Feedback & Reviews
 app.post('/api/feedback', async (req, res) => {
   try {

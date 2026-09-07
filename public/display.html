@@ -139,8 +139,14 @@
         <span class="hidden md:inline">Snack Wishlist</span>
       </button>
 
+      <!-- Student Face ID Scanner Trigger -->
+      <button id="display-btn-face-id" onclick="openDisplayFaceScanner()" class="flex items-center gap-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-white border border-blue-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Look into camera for Face ID pass lookup">
+        <span>👤</span>
+        <span class="hidden sm:inline">Face ID</span>
+      </button>
+
       <!-- Student Balance Checker Trigger -->
-      <button id="display-btn-balance" onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-white border border-blue-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
+      <button id="display-btn-balance" onclick="openBalanceChecker()" class="flex items-center gap-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>💳</span>
         <span class="hidden sm:inline">Pass Balance</span>
       </button>
@@ -239,6 +245,16 @@
         <p class="text-slate-400 text-xs sm:text-base max-w-xl mx-auto">
           Order snacks, cold drinks & treats at the register window.
         </p>
+
+        <!-- Student Face ID Quick Action on 2nd Screen -->
+        <div class="pt-2">
+          <button onclick="openDisplayFaceScanner()" class="inline-flex items-center gap-2.5 bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-blue-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border-2 border-blue-500/50 text-white px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold shadow-xl shadow-blue-900/30 transition transform hover:scale-105 active:scale-95">
+            <span class="text-lg">👤</span>
+            <span>Scan My Face ID for Pass & Rewards</span>
+            <span class="bg-blue-500/30 text-blue-200 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border border-blue-400/30">Camera Ready</span>
+          </button>
+        </div>
+      </div>
       <!-- LIVE "TRENDING RIGHT NOW" BEST SELLERS BAR -->
       <div id="display-trending-container" class="w-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 rounded-3xl p-4 shadow-xl">
         <div class="flex items-center justify-between mb-2.5">
@@ -977,6 +993,66 @@
       </button>
     </div>
   </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 👤 2ND MONITOR STUDENT FACE ID SCANNER -->
+  <!-- ==================================================== -->
+  <div id="modal-display-face-id" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-blue-500/60 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col items-center text-center">
+      <button onclick="closeDisplayFaceScanner()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="space-y-1">
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-3 py-0.5 rounded-full">
+          👤 2nd Screen Biometric Camera
+        </span>
+        <h3 class="font-heading font-extrabold text-2xl text-white">
+          Student Face ID Scanner
+        </h3>
+        <p id="display-face-status-text" class="text-xs text-slate-300">
+          Look directly into this screen's camera to identify your student pass & punch card!
+        </p>
+      </div>
+
+      <!-- Live Video Viewport with Oval Target & Scanning Animation -->
+      <div class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-3xl overflow-hidden border-2 border-blue-500/40 shadow-inner bg-slate-950 flex items-center justify-center">
+        <video id="display-face-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+        <canvas id="display-face-canvas" class="hidden"></canvas>
+
+        <!-- Animated Face Oval Guide Ring -->
+        <div id="display-face-guide-ring" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-48 h-56 rounded-[50%] border-4 border-blue-400/80 shadow-[0_0_30px_rgba(59,130,246,0.6)] animate-pulse flex items-center justify-center">
+            <div class="w-full h-0.5 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-bounce"></div>
+          </div>
+        </div>
+
+        <!-- Matched Student Greeting Overlay (hidden by default) -->
+        <div id="display-face-matched-overlay" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 space-y-3 animate-in zoom-in">
+          <div id="display-face-matched-photo" class="w-24 h-24 rounded-full border-4 border-emerald-400 shadow-2xl overflow-hidden flex items-center justify-center bg-slate-900 text-5xl">
+            👤
+          </div>
+          <div class="space-y-1">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 px-3 py-0.5 rounded-full inline-block">✅ Face Recognized!</span>
+            <h4 id="display-face-matched-name" class="font-heading font-black text-2xl text-white">Student Name</h4>
+            <p id="display-face-matched-details" class="text-xs text-blue-300 font-semibold">$0.00 Balance • 0 Punches</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="w-full flex gap-2">
+        <button onclick="captureAndMatchDisplayFace()" id="btn-display-match-face" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2">
+          <i data-lucide="scan-face" class="w-4 h-4"></i>
+          <span>Scan My Face Now</span>
+        </button>
+        <button onclick="closeDisplayFaceScanner()" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-2xl text-xs transition">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
   <footer class="bg-slate-900/60 border-t border-slate-800/80 px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0">
     <div class="flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -2558,6 +2634,233 @@
       scratchCanvas.ontouchstart = (e) => { isScratching = true; scratchAt(getPos(e)); e.preventDefault(); };
       scratchCanvas.ontouchmove = (e) => { if (isScratching) scratchAt(getPos(e)); e.preventDefault(); };
       scratchCanvas.ontouchend = () => { isScratching = false; };
+    }
+
+    // ==========================================
+    // 👤 2ND MONITOR STUDENT FACE ID SCANNER
+    // ==========================================
+    let displayFaceStream = null;
+    let enrolledStudentsForDisplay = [];
+    let isDisplayFaceScanning = false;
+    let displayFaceScanInterval = null;
+
+    async function loadEnrolledStudentsForFace() {
+      try {
+        const res = await fetch('/api/students');
+        const list = await res.json();
+        enrolledStudentsForDisplay = list.filter(s => s.photo_data && s.photo_data.length > 100);
+      } catch (err) {
+        console.warn('Failed to load students for face ID:', err);
+      }
+    }
+
+    async function openDisplayFaceScanner() {
+      const modal = document.getElementById('modal-display-face-id');
+      const statusText = document.getElementById('display-face-status-text');
+      const matchedOverlay = document.getElementById('display-face-matched-overlay');
+      const video = document.getElementById('display-face-video');
+
+      if (matchedOverlay) matchedOverlay.classList.add('hidden');
+      if (statusText) statusText.textContent = 'Align your face inside the guide frame...';
+      if (modal) modal.classList.remove('hidden');
+
+      if (enrolledStudentsForDisplay.length === 0) {
+        await loadEnrolledStudentsForFace();
+      }
+
+      try {
+        if (displayFaceStream) {
+          closeDisplayFaceCameraStream();
+        }
+        displayFaceStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: 480, height: 480 }
+        });
+        if (video) {
+          video.srcObject = displayFaceStream;
+          video.play().catch(()=>{});
+        }
+        isDisplayFaceScanning = true;
+
+        // Automatically scan every 850ms
+        if (displayFaceScanInterval) clearInterval(displayFaceScanInterval);
+        displayFaceScanInterval = setInterval(() => {
+          if (isDisplayFaceScanning) {
+            captureAndMatchDisplayFace(true);
+          }
+        }, 850);
+      } catch (err) {
+        console.error('Camera access error on 2nd screen:', err);
+        if (statusText) statusText.textContent = `Camera Notice: ${err.message || 'Please grant camera access on this screen'}`;
+      }
+    }
+
+    function closeDisplayFaceCameraStream() {
+      if (displayFaceScanInterval) {
+        clearInterval(displayFaceScanInterval);
+        displayFaceScanInterval = null;
+      }
+      isDisplayFaceScanning = false;
+      if (displayFaceStream) {
+        displayFaceStream.getTracks().forEach(t => t.stop());
+        displayFaceStream = null;
+      }
+    }
+
+    function closeDisplayFaceScanner() {
+      closeDisplayFaceCameraStream();
+      const modal = document.getElementById('modal-display-face-id');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function captureAndMatchDisplayFace(isAuto = false) {
+      const video = document.getElementById('display-face-video');
+      const canvas = document.getElementById('display-face-canvas');
+      const statusText = document.getElementById('display-face-status-text');
+
+      if (!video || !video.videoWidth || !isDisplayFaceScanning) return;
+
+      canvas.width = 120;
+      canvas.height = 120;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, 120, 120);
+
+      const capturedData = ctx.getImageData(0, 0, 120, 120).data;
+
+      if (enrolledStudentsForDisplay.length === 0) {
+        await loadEnrolledStudentsForFace();
+        if (enrolledStudentsForDisplay.length === 0) {
+          if (!isAuto && statusText) statusText.textContent = 'No student photos registered in database yet.';
+          return;
+        }
+      }
+
+      let bestMatch = null;
+      let highestScore = -Infinity;
+
+      for (const stu of enrolledStudentsForDisplay) {
+        try {
+          const img = new Image();
+          img.src = stu.photo_data;
+          await new Promise(r => { img.onload = r; img.onerror = r; });
+
+          const testCanvas = document.createElement('canvas');
+          testCanvas.width = 120;
+          testCanvas.height = 120;
+          const tctx = testCanvas.getContext('2d', { willReadFrequently: true });
+          tctx.drawImage(img, 0, 0, 120, 120);
+          const stuData = tctx.getImageData(0, 0, 120, 120).data;
+
+          let diffSum = 0;
+          for (let i = 0; i < capturedData.length; i += 4) {
+            const lum1 = (capturedData[i] * 0.299 + capturedData[i+1] * 0.587 + capturedData[i+2] * 0.114);
+            const lum2 = (stuData[i] * 0.299 + stuData[i+1] * 0.587 + stuData[i+2] * 0.114);
+            diffSum += Math.abs(lum1 - lum2);
+          }
+
+          const score = 100 - (diffSum / (120 * 120 * 255)) * 100;
+          if (score > highestScore) {
+            highestScore = score;
+            bestMatch = stu;
+          }
+        } catch(e) {
+          console.warn('Face match comp error:', e);
+        }
+      }
+
+      if (bestMatch && highestScore > 35) {
+        // Successful Face Match!
+        isDisplayFaceScanning = false;
+        if (displayFaceScanInterval) clearInterval(displayFaceScanInterval);
+
+        const overlay = document.getElementById('display-face-matched-overlay');
+        const photoEl = document.getElementById('display-face-matched-photo');
+        const nameEl = document.getElementById('display-face-matched-name');
+        const detailsEl = document.getElementById('display-face-matched-details');
+
+        if (nameEl) nameEl.textContent = bestMatch.name;
+        if (detailsEl) detailsEl.textContent = `${bestMatch.student_id} • Balance: $${parseFloat(bestMatch.balance || 0).toFixed(2)} • ${bestMatch.punch_card || 0}/10 Punches`;
+        if (photoEl) {
+          if (bestMatch.photo_data) {
+            photoEl.innerHTML = `<img src="${bestMatch.photo_data}" class="w-full h-full object-cover" />`;
+          } else {
+            photoEl.innerHTML = `👤`;
+          }
+        }
+        if (overlay) overlay.classList.remove('hidden');
+
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 70, spread: 80, origin: { y: 0.5 } });
+        }
+
+        // Notify Cashier POS immediately via BroadcastChannel + API Relay
+        const syncPayload = {
+          type: 'student_face_identified',
+          student: bestMatch
+        };
+
+        if (typeof BroadcastChannel !== 'undefined') {
+          try {
+            const bc = new BroadcastChannel('snack_display_sync');
+            bc.postMessage(syncPayload);
+          } catch(e){}
+        }
+
+        fetch('/api/display/face_match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student: bestMatch })
+        }).catch(()=>{});
+
+        // Close scanner after 1.8 seconds
+        setTimeout(() => {
+          closeDisplayFaceScanner();
+        }, 1800);
+      } else if (!isAuto && statusText) {
+        statusText.textContent = 'Face not recognized. Please align face or try again.';
+      }
+    }
+
+    // Real-Time Display Sync Channel
+    const displayBroadcastChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('snack_display_sync') : null;
+    if (displayBroadcastChannel) {
+      displayBroadcastChannel.onmessage = (event) => {
+        if (event.data) {
+          handleIncomingSyncMessage(event.data);
+        }
+      };
+    }
+
+    function initSSE() {
+      if (typeof EventSource !== 'undefined') {
+        const evtSource = new EventSource('/api/display/events');
+        evtSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleIncomingSyncMessage(data);
+          } catch(e){}
+        };
+        evtSource.onerror = () => {
+          console.warn('SSE connection notice');
+        };
+      }
+    }
+
+    function handleIncomingSyncMessage(data) {
+      if (!data) return;
+      if (data.type === 'settings_update') {
+        applyDisplaySettings(data.settings);
+      } else if (data.type === 'shift_status') {
+        isShiftActive = !!data.active;
+        updateDisplayShiftUI();
+      } else if (data.type === 'speaker_broadcast') {
+        showSpeakerBroadcastBanner(data.text || data.message, data.emoji);
+      } else if (data.type === 'birthday_alert') {
+        triggerBirthdaySiren(data.student?.name || 'Alex');
+      } else if (data.type === 'request_display_face_scan') {
+        openDisplayFaceScanner();
+      } else if (data.state) {
+        renderState(data);
+      }
     }
 
     // Call init scratch card whenever celebrate view is shown

@@ -775,10 +775,14 @@
         </div>
       </div>
 
-      <div id="face-actions-bar" class="hidden flex gap-2">
-        <button onclick="captureAndMatchFace()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/30 transition">
-          <i data-lucide="scan-face" class="w-4 h-4"></i>
-          <span>Match Student Face</span>
+      <div id="face-actions-bar" class="hidden flex flex-col gap-2">
+        <button onclick="requestDisplayFaceScanFromPOS()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 transition">
+          <i data-lucide="tv" class="w-4 h-4 text-cyan-300"></i>
+          <span>📸 Scan Face via 2nd Screen (Student-Facing Camera)</span>
+        </button>
+        <button onclick="captureAndMatchFace()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="scan-face" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span>Or Scan Face on This Register Camera</span>
         </button>
       </div>
 

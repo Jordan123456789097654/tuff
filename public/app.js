@@ -23,6 +23,23 @@ let isCelebrationActiveOnDisplay = false;
 // Display Synchronization (BroadcastChannel + SSE)
 const displayChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('snack_display_sync') : null;
 
+if (displayChannel) {
+  displayChannel.onmessage = (event) => {
+    if (event.data && event.data.type === 'student_face_identified') {
+      handleStudentFaceIdentifiedFromDisplay(event.data.student);
+    }
+  };
+}
+
+function handleStudentFaceIdentifiedFromDisplay(student) {
+  if (!student) return;
+  playSound('chaching');
+  closeCameraScanner();
+  openStudentCheckoutModal();
+  selectStudentForCheckout(student.id);
+  showToast(`👤 Face ID Identified from 2nd Monitor: ${student.name}! ($${parseFloat(student.balance || 0).toFixed(2)})`, 'success');
+}
+
 function getActiveFundraiser() {
   if (!fundraisers || fundraisers.length === 0) return null;
   if (activeFundraiserId) {
@@ -2561,7 +2578,7 @@ function setScannerMode(mode) {
     faceActions.classList.remove('hidden');
 
     startFaceVideoStream();
-    if (feedback) feedback.textContent = 'Align student face inside the circle, then click "Match Student Face".';
+    if (feedback) feedback.innerHTML = '<span class="text-blue-300 font-bold">👤 Align student face with the camera or click "Trigger Face Scan on 2nd Screen" below.</span>';
   } else {
     btnBarcode.className = 'py-1.5 px-3 rounded-lg bg-amber-500 text-slate-950 font-bold transition flex items-center justify-center gap-1.5';
     btnFace.className = 'py-1.5 px-3 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
@@ -2648,7 +2665,26 @@ async function closeCameraScanner() {
   closeModal('modal-camera-scanner');
 }
 
-// Face Matching Logic
+// Face Matching Logic (2nd Screen & POS)
+function requestDisplayFaceScanFromPOS() {
+  playSound('beep');
+  showToast('👤 Activated Face ID camera on Customer 2nd Screen...', 'info');
+  const feedback = document.getElementById('scan-feedback-box');
+  if (feedback) feedback.innerHTML = `<span class="text-blue-400 font-bold">👤 Scanning student face on Customer 2nd Monitor... Look into 2nd screen camera!</span>`;
+
+  if (displayChannel) {
+    try {
+      displayChannel.postMessage({ type: 'request_display_face_scan' });
+    } catch(e){}
+  }
+
+  fetch('/api/display/scan_face_request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  }).catch(()=>{});
+}
+
 async function captureAndMatchFace() {
   const video = document.getElementById('face-video-stream');
   const canvas = document.getElementById('face-capture-canvas');
