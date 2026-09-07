@@ -70,6 +70,27 @@
     <span>Single-File Queue Please! (1 Student at Register Counter)</span>
   </div>
 
+  <!-- 🎙️ FLOATING INTERCOM / PA LIVE ANNOUNCEMENT HUD -->
+  <div id="intercom-broadcast-hud" class="hidden fixed top-4 inset-x-4 max-w-2xl mx-auto z-50 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white p-4 rounded-3xl shadow-2xl border-2 border-amber-300/80 animate-in fade-in slide-in-from-top duration-300">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-black/30 border border-white/30 flex items-center justify-center text-2xl animate-pulse shrink-0">
+        🎙️
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center justify-between">
+          <span id="intercom-broadcast-sender" class="text-[11px] font-mono font-extrabold uppercase tracking-wider text-amber-200">🎙️ Cashier Station Table 4B</span>
+          <span class="text-[10px] bg-black/40 px-2 py-0.5 rounded-full font-mono font-bold text-amber-300 border border-amber-400/40">LIVE PA BROADCAST</span>
+        </div>
+        <p id="intercom-broadcast-text" class="text-sm sm:text-base font-extrabold leading-snug text-white drop-shadow mt-0.5">
+          Table 4B is now open, please have your Student ID passes ready!
+        </p>
+      </div>
+      <button onclick="document.getElementById('intercom-broadcast-hud').classList.add('hidden')" class="text-white/80 hover:text-white p-1">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- LIVE SCHOOL EVENT COUNTDOWN BANNER -->
   <div id="display-event-countdown-bar" class="hidden bg-gradient-to-r from-blue-950 via-indigo-950 to-purple-950 text-white font-bold text-xs py-2 px-4 overflow-hidden shadow-lg flex items-center justify-between gap-3 shrink-0 border-b border-indigo-500/40">
     <div class="flex items-center gap-2">
@@ -5046,6 +5067,8 @@
         updateDisplayShiftUI();
       } else if (data.type === 'speaker_broadcast') {
         playSpeakerBroadcast(data.text || data.message, data.emoji);
+      } else if (data.type === 'intercom_broadcast') {
+        handleIncomingIntercomBroadcast(data);
       } else if (data.type === 'birthday_alert') {
         triggerBirthdaySiren(data.student?.name || 'Alex');
       } else if (data.type === 'request_display_face_scan') {
@@ -5286,6 +5309,103 @@
     function closeMobileReceiptQRModal() {
       const modal = document.getElementById('modal-mobile-receipt-qr');
       if (modal) modal.classList.add('hidden');
+    }
+
+    // ==========================================
+    // 🎙️ LIVE INTERCOM & QUEUE PA BROADCASTER (DISPLAY)
+    // ==========================================
+    function playIntercomChime(chimeType = 'airport_chime') {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        if (chimeType === 'school_bell') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + (idx * 0.12));
+            gain.gain.setValueAtTime(0.25, now + (idx * 0.12));
+            gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.12) + 0.8);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + (idx * 0.12));
+            osc.stop(now + (idx * 0.12) + 0.8);
+          });
+        } else {
+          // Default Airport / PA Ding-Dong (D5 -> A4)
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(587.33, now); // D5
+          gain1.gain.setValueAtTime(0.3, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc1.connect(gain1);
+          gain1.connect(ctx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.6);
+
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(440.00, now + 0.35); // A4
+          gain2.gain.setValueAtTime(0.35, now + 0.35);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start(now + 0.35);
+          osc2.stop(now + 1.1);
+        }
+      } catch (e) {
+        console.warn('Intercom chime error:', e);
+      }
+    }
+
+    function handleIncomingIntercomBroadcast(data) {
+      if (!data) return;
+      playIntercomChime(data.chime || 'airport_chime');
+
+      const hud = document.getElementById('intercom-broadcast-hud');
+      const textEl = document.getElementById('intercom-broadcast-text');
+      const senderEl = document.getElementById('intercom-broadcast-sender');
+      
+      if (hud && textEl) {
+        textEl.textContent = data.message || 'Live Audio Announcement from Counter';
+        if (senderEl) senderEl.textContent = `🎙️ ${data.sender || 'Cashier Station Table 4B'}`;
+        hud.classList.remove('hidden');
+        hud.classList.add('animate-bounce');
+        setTimeout(() => { hud.classList.remove('animate-bounce'); }, 1000);
+
+        // Auto-dismiss HUD after 12s
+        if (window._intercomDismissTimer) clearTimeout(window._intercomDismissTimer);
+        window._intercomDismissTimer = setTimeout(() => {
+          hud.classList.add('hidden');
+        }, 12000);
+      }
+
+      // Play direct recorded audio or synthesized speech
+      if (data.audioBase64) {
+        setTimeout(() => {
+          try {
+            const audio = new Audio(data.audioBase64);
+            audio.volume = 1.0;
+            audio.play().catch(e => console.warn('Intercom audio autoplay notice:', e));
+          } catch(e){}
+        }, 700);
+      } else if (data.message && 'speechSynthesis' in window) {
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(data.message);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.05;
+            utterance.volume = 1.0;
+            window.speechSynthesis.speak(utterance);
+          } catch(e){}
+        }, 800);
+      }
     }
 
     async function loadInitialDisplayState() {

@@ -2146,6 +2146,43 @@ app.post('/api/display/broadcast', (req, res) => {
   res.json({ success: true });
 });
 
+// ----------------------------------------------------
+// 🎙️ CASHIER-TO-QUEUE INTERCOM & VOICE PA BROADCASTER
+// ----------------------------------------------------
+const INTERCOM_PRESETS = [
+  { id: 'p1', title: '📢 Table 4B Register Open', text: 'Ding dong! Table 4B register is now open! Please have your student ID cards or cash ready.', icon: '🛒' },
+  { id: 'p2', title: '⚡ Have Barcodes Ready', text: 'Attention students in queue: Please have your Student Pass barcodes pulled up on your lanyards to keep the line moving fast!', icon: '💳' },
+  { id: 'p3', title: '📦 Pre-Orders Ready', text: 'Attention: Online pre-orders are bagged and ready for pickup at the counter table!', icon: '🛍️' },
+  { id: 'p4', title: '⏳ Last Call (2 Min)', text: 'Attention students: Last call for snacks and drinks! Register closes in two minutes before the bell.', icon: '⏰' },
+  { id: 'p5', title: '🥤 Cold Drink Restock Notice', text: 'Cold drink coolers and snack bins have just been freshly restocked from Locker Vault 314!', icon: '🧊' }
+];
+
+app.get('/api/intercom/presets', (req, res) => {
+  res.json(INTERCOM_PRESETS);
+});
+
+app.post('/api/intercom/broadcast', (req, res) => {
+  const { type, message, audioBase64, sender, priority, chime } = req.body;
+  const now = Date.now();
+
+  broadcastToDisplayClients({
+    type: 'intercom_broadcast',
+    broadcastType: type || 'text',
+    message: message || '',
+    audioBase64: audioBase64 || null,
+    sender: sender || 'Cashier Station Table 4B',
+    priority: priority || 'NORMAL',
+    chime: chime || 'airport_chime',
+    timestamp: now
+  });
+
+  res.json({
+    success: true,
+    message: `Intercom announcement broadcast to customer display at ${new Date(now).toLocaleTimeString()}`,
+    timestamp: now
+  });
+});
+
 app.post('/api/display/face_match', (req, res) => {
   broadcastToDisplayClients({ type: 'student_face_identified', student: req.body.student });
   res.json({ success: true });

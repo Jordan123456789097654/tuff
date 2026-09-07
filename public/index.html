@@ -153,6 +153,12 @@
         <span>CCTV (1-Hr DVR)</span>
       </button>
 
+      <!-- Cashier-to-Queue Voice Intercom PA Button -->
+      <button onclick="openIntercomModal()" class="flex items-center gap-1.5 text-xs text-amber-200 hover:text-white bg-amber-600/80 hover:bg-amber-500 border border-amber-400 px-2.5 py-1.5 rounded-xl transition font-bold shadow-md shadow-amber-950/60" title="Cashier-to-Queue Intercom PA Broadcast">
+        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+        <span>🎙️ PA Intercom</span>
+      </button>
+
       <!-- Manager Dashboard Button -->
       <button onclick="openManagerDashboard()" class="flex items-center gap-1.5 text-xs text-purple-200 hover:text-white bg-purple-600/30 hover:bg-purple-600/40 border border-purple-500/50 px-3 py-1.5 rounded-xl transition font-black shadow-md shadow-purple-950/40" title="Open Manager Operations Dashboard & Security Center">
         <span>👔 Manager Hub</span>
@@ -173,6 +179,14 @@
 
       <!-- Dropdown Menu Box -->
       <div id="dropdown-more-tools" class="hidden absolute right-0 top-full mt-2 w-64 bg-slate-900 border-2 border-slate-800 rounded-2xl shadow-2xl p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-100">
+        <button onclick="openIntercomModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
+          <span class="text-base">🎙️</span>
+          <div>
+            <div class="text-white font-bold">PA Voice Intercom</div>
+            <div class="text-[10px] text-slate-400">Live push-to-talk &amp; school chimes</div>
+          </div>
+        </button>
+
         <button onclick="openSpeakerBroadcastModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cyan-300 hover:bg-cyan-500/10 transition font-semibold">
           <span class="text-base">📢</span>
           <div>
@@ -4158,6 +4172,155 @@
         <button onclick="generateAiRestockForecast()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>Re-Analyze Inventory</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 🎙️ CASHIER-TO-QUEUE INTERCOM & VOICE PA MODAL       -->
+  <!-- ==================================================== -->
+  <div id="modal-intercom-broadcaster" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-intercom-broadcaster')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg">
+          🎙️
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <span>Cashier-to-Queue Voice Intercom &amp; PA System</span>
+            <span class="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">2ND DISPLAY SPEAKER</span>
+          </h3>
+          <p class="text-xs text-slate-400">Broadcast live voice audio, chimes, and pre-recorded announcements to students in line</p>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
+        
+        <!-- SECTION 1: PUSH-TO-TALK LIVE MIC BROADCAST -->
+        <div class="bg-slate-950 p-5 rounded-2xl border-2 border-amber-500/40 space-y-3 text-center">
+          <div class="flex items-center justify-between text-left">
+            <div>
+              <h4 class="font-bold text-xs text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🔴</span> Push-To-Talk Live Voice Broadcast
+              </h4>
+              <p class="text-[11px] text-slate-400">Hold button down while speaking to stream your voice directly out of the 2nd display speaker</p>
+            </div>
+            <span id="intercom-live-indicator" class="hidden text-[10px] font-mono font-bold bg-rose-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+              ● ON AIR (LIVE)
+            </span>
+          </div>
+
+          <div class="py-3 flex flex-col items-center justify-center gap-2">
+            <button
+              id="btn-push-to-talk"
+              onmousedown="startPushToTalk()"
+              onmouseup="stopPushToTalk()"
+              ontouchstart="startPushToTalk(event)"
+              ontouchend="stopPushToTalk(event)"
+              class="w-32 h-32 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 active:scale-95 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-2xl border-4 border-amber-300/40 transition select-none cursor-pointer"
+            >
+              <i data-lucide="mic" class="w-8 h-8"></i>
+              <span id="ptt-btn-label">HOLD TO TALK</span>
+            </button>
+            <span class="text-[10px] text-slate-500 font-mono">Press &amp; Hold to speak • Release to broadcast</span>
+          </div>
+        </div>
+
+        <!-- SECTION 2: 1-CLICK SCHOOL PA PRESETS -->
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span>📢</span> Instant 1-Click School PA Announcements
+            </h4>
+            <span class="text-[10px] text-slate-400 font-mono">Ding-Dong Chime Auto-Included</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="intercom-presets-grid">
+            <button onclick="broadcastPreset('p1')" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 p-3 rounded-xl text-left transition flex items-start gap-2.5 group">
+              <span class="text-xl shrink-0 group-hover:scale-110 transition">🛒</span>
+              <div>
+                <div class="font-bold text-amber-300">Table 4B Register Open</div>
+                <div class="text-[10px] text-slate-400">"Ding dong! Table 4B register is now open! Please have student ID cards ready."</div>
+              </div>
+            </button>
+
+            <button onclick="broadcastPreset('p2')" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 p-3 rounded-xl text-left transition flex items-start gap-2.5 group">
+              <span class="text-xl shrink-0 group-hover:scale-110 transition">💳</span>
+              <div>
+                <div class="font-bold text-amber-300">Have Barcodes Ready</div>
+                <div class="text-[10px] text-slate-400">"Attention queue: Please have your Student Pass barcodes pulled up on lanyards!"</div>
+              </div>
+            </button>
+
+            <button onclick="broadcastPreset('p3')" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 p-3 rounded-xl text-left transition flex items-start gap-2.5 group">
+              <span class="text-xl shrink-0 group-hover:scale-110 transition">🛍️</span>
+              <div>
+                <div class="font-bold text-emerald-300">Pre-Orders Ready for Pickup</div>
+                <div class="text-[10px] text-slate-400">"Attention: Online pre-orders are bagged and ready for pickup at side counter!"</div>
+              </div>
+            </button>
+
+            <button onclick="broadcastPreset('p4')" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 p-3 rounded-xl text-left transition flex items-start gap-2.5 group">
+              <span class="text-xl shrink-0 group-hover:scale-110 transition">⏰</span>
+              <div>
+                <div class="font-bold text-rose-300">Last Call (2 Minutes)</div>
+                <div class="text-[10px] text-slate-400">"Attention students: Last call for snacks! Register closes in 2 minutes."</div>
+              </div>
+            </button>
+
+            <button onclick="broadcastPreset('p5')" class="sm:col-span-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 p-3 rounded-xl text-left transition flex items-start gap-2.5 group">
+              <span class="text-xl shrink-0 group-hover:scale-110 transition">🧊</span>
+              <div>
+                <div class="font-bold text-cyan-300">Cold Drink Vault #314 Restock Notice</div>
+                <div class="text-[10px] text-slate-400">"Cold drink coolers &amp; snack bins have just been freshly restocked from Locker Vault #314!"</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- SECTION 3: CUSTOM TEXT-TO-SPEECH (TTS) PA ANNOUNCEMENT -->
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span>✍️</span> Custom Voice Announcement (AI Speech Synthesizer)
+            </h4>
+            <div class="flex items-center gap-1.5 text-[11px]">
+              <label class="text-slate-400">Chime:</label>
+              <select id="intercom-chime-select" class="bg-slate-900 border border-slate-700 text-amber-300 rounded-lg px-2 py-1 text-xs">
+                <option value="airport_chime">🔔 Airport Ding-Dong (2-Tone)</option>
+                <option value="school_bell">🏫 School Bell Chime (4-Tone)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="intercom-custom-text-input"
+              placeholder="Type custom announcement to speak aloud on the 2nd display..."
+              class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+              onkeydown="if(event.key==='Enter') broadcastCustomIntercomAnnouncement()"
+            />
+            <button
+              onclick="broadcastCustomIntercomAnnouncement()"
+              class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow"
+            >
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>Broadcast</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="closeModal('modal-intercom-broadcaster')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Close Intercom
         </button>
       </div>
     </div>

@@ -7110,6 +7110,156 @@ async function generateAiRestockForecast() {
 }
 
 // ==========================================
+// 🎙️ CASHIER INTERCOM & PA BROADCASTER
+// ==========================================
+let intercomMediaRecorder = null;
+let intercomAudioChunks = [];
+let isIntercomRecording = false;
+
+function openIntercomModal() {
+  openModal('modal-intercom-broadcaster');
+}
+
+const INTERCOM_LOCAL_PRESETS = {
+  p1: "Ding dong! Table 4B register is now open! Please have your student ID cards or cash ready.",
+  p2: "Attention students in queue: Please have your Student Pass barcodes pulled up on your lanyards to keep the line moving fast!",
+  p3: "Attention: Online pre-orders are bagged and ready for pickup at the counter table!",
+  p4: "Attention students: Last call for snacks and drinks! Register closes in two minutes before the bell.",
+  p5: "Cold drink coolers and snack bins have just been freshly restocked from Locker Vault #314!"
+};
+
+async function broadcastPreset(presetId) {
+  const text = INTERCOM_LOCAL_PRESETS[presetId] || "Attention students at the counter!";
+  try {
+    const res = await fetch('/api/intercom/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'preset',
+        message: text,
+        chime: 'airport_chime',
+        sender: 'Cashier Station Table 4B'
+      })
+    });
+    const data = await res.json();
+    showToast('📢 Intercom Announcement Broadcast to 2nd Display!', 'success');
+    playSound('bell');
+  } catch (err) {
+    showToast('Failed to broadcast announcement', 'error');
+  }
+}
+
+async function broadcastCustomIntercomAnnouncement() {
+  const input = document.getElementById('intercom-custom-text-input');
+  const chimeSelect = document.getElementById('intercom-chime-select');
+  const text = input ? input.value.trim() : '';
+  const chime = chimeSelect ? chimeSelect.value : 'airport_chime';
+
+  if (!text) {
+    showToast('Please type an announcement first!', 'warning');
+    if (input) input.focus();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/intercom/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'text',
+        message: text,
+        chime: chime,
+        sender: 'Cashier Station Table 4B'
+      })
+    });
+    const data = await res.json();
+    showToast('📢 Custom Voice Announcement Broadcast to 2nd Display!', 'success');
+    if (input) input.value = '';
+    playSound('bell');
+  } catch (err) {
+    showToast('Failed to broadcast custom announcement', 'error');
+  }
+}
+
+async function startPushToTalk(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (isIntercomRecording) return;
+
+  const btn = document.getElementById('btn-push-to-talk');
+  const label = document.getElementById('ptt-btn-label');
+  const liveInd = document.getElementById('intercom-live-indicator');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    intercomAudioChunks = [];
+    intercomMediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+    intercomMediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        intercomAudioChunks.push(event.data);
+      }
+    };
+
+    intercomMediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      if (intercomAudioChunks.length > 0) {
+        const audioBlob = new Blob(intercomAudioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Audio = reader.result;
+          try {
+            await fetch('/api/intercom/broadcast', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'audio',
+                audioBase64: base64Audio,
+                message: '🎙️ Live Cashier Voice Transmission',
+                chime: 'airport_chime',
+                sender: 'Cashier Station Table 4B'
+              })
+            });
+            showToast('🎙️ Live Voice Transmission Sent to 2nd Display!', 'success');
+          } catch(err) {
+            showToast('Failed to transmit voice audio', 'error');
+          }
+        };
+        reader.readAsDataURL(audioBlob);
+      }
+    };
+
+    intercomMediaRecorder.start();
+    isIntercomRecording = true;
+
+    if (btn) btn.className = 'w-32 h-32 rounded-full bg-rose-600 active:scale-95 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-2xl border-4 border-white animate-pulse transition select-none cursor-pointer';
+    if (label) label.textContent = 'TALKING (LIVE)...';
+    if (liveInd) liveInd.classList.remove('hidden');
+
+  } catch (err) {
+    console.warn('Push-to-talk mic error:', err);
+    showToast('Microphone access needed for Push-to-Talk. Or use 1-click presets below.', 'warning');
+  }
+}
+
+function stopPushToTalk(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (!isIntercomRecording) return;
+
+  const btn = document.getElementById('btn-push-to-talk');
+  const label = document.getElementById('ptt-btn-label');
+  const liveInd = document.getElementById('intercom-live-indicator');
+
+  isIntercomRecording = false;
+  if (btn) btn.className = 'w-32 h-32 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 active:scale-95 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-2xl border-4 border-amber-300/40 transition select-none cursor-pointer';
+  if (label) label.textContent = 'HOLD TO TALK';
+  if (liveInd) liveInd.classList.add('hidden');
+
+  if (intercomMediaRecorder && intercomMediaRecorder.state !== 'inactive') {
+    intercomMediaRecorder.stop();
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {
