@@ -178,6 +178,12 @@
         <span id="intercom-talk-label">Talk to Cashier</span>
       </button>
 
+      <!-- Lofi Beats Synthesizer Button -->
+      <button id="btn-toggle-lofi" onclick="toggleLofiBeats()" class="flex items-center gap-1.5 bg-purple-600/40 hover:bg-purple-600/60 text-purple-300 hover:text-white border border-purple-500/50 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Toggle Ambient Lofi Chill Beats Synthesizer">
+        <span>🎧</span>
+        <span class="hidden md:inline" id="label-lofi-status">Lofi Beats</span>
+      </button>
+
       <!-- Apple Wallet & Digital ID Pass Generator -->
       <button id="display-btn-apple-wallet" onclick="openAppleWalletPassModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Generate Apple Wallet / Printable ID Pass">
         <span>💳</span>
@@ -1698,163 +1704,7 @@
     </div>
   </div>
 
-  <!-- ==================================================== -->
-  <!-- MODAL: 📋 FULL LIVE MENU BOARD -->
-  <!-- ==================================================== -->
-  <div id="modal-display-menu" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto max-h-[90vh] flex flex-col">
-      <button onclick="closeDisplayMenu()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
 
-      <div class="flex items-center gap-3 border-b border-slate-800 pb-3 shrink-0">
-        <div class="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl font-bold shadow-lg">
-          📋
-        </div>
-        <div>
-          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
-            <span>Official Snack Shack Menu Board</span>
-            <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">In-Stock</span>
-          </h3>
-          <p class="text-xs text-slate-400">All prices include school sales tax • $0.50 Drink+Snack Combo Discount Applied Automatically</p>
-        </div>
-      </div>
-
-      <!-- Category Filter Pills -->
-      <div class="flex flex-wrap gap-2 shrink-0" id="display-menu-category-pills">
-        <button onclick="filterDisplayMenuCategory(null)" class="display-menu-cat active bg-amber-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">All Items</button>
-        <button onclick="filterDisplayMenuCategory('Chips')" class="display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">🥔 Chips & Salty</button>
-        <button onclick="filterDisplayMenuCategory('Drinks')" class="display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">🥤 Cold Drinks</button>
-        <button onclick="filterDisplayMenuCategory('Candy')" class="display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">🍬 Candy & Sweets</button>
-      </div>
-
-      <!-- Menu Grid -->
-      <div class="flex-1 overflow-y-auto pr-1">
-        <div id="display-menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================================================== -->
-  <!-- MODAL: 👤 BIOMETRIC FACE ID SCANNER -->
-  <!-- ==================================================== -->
-  <div id="modal-display-face-scanner" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border-2 border-blue-500/50 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto text-center">
-      <button onclick="closeDisplayFaceScanner()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <div class="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/40 flex items-center justify-center text-2xl font-bold mx-auto shadow-lg">
-        👤
-      </div>
-      <div>
-        <h3 class="font-heading font-extrabold text-xl text-white">Biometric Face ID Lookup</h3>
-        <p class="text-xs text-slate-400">Position your face in front of the lens to load your student pass</p>
-      </div>
-
-      <!-- Viewfinder -->
-      <div class="relative w-64 h-64 mx-auto rounded-3xl overflow-hidden border-2 border-blue-500/60 bg-black shadow-inner">
-        <video id="display-face-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
-        <!-- Scanning Grid Laser Line -->
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse shadow-[0_0_12px_#38bdf8]"></div>
-        <!-- Face Guide Reticle -->
-        <div class="absolute inset-8 rounded-full border-2 border-dashed border-blue-400/60 pointer-events-none flex items-center justify-center">
-          <span class="text-[10px] font-mono text-cyan-300 font-bold bg-black/60 px-2 py-0.5 rounded">ALIGN FACE</span>
-        </div>
-      </div>
-
-      <div id="display-face-status" class="font-mono text-xs text-cyan-400 font-bold animate-pulse">
-        Optical Sensor Active • Scanning...
-      </div>
-
-      <div class="flex gap-2 justify-center pt-2">
-        <button onclick="simulateFaceScanMatch()" class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs shadow-lg transition active:scale-95">
-          Scan & Match Pass
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================================================== -->
-  <!-- MODAL: 📝 STUDENT PASS REGISTRATION (PHOTO CAPTURE) -->
-  <!-- ==================================================== -->
-  <div id="modal-display-register" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-lg p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto">
-      <button onclick="closeDisplayRegisterModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <!-- Header -->
-      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
-        <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-2xl font-bold shadow-lg">
-          📝
-        </div>
-        <div>
-          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
-            <span>Register Student Pass</span>
-            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">Required</span>
-          </h3>
-          <p class="text-xs text-slate-400">Create your digital ID, capture a face badge photo & set your 4-digit PIN</p>
-        </div>
-      </div>
-
-      <!-- Registration Form -->
-      <div class="space-y-3.5 text-xs text-slate-300">
-        <!-- Photo Snapshot Row -->
-        <div class="flex items-center gap-4 bg-slate-950 p-3 rounded-2xl border border-slate-800">
-          <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 flex items-center justify-center">
-            <video id="display-reg-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100 hidden"></video>
-            <img id="display-reg-preview" class="w-full h-full object-cover hidden" />
-            <span id="display-reg-placeholder" class="text-3xl">👤</span>
-          </div>
-          <div class="space-y-1.5 flex-1">
-            <div class="font-bold text-white text-xs">Official Student Photo</div>
-            <p class="text-[11px] text-slate-400">Required for kiosk verification and digital lanyard cards</p>
-            <button type="button" onclick="captureRegistrationPhoto()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition">
-              <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-              <span id="btn-snap-photo-text">Take Face Photo</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-400 mb-1">Full Student Name *</label>
-            <input type="text" id="display-reg-name" placeholder="e.g. Jordan Mitchell" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
-          </div>
-          <div>
-            <label class="block font-bold text-slate-400 mb-1">Grade Level</label>
-            <select id="display-reg-grade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-              <option value="8th Grade">8th Grade</option>
-              <option value="9th Grade" selected>9th Grade</option>
-              <option value="10th Grade">10th Grade</option>
-              <option value="11th Grade">11th Grade</option>
-              <option value="12th Grade">12th Grade</option>
-              <option value="Staff / Faculty">Staff / Faculty</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-400 mb-1">4-Digit Security PIN *</label>
-            <input type="password" id="display-reg-pin" maxlength="4" placeholder="••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-center tracking-widest text-sm focus:outline-none focus:border-emerald-500" />
-          </div>
-          <div>
-            <label class="block font-bold text-slate-400 mb-1">Initial Deposit ($)</label>
-            <input type="number" id="display-reg-balance" step="0.25" min="0" value="5.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500" />
-          </div>
-        </div>
-
-        <button onclick="saveDisplayRegistration()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 transition active:scale-95">
-          <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>Complete Registration & Issue Student Pass</span>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ==================================================== -->
   <!-- MODAL: 💳 INSTANT BALANCE & PUNCH CARD CHECKER -->
@@ -5601,5 +5451,8 @@
 
   <!-- Theme Particles Overlay Canvas -->
   <canvas id="theme-particles-canvas"></canvas>
+
+  <!-- Shared App Core Script -->
+  <script src="app.js"></script>
 </body>
 </html>

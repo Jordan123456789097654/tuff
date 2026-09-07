@@ -8040,7 +8040,7 @@ function toggleLofiBeats(force = null) {
 
     if (!lofiMasterGain) {
       lofiMasterGain = lofiAudioCtx.createGain();
-      lofiMasterGain.gain.value = 0.25;
+      lofiMasterGain.gain.value = 0.70;
       lofiMasterGain.connect(lofiAudioCtx.destination);
     }
 
@@ -8059,7 +8059,7 @@ function toggleLofiBeats(force = null) {
 
 function setLofiVolume(volPct) {
   if (lofiMasterGain) {
-    lofiMasterGain.gain.value = Math.max(0, Math.min(1, (parseFloat(volPct) || 0) / 100)) * 0.35;
+    lofiMasterGain.gain.value = Math.max(0, Math.min(1, (parseFloat(volPct) || 0) / 100)) * 0.85;
   }
 }
 
@@ -8090,11 +8090,11 @@ function startLofiSynthLoop() {
       osc.frequency.value = freq;
 
       filter.type = 'lowpass';
-      filter.frequency.value = 650 + (Math.random() * 150);
+      filter.frequency.value = 850 + (Math.random() * 200);
 
       const now = lofiAudioCtx.currentTime;
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.08 / currentNotes.length, now + 0.3);
+      gain.gain.linearRampToValueAtTime(0.25 / currentNotes.length, now + 0.3);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.2);
 
       osc.connect(filter);
