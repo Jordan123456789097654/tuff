@@ -156,7 +156,7 @@ app.get('/api/categories', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// STUDENT ACCOUNTS & PASSES
+// STUDENT ACCOUNTS & PUNCH CARDS
 // ----------------------------------------------------
 
 // Get all or search students
@@ -204,14 +204,14 @@ app.post('/api/students', async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0) RETURNING *`,
       [
         student_id.trim().toUpperCase(),
         name.trim(),
         grade || '6th Grade',
         parseFloat(balance) || 0.00,
-        parseFloat(daily_limit) || 5.00,
+        parseFloat(daily_limit) || 10.00,
         allergies || '',
         notes || ''
       ]
@@ -255,11 +255,33 @@ app.post('/api/students/:id/recharge', async (req, res) => {
   }
 });
 
+// Redeem Punch Card Reward
+app.post('/api/students/:id/redeem-reward', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cur = await db.query('SELECT * FROM students WHERE id = $1', [id]);
+    if (cur.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
+
+    const stu = cur.rows[0];
+    if (stu.free_rewards <= 0) {
+      return res.status(400).json({ error: 'No free rewards available to redeem.' });
+    }
+
+    const result = await db.query(
+      `UPDATE students SET free_rewards = free_rewards - 1 WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    res.json({ success: true, student: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to redeem reward' });
+  }
+});
+
 // Update student details
 app.put('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, grade, daily_limit, allergies, notes } = req.body;
+    const { name, grade, daily_limit, allergies, notes, punch_card, free_rewards } = req.body;
 
     const result = await db.query(
       `UPDATE students
@@ -267,9 +289,11 @@ app.put('/api/students/:id', async (req, res) => {
            grade = COALESCE($2, grade),
            daily_limit = COALESCE($3, daily_limit),
            allergies = COALESCE($4, allergies),
-           notes = COALESCE($5, notes)
-       WHERE id = $6 RETURNING *`,
-      [name, grade, daily_limit, allergies, notes, id]
+           notes = COALESCE($5, notes),
+           punch_card = COALESCE($6, punch_card),
+           free_rewards = COALESCE($7, free_rewards)
+       WHERE id = $8 RETURNING *`,
+      [name, grade, daily_limit, allergies, notes, punch_card, free_rewards, id]
     );
 
     if (result.rows.length === 0) {
@@ -291,8 +315,9 @@ app.post('/api/checkout', async (req, res) => {
   try {
     const {
       cart,
-      payment_method,
-      student_id,
+      payment_method, // 'cash', 'student_account', 'student_cash', 'reward_token', 'card', etc.
+      student_id,     // optional for cash / walk-ins, or provided for student link
+      use_reward = false, // if true, redeem free snack pass
       discount = 0,
       tax = 0,
       amount_paid,
@@ -342,70 +367,109 @@ app.post('/api/checkout', async (req, res) => {
       });
     }
 
-    const discountAmt = Math.min(parseFloat(discount) || 0, subtotal);
+    let discountAmt = Math.min(parseFloat(discount) || 0, subtotal);
+
+    // If using reward pass, discount 1 snack item
+    let rewardUsed = false;
+    if (use_reward && student_id) {
+      const stuRewardCheck = await client.query('SELECT free_rewards FROM students WHERE id = $1 OR student_id = $1 FOR UPDATE', [student_id]);
+      if (stuRewardCheck.rows.length > 0 && stuRewardCheck.rows[0].free_rewards > 0) {
+        // Discount highest item price
+        const maxPrice = Math.max(...preparedItems.map(i => i.unit_price));
+        discountAmt = Math.min(subtotal, discountAmt + maxPrice);
+        rewardUsed = true;
+      }
+    }
+
     const taxAmt = parseFloat(tax) || 0;
     const total = Math.max(0, subtotal - discountAmt + taxAmt);
     const paid = parseFloat(amount_paid) !== undefined ? parseFloat(amount_paid) : total;
     const changeDue = Math.max(0, paid - total);
 
-    // 2. Handle Student Account payment validation
+    // 2. Student Account / Linking logic
     let resolvedStudentId = null;
-    if (payment_method === 'student_account') {
-      if (!student_id) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ error: 'Please select a student account for this payment method.' });
-      }
+    let punchAwarded = false;
+    let newPunchCardCount = 0;
+    let newFreeRewards = 0;
 
+    if (student_id) {
       const studentRes = await client.query(
         'SELECT * FROM students WHERE id = $1 OR student_id = $1 FOR UPDATE',
         [student_id]
       );
 
-      if (studentRes.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ error: 'Student account not found.' });
+      if (studentRes.rows.length > 0) {
+        const student = studentRes.rows[0];
+        resolvedStudentId = student.id;
+
+        // If paying via PREPAID ACCOUNT BALANCE:
+        if (payment_method === 'student_account') {
+          if (parseFloat(student.balance) < total) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+              error: `Insufficient prepaid balance ($${parseFloat(student.balance).toFixed(2)})! You can choose "Pay with Cash" instead.`
+            });
+          }
+
+          // Check daily limit (resets if date changed)
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const lastSpentStr = student.last_spent_date ? new Date(student.last_spent_date).toISOString().slice(0, 10) : '';
+          const spentToday = (lastSpentStr === todayStr) ? parseFloat(student.spent_today) : 0;
+          const dailyLimit = parseFloat(student.daily_limit);
+
+          if (dailyLimit > 0 && (spentToday + total) > dailyLimit) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+              error: `Daily limit ($${dailyLimit.toFixed(2)}) exceeded! Student already spent $${spentToday.toFixed(2)} today.`
+            });
+          }
+
+          // Deduct prepaid balance
+          await client.query(
+            `UPDATE students
+             SET balance = balance - $1,
+                 spent_today = $2 + $1,
+                 last_spent_date = CURRENT_DATE
+             WHERE id = $3`,
+            [total, spentToday, student.id]
+          );
+        }
+
+        // Increment Punch Card Rewards (whether paying Cash or Balance!)
+        let currentPunches = (student.punch_card || 0) + 1;
+        let currentRewards = student.free_rewards || 0;
+
+        if (rewardUsed) {
+          currentRewards = Math.max(0, currentRewards - 1);
+        }
+
+        if (currentPunches >= 10) {
+          currentPunches = 0; // Reset punch card
+          currentRewards += 1; // Award 1 free snack!
+        }
+
+        newPunchCardCount = currentPunches;
+        newFreeRewards = currentRewards;
+        punchAwarded = true;
+
+        await client.query(
+          `UPDATE students
+           SET punch_card = $1,
+               free_rewards = $2
+           WHERE id = $3`,
+          [currentPunches, currentRewards, student.id]
+        );
       }
-
-      const student = studentRes.rows[0];
-      resolvedStudentId = student.id;
-
-      if (parseFloat(student.balance) < total) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          error: `Insufficient account balance! Student has $${parseFloat(student.balance).toFixed(2)}, but total is $${total.toFixed(2)}.`
-        });
-      }
-
-      // Check daily limit (resets if date changed)
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const lastSpentStr = student.last_spent_date ? new Date(student.last_spent_date).toISOString().slice(0, 10) : '';
-      const spentToday = (lastSpentStr === todayStr) ? parseFloat(student.spent_today) : 0;
-      const dailyLimit = parseFloat(student.daily_limit);
-
-      if (dailyLimit > 0 && (spentToday + total) > dailyLimit) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          error: `Daily limit exceeded! Limit is $${dailyLimit.toFixed(2)}. Student already spent $${spentToday.toFixed(2)} today.`
-        });
-      }
-
-      // Deduct student balance and update daily spent
-      await client.query(
-        `UPDATE students
-         SET balance = balance - $1,
-             spent_today = $2 + $1,
-             last_spent_date = CURRENT_DATE
-         WHERE id = $3`,
-        [total, spentToday, student.id]
-      );
     }
 
     // 3. Create Order
     const orderNumber = generateOrderNumber();
+    const cleanPaymentMethod = payment_method === 'student_cash' ? 'cash (student pass)' : payment_method;
+
     const orderRes = await client.query(
-      `INSERT INTO orders (order_number, cashier_name, payment_method, student_id, subtotal, discount, tax, total, amount_paid, change_due, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [orderNumber, cashier_name, payment_method, resolvedStudentId, subtotal, discountAmt, taxAmt, total, paid, changeDue, notes]
+      `INSERT INTO orders (order_number, cashier_name, payment_method, student_id, subtotal, discount, tax, total, amount_paid, change_due, punch_awarded, reward_used, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [orderNumber, cashier_name, cleanPaymentMethod, resolvedStudentId, subtotal, discountAmt, taxAmt, total, paid, changeDue, punchAwarded, rewardUsed, notes]
     );
     const order = orderRes.rows[0];
 
@@ -432,6 +496,9 @@ app.post('/api/checkout', async (req, res) => {
 
     // Return complete receipt data
     order.items = preparedItems;
+    order.punch_card_count = newPunchCardCount;
+    order.free_rewards = newFreeRewards;
+
     res.status(201).json({
       success: true,
       order: order
@@ -458,7 +525,6 @@ app.get('/api/orders', async (req, res) => {
       [limit]
     );
 
-    // Fetch items for these orders
     const orders = ordersRes.rows;
     for (const order of orders) {
       const itemsRes = await db.query('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
@@ -476,7 +542,6 @@ app.get('/api/orders', async (req, res) => {
 // SHIFT & CASH DRAWER MANAGEMENT
 // ----------------------------------------------------
 
-// Get active shift
 app.get('/api/shifts/current', async (req, res) => {
   try {
     const shiftRes = await db.query(
@@ -489,11 +554,10 @@ app.get('/api/shifts/current', async (req, res) => {
 
     const shift = shiftRes.rows[0];
 
-    // Compute cash sales since shift opened
     const cashSalesRes = await db.query(
       `SELECT COALESCE(SUM(total), 0) as cash_total, COUNT(*) as order_count
        FROM orders
-       WHERE payment_method = 'cash' AND created_at >= $1`,
+       WHERE (payment_method ILIKE '%cash%') AND created_at >= $1`,
       [shift.opened_at]
     );
 
@@ -515,12 +579,10 @@ app.get('/api/shifts/current', async (req, res) => {
   }
 });
 
-// Open new shift
 app.post('/api/shifts/open', async (req, res) => {
   try {
     const { cashier_name, start_cash } = req.body;
 
-    // Check if open shift exists
     const existing = await db.query('SELECT * FROM shifts WHERE is_open = TRUE LIMIT 1');
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'A shift is already open. Please close the active shift first.' });
@@ -539,7 +601,6 @@ app.post('/api/shifts/open', async (req, res) => {
   }
 });
 
-// Close shift & audit cash drawer
 app.post('/api/shifts/close', async (req, res) => {
   try {
     const { actual_cash, notes } = req.body;
@@ -556,11 +617,10 @@ app.post('/api/shifts/close', async (req, res) => {
 
     const shift = openShift.rows[0];
 
-    // Compute expected
     const cashSalesRes = await db.query(
       `SELECT COALESCE(SUM(total), 0) as cash_total
        FROM orders
-       WHERE payment_method = 'cash' AND created_at >= $1`,
+       WHERE (payment_method ILIKE '%cash%') AND created_at >= $1`,
       [shift.opened_at]
     );
 
@@ -604,7 +664,6 @@ app.post('/api/shifts/close', async (req, res) => {
 
 app.get('/api/analytics/summary', async (req, res) => {
   try {
-    // Total Revenue & Profit Today
     const todayRes = await db.query(`
       SELECT 
         COALESCE(SUM(o.total), 0) as revenue,
@@ -620,7 +679,6 @@ app.get('/api/analytics/summary', async (req, res) => {
     const profitToday = revToday - costToday;
     const ordersToday = parseInt(todayRes.rows[0].order_count, 10);
 
-    // All-time sales
     const allTimeRes = await db.query(`
       SELECT 
         COALESCE(SUM(total), 0) as total_revenue,
@@ -628,7 +686,6 @@ app.get('/api/analytics/summary', async (req, res) => {
       FROM orders
     `);
 
-    // Top Selling Items
     const topItemsRes = await db.query(`
       SELECT 
         oi.product_name,
@@ -641,7 +698,6 @@ app.get('/api/analytics/summary', async (req, res) => {
       LIMIT 6
     `);
 
-    // Payment method breakdown
     const paymentRes = await db.query(`
       SELECT payment_method, COUNT(*) as count, SUM(total) as amount
       FROM orders
@@ -649,7 +705,6 @@ app.get('/api/analytics/summary', async (req, res) => {
       ORDER BY amount DESC
     `);
 
-    // Low stock alerts
     const lowStockRes = await db.query(`
       SELECT id, name, emoji, stock_quantity, low_stock_threshold
       FROM products
@@ -711,12 +766,10 @@ app.get('/api/analytics/export', async (req, res) => {
   }
 });
 
-// Fallback to index.html for SPA routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server and Initialize Database
 app.listen(PORT, async () => {
   console.log(`🍿 Jordan's Snack Shack POS running on port ${PORT}`);
   try {

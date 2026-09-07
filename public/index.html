@@ -31,15 +31,6 @@
               700: '#b45309',
               800: '#92400e',
               900: '#78350f',
-            },
-            snack: {
-              red: '#ef4444',
-              orange: '#f97316',
-              amber: '#f59e0b',
-              emerald: '#10b981',
-              cyan: '#06b6d4',
-              blue: '#3b82f6',
-              purple: '#8b5cf6',
             }
           }
         }
@@ -61,7 +52,7 @@
           Jordan's Snack Shack
           <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">POS</span>
         </h1>
-        <p class="text-xs text-slate-400 font-medium">School Snack Bar Register</p>
+        <p class="text-xs text-slate-400 font-medium">School Snack Bar Register & Punch Rewards</p>
       </div>
     </div>
 
@@ -72,8 +63,8 @@
         <span>Register</span>
       </button>
       <button onclick="switchTab('students')" id="tab-btn-students" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="id-card" class="w-4 h-4"></i>
-        <span>Student Passes</span>
+        <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+        <span>Student Passes & Punch Cards</span>
       </button>
       <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="package" class="w-4 h-4"></i>
@@ -144,7 +135,7 @@
           <!-- Quick Action: Fast Add Custom Snack -->
           <button onclick="openCustomItemModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
             <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
-            <span>Custom Item</span>
+            <span>Add Snack Item</span>
           </button>
         </div>
 
@@ -153,7 +144,6 @@
           <button onclick="filterCategory(null)" class="category-pill active flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap">
             <span>✨</span> All Items
           </button>
-          <!-- Dynamic Category Pills inserted by JS -->
         </div>
 
         <!-- Product Cards Grid -->
@@ -165,7 +155,7 @@
           <div id="no-products-msg" class="hidden flex flex-col items-center justify-center h-64 text-center text-slate-400">
             <i data-lucide="search-x" class="w-12 h-12 mb-2 text-slate-600"></i>
             <p class="font-bold text-slate-300">No snacks found</p>
-            <p class="text-xs text-slate-500">Try searching for something else or clear the filter.</p>
+            <p class="text-xs text-slate-500">Click "+ Add Snack Item" above to add your first snack or candy!</p>
           </div>
         </div>
       </div>
@@ -189,9 +179,17 @@
           </button>
         </div>
 
+        <!-- Auto Combo Deal Notification Banner -->
+        <div id="auto-combo-banner" class="hidden bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-b border-amber-500/30 px-3.5 py-2 text-xs text-amber-300 flex items-center justify-between animate-pulse">
+          <div class="flex items-center gap-1.5 font-bold">
+            <span>🎉</span>
+            <span id="combo-banner-text">Combo Deal Applied! Saved $0.50</span>
+          </div>
+          <span class="bg-amber-500 text-slate-950 font-extrabold text-[10px] px-1.5 py-0.5 rounded">COMBO</span>
+        </div>
+
         <!-- Cart Items List (Scrollable) -->
         <div id="cart-items-list" class="flex-1 overflow-y-auto p-3 space-y-2 divide-y divide-slate-800/60">
-          <!-- Empty cart placeholder -->
           <div id="cart-empty-placeholder" class="flex flex-col items-center justify-center h-48 text-center text-slate-500">
             <span class="text-4xl mb-2">🛒</span>
             <p class="font-medium text-slate-400 text-sm">Cart is empty</p>
@@ -205,7 +203,7 @@
           <div class="flex items-center justify-between gap-2 pb-1">
             <span class="text-slate-400 font-medium">Discount / Coupon:</span>
             <select id="discount-select" onchange="updateCartTotals()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-amber-500">
-              <option value="0">No Discount ($0.00)</option>
+              <option value="0">No Manual Discount ($0.00)</option>
               <option value="0.50">50¢ Off Coupon</option>
               <option value="1.00">$1.00 Off Promo</option>
               <option value="pct-10">10% Student Honor Roll</option>
@@ -219,8 +217,12 @@
             <span>Subtotal:</span>
             <span id="summary-subtotal" class="font-bold text-white">$0.00</span>
           </div>
+          <div id="combo-discount-row" class="hidden flex justify-between text-amber-400">
+            <span>⭐ Auto-Combo Savings:</span>
+            <span id="summary-combo-discount" class="font-bold">-$0.00</span>
+          </div>
           <div id="discount-row" class="hidden flex justify-between text-emerald-400">
-            <span>Discount Applied:</span>
+            <span>Coupon / Manual Discount:</span>
             <span id="summary-discount" class="font-bold">-$0.00</span>
           </div>
 
@@ -233,29 +235,34 @@
 
         <!-- Checkout Action Buttons -->
         <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-          <!-- Primary Cash / Student Buttons -->
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="openCashCheckoutModal()" id="btn-pay-cash" class="checkout-action-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-3 rounded-xl shadow-lg shadow-emerald-900/30 flex flex-col items-center justify-center gap-0.5 transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
-              <div class="flex items-center gap-1.5 text-sm">
-                <i data-lucide="banknote" class="w-4 h-4"></i>
-                <span>CASH PAY</span>
+          <!-- Direct Cash Button (No account or loaded balance needed!) -->
+          <button onclick="openCashCheckoutModal()" id="btn-pay-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-3 rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-between transition active:scale-98 disabled:opacity-50 disabled:pointer-events-none">
+            <div class="flex items-center gap-2">
+              <i data-lucide="banknote" class="w-5 h-5"></i>
+              <div class="text-left">
+                <div class="text-sm font-bold">💵 CASH PAY (WALK-IN)</div>
+                <div class="text-[10px] text-emerald-200 font-normal">Instant cash • No account needed</div>
               </div>
-              <span class="text-[10px] text-emerald-200 font-normal">Exact & Quick Change</span>
-            </button>
+            </div>
+            <span class="bg-emerald-800/80 text-emerald-200 px-2 py-1 rounded text-xs font-mono font-bold" id="cash-btn-total-preview">$0.00</span>
+          </button>
 
-            <button onclick="openStudentCheckoutModal()" id="btn-pay-student" class="checkout-action-btn bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-3 rounded-xl shadow-lg shadow-blue-900/30 flex flex-col items-center justify-center gap-0.5 transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
-              <div class="flex items-center gap-1.5 text-sm">
-                <i data-lucide="id-card" class="w-4 h-4"></i>
-                <span>STUDENT PASS</span>
+          <!-- Student Pass & Punch Card Button -->
+          <button onclick="openStudentCheckoutModal()" id="btn-pay-student" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-3 rounded-xl shadow-lg shadow-blue-900/30 flex items-center justify-between transition active:scale-98 disabled:opacity-50 disabled:pointer-events-none">
+            <div class="flex items-center gap-2">
+              <i data-lucide="id-card" class="w-5 h-5 text-amber-300"></i>
+              <div class="text-left">
+                <div class="text-sm font-bold">STUDENT PASS / PUNCH CARD</div>
+                <div class="text-[10px] text-blue-200 font-normal">Pay with Balance or Cash + Earn Punch Rewards</div>
               </div>
-              <span class="text-[10px] text-blue-200 font-normal">Prepaid ID & Balance</span>
-            </button>
-          </div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-blue-300"></i>
+          </button>
 
-          <!-- Secondary Payment: Card / Meal Pass / Token -->
-          <button onclick="quickOtherCheckout('School Meal Token')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold py-2 px-3 rounded-xl border border-slate-700 text-xs flex items-center justify-center gap-2 transition disabled:opacity-50">
-            <i data-lucide="credit-card" class="w-3.5 h-3.5 text-amber-400"></i>
-            <span>Other / Card / Meal Token</span>
+          <!-- Other / Free Token -->
+          <button onclick="quickOtherCheckout('School Reward Token')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold py-2 px-3 rounded-xl border border-slate-700 text-xs flex items-center justify-center gap-2 transition disabled:opacity-50">
+            <i data-lucide="ticket" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Other / Card / Teacher Reward Token</span>
           </button>
         </div>
       </div>
@@ -263,7 +270,7 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 2: STUDENT PASSES & ACCOUNTS -->
+    <!-- TAB 2: STUDENT PASSES & PUNCH REWARDS -->
     <!-- ==================================================== -->
     <section id="tab-students" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
@@ -271,10 +278,10 @@
         <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
           <div>
             <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
-              <i data-lucide="id-card" class="w-6 h-6 text-blue-400"></i>
-              Prepaid Student Snack Accounts
+              <i data-lucide="award" class="w-6 h-6 text-amber-400"></i>
+              Student Accounts & Digital Punch Cards
             </h2>
-            <p class="text-xs text-slate-400">Manage student balances, set allergy safety warnings, and enforce daily spending limits.</p>
+            <p class="text-xs text-slate-400">Students earn 1 punch stamp per order. 10 punches = 1 FREE Snack reward! Track balances, allergies, and cash visits.</p>
           </div>
           <button onclick="openNewStudentModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-900/30 flex items-center gap-2 transition">
             <i data-lucide="user-plus" class="w-4 h-4"></i>
@@ -295,12 +302,12 @@
             />
           </div>
           <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold">
-              <i data-lucide="users" class="w-5 h-5"></i>
+            <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold">
+              <i data-lucide="star" class="w-5 h-5"></i>
             </div>
             <div>
-              <div class="text-xs text-slate-400">Total Accounts</div>
-              <div id="stat-total-students" class="font-bold text-base text-white">0</div>
+              <div class="text-xs text-slate-400">Active Punch Cards</div>
+              <div id="stat-total-punches" class="font-bold text-base text-amber-400">0 Stamps</div>
             </div>
           </div>
           <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
@@ -308,7 +315,7 @@
               <i data-lucide="wallet" class="w-5 h-5"></i>
             </div>
             <div>
-              <div class="text-xs text-slate-400">Total Prepaid Pool</div>
+              <div class="text-xs text-slate-400">Prepaid Funds Pool</div>
               <div id="stat-total-balance" class="font-bold text-base text-emerald-400">$0.00</div>
             </div>
           </div>
@@ -322,8 +329,8 @@
                 <tr>
                   <th class="p-3.5">Student ID</th>
                   <th class="p-3.5">Name & Grade</th>
-                  <th class="p-3.5">Account Balance</th>
-                  <th class="p-3.5">Daily Limit</th>
+                  <th class="p-3.5">Prepaid Balance</th>
+                  <th class="p-3.5">Punch Card Progress (10 for Free Snack)</th>
                   <th class="p-3.5">Allergies / Flags</th>
                   <th class="p-3.5 text-right">Actions</th>
                 </tr>
@@ -425,7 +432,7 @@
               <i data-lucide="receipt" class="w-6 h-6 text-purple-400"></i>
               Sales & Order History
             </h2>
-            <p class="text-xs text-slate-400">View past snack orders, reprints receipts, and inspect payment breakdowns.</p>
+            <p class="text-xs text-slate-400">View past snack orders, reprint thermal receipts, and inspect payment breakdowns.</p>
           </div>
           <button onclick="loadOrders()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -443,7 +450,7 @@
                   <th class="p-3.5">Time</th>
                   <th class="p-3.5">Items Purchased</th>
                   <th class="p-3.5">Payment</th>
-                  <th class="p-3.5">Account / Customer</th>
+                  <th class="p-3.5">Customer / Student</th>
                   <th class="p-3.5">Total</th>
                   <th class="p-3.5 text-right">Receipt</th>
                 </tr>
@@ -462,7 +469,6 @@
     <!-- ==================================================== -->
     <section id="tab-shifts" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-4xl mx-auto space-y-5">
-        <!-- Header -->
         <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800">
           <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
             <i data-lucide="wallet" class="w-6 h-6 text-emerald-400"></i>
@@ -471,7 +477,6 @@
           <p class="text-xs text-slate-400 mt-1">Reconcile cash drawer, track starting float, count register at end of lunch/recess, and detect over/short discrepancies.</p>
         </div>
 
-        <!-- Active Shift Card -->
         <div id="active-shift-card" class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-5">
           <!-- Populated by JS -->
         </div>
@@ -483,7 +488,6 @@
     <!-- ==================================================== -->
     <section id="tab-analytics" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-5">
-        <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
           <div>
             <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
@@ -543,7 +547,6 @@
 
         <!-- Top Selling Snacks & Payment Methods -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <!-- Top Snacks -->
           <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
             <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
               <i data-lucide="flame" class="w-5 h-5 text-orange-400"></i>
@@ -554,7 +557,6 @@
             </div>
           </div>
 
-          <!-- Payment Breakdown -->
           <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
             <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
               <i data-lucide="pie-chart" class="w-5 h-5 text-blue-400"></i>
@@ -571,7 +573,7 @@
   </main>
 
   <!-- ==================================================== -->
-  <!-- MODAL: CASH CHECKOUT & FAST CHANGE CALCULATOR -->
+  <!-- MODAL: CASH CHECKOUT (WALK-IN OR FAST CASH) -->
   <!-- ==================================================== -->
   <div id="modal-cash-checkout" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
@@ -585,7 +587,7 @@
         </div>
         <div>
           <h3 class="font-heading font-bold text-lg text-white">Cash Register Checkout</h3>
-          <p class="text-xs text-slate-400">Calculate change due instantly</p>
+          <p class="text-xs text-slate-400">Fast cash payment • No account required</p>
         </div>
       </div>
 
@@ -634,16 +636,16 @@
       <!-- Complete Button -->
       <button onclick="submitCashCheckout()" id="btn-complete-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl text-base shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition active:scale-98">
         <i data-lucide="check-circle" class="w-5 h-5"></i>
-        <span>Complete Sale & Print Receipt</span>
+        <span>Complete Cash Sale & Print Receipt</span>
       </button>
     </div>
   </div>
 
   <!-- ==================================================== -->
-  <!-- MODAL: STUDENT ID / PREPAID PASS CHECKOUT -->
+  <!-- MODAL: STUDENT ID / PUNCH CARD / ACCOUNT CHECKOUT -->
   <!-- ==================================================== -->
   <div id="modal-student-checkout" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
       <button onclick="closeModal('modal-student-checkout')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
@@ -653,39 +655,38 @@
           🎒
         </div>
         <div>
-          <h3 class="font-heading font-bold text-lg text-white">Student Account Checkout</h3>
-          <p class="text-xs text-slate-400">Deduct from prepaid student balance</p>
+          <h3 class="font-heading font-bold text-lg text-white">Student Pass & Punch Card</h3>
+          <p class="text-xs text-slate-400">Pay with Prepaid Balance or Pay Cash in Hand to earn punch stamps</p>
         </div>
       </div>
 
       <!-- Total Due Banner -->
-      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex justify-between items-center">
         <span class="text-xs text-slate-400 uppercase font-semibold">Total Due</span>
         <span id="student-modal-total-due" class="font-heading font-extrabold text-2xl text-blue-400">$0.00</span>
       </div>
 
       <!-- Student Lookup Search -->
-      <div class="space-y-2">
-        <label class="text-xs text-slate-400 font-semibold block">Select or Scan Student ID:</label>
+      <div class="space-y-1.5">
+        <label class="text-xs text-slate-400 font-semibold block">Find Student by Name or ID:</label>
         <div class="relative">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
           <input
             type="text"
             id="student-lookup-input"
             placeholder="Type student name or ID..."
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
             oninput="searchStudentsForCheckout(this.value)"
           />
         </div>
 
-        <!-- Student Dropdown/Matches -->
-        <div id="student-matches-list" class="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
+        <div id="student-matches-list" class="max-h-36 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
           <!-- Populated by JS -->
         </div>
       </div>
 
-      <!-- Selected Student Profile Card -->
-      <div id="selected-student-card" class="hidden bg-slate-950 p-4 rounded-2xl border border-blue-500/40 space-y-2">
+      <!-- Selected Student Profile Card with Punch Card Visual -->
+      <div id="selected-student-card" class="hidden bg-slate-950 p-4 rounded-2xl border border-blue-500/40 space-y-3">
         <!-- Populated by JS -->
       </div>
 
@@ -693,21 +694,45 @@
       <div id="student-allergy-alert" class="hidden bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-xs text-rose-300 flex items-start gap-2">
         <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
         <div>
-          <strong class="font-bold text-rose-400">Allergy Warning:</strong>
-          <p id="student-allergy-text" class="mt-0.5">Student has dietary restrictions. Check cart items!</p>
+          <strong class="font-bold text-rose-400">Allergy Alert:</strong>
+          <p id="student-allergy-text" class="mt-0.5">Student has dietary restrictions.</p>
         </div>
       </div>
 
-      <!-- Confirm Button -->
-      <button onclick="submitStudentCheckout()" id="btn-complete-student" disabled class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl text-base shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:pointer-events-none active:scale-98">
-        <i data-lucide="check-circle" class="w-5 h-5"></i>
-        <span>Charge Student Pass & Complete</span>
-      </button>
+      <!-- Action Buttons for Selected Student -->
+      <div id="student-actions-container" class="hidden space-y-2 pt-1">
+        <!-- Option 1: Pay with Loaded Account Balance -->
+        <button onclick="submitStudentCheckout('student_account')" id="btn-pay-balance" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-between transition disabled:opacity-40 disabled:pointer-events-none">
+          <div class="flex items-center gap-2">
+            <i data-lucide="credit-card" class="w-4 h-4"></i>
+            <span>Deduct from Prepaid Balance</span>
+          </div>
+          <span class="text-xs font-mono font-bold" id="balance-btn-preview">$0.00 available</span>
+        </button>
+
+        <!-- Option 2: Pay with Cash in Hand (No balance needed!) -->
+        <button onclick="submitStudentCheckout('student_cash')" id="btn-pay-student-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-between transition">
+          <div class="flex items-center gap-2">
+            <i data-lucide="banknote" class="w-4 h-4"></i>
+            <span>Student Pays Cash (+1 Punch Stamp ⭐)</span>
+          </div>
+          <span class="text-xs text-emerald-200">Take Cash in Hand</span>
+        </button>
+
+        <!-- Option 3: Free Snack Pass (if unlocked) -->
+        <button onclick="submitStudentCheckout('reward_token')" id="btn-pay-free-reward" class="hidden w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2.5 px-4 rounded-xl text-sm flex items-center justify-between transition shadow-md shadow-amber-500/20">
+          <div class="flex items-center gap-2">
+            <i data-lucide="gift" class="w-4 h-4"></i>
+            <span>Redeem Free Punch Card Snack Pass!</span>
+          </div>
+          <span class="text-xs bg-slate-950 text-amber-300 px-2 py-0.5 rounded font-bold">100% FREE</span>
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- ==================================================== -->
-  <!-- MODAL: RECEIPT & PRINT PREVIEW -->
+  <!-- MODAL: RECEIPT & THERMAL PRINT PREVIEW -->
   <!-- ==================================================== -->
   <div id="modal-receipt" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
@@ -715,12 +740,10 @@
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <!-- Thermal Receipt Slip Content -->
       <div id="printable-receipt" class="bg-white text-slate-900 p-5 rounded-xl font-mono text-xs shadow-inner space-y-3">
         <!-- Dynamically rendered receipt -->
       </div>
 
-      <!-- Receipt Actions -->
       <div class="flex gap-2 print:hidden">
         <button onclick="printReceipt()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition">
           <i data-lucide="printer" class="w-4 h-4"></i>
@@ -754,7 +777,6 @@
 
       <input type="hidden" id="restock-product-id" />
 
-      <!-- Quick Case Buttons -->
       <div class="space-y-2">
         <span class="text-xs text-slate-400 font-semibold">Quick Case Add:</span>
         <div class="grid grid-cols-4 gap-2">
@@ -765,7 +787,6 @@
         </div>
       </div>
 
-      <!-- Custom Quantity -->
       <div>
         <label class="text-xs text-slate-400 font-semibold mb-1 block">Quantity to Add:</label>
         <input
@@ -777,7 +798,6 @@
         />
       </div>
 
-      <!-- Restock Reason / Shipment Note -->
       <div>
         <label class="text-xs text-slate-400 font-semibold mb-1 block">Shipment Note / Reason:</label>
         <input
@@ -788,7 +808,6 @@
         />
       </div>
 
-      <!-- Submit -->
       <button onclick="submitRestock()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 transition">
         <i data-lucide="check" class="w-4 h-4"></i>
         <span>Confirm Restock</span>
@@ -870,7 +889,7 @@
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-heading font-bold text-lg text-white">Create Student Snack Pass</h3>
+      <h3 class="font-heading font-bold text-lg text-white">Create Student Pass & Punch Card</h3>
 
       <div class="space-y-3 text-xs">
         <div>
@@ -891,12 +910,12 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-slate-400 font-semibold mb-1 block">Initial Balance ($):</label>
-            <input type="number" step="1.00" id="new-stu-balance" value="10.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
+            <label class="text-slate-400 font-semibold mb-1 block">Prepaid Balance ($) (Optional - can be 0.00):</label>
+            <input type="number" step="1.00" id="new-stu-balance" value="0.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
           </div>
           <div>
             <label class="text-slate-400 font-semibold mb-1 block">Daily Spending Limit ($):</label>
-            <input type="number" step="0.50" id="new-stu-limit" value="5.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
+            <input type="number" step="0.50" id="new-stu-limit" value="10.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
           </div>
         </div>
 
@@ -912,7 +931,7 @@
       </div>
 
       <button onclick="submitNewStudent()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition">
-        <i data-lucide="user-check" class="w-4 h-4"></i>
+        <i data-lucide="award" class="w-4 h-4 text-amber-300"></i>
         <span>Create Student Pass</span>
       </button>
     </div>
@@ -939,7 +958,6 @@
 
       <input type="hidden" id="recharge-student-id" />
 
-      <!-- Quick Reload Buttons -->
       <div class="space-y-2">
         <span class="text-xs text-slate-400 font-semibold">Quick Amount:</span>
         <div class="grid grid-cols-4 gap-2">
@@ -984,7 +1002,6 @@
   <!-- App Logic Scripts -->
   <script src="app.js"></script>
   <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
   </script>
 </body>

@@ -47,12 +47,29 @@ async function initDB() {
         name VARCHAR(150) NOT NULL,
         grade VARCHAR(50) DEFAULT '6th Grade',
         balance NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
-        daily_limit NUMERIC(10, 2) NOT NULL DEFAULT 5.00,
+        daily_limit NUMERIC(10, 2) NOT NULL DEFAULT 10.00,
         spent_today NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
         last_spent_date DATE DEFAULT CURRENT_DATE,
+        punch_card INT NOT NULL DEFAULT 0,
+        free_rewards INT NOT NULL DEFAULT 0,
         allergies TEXT DEFAULT '',
         notes TEXT DEFAULT '',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Ensure punch_card and free_rewards columns exist if table was already created
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS punch_card INT NOT NULL DEFAULT 0;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS free_rewards INT NOT NULL DEFAULT 0;
+
+      CREATE TABLE IF NOT EXISTS combos (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        category_id_1 INT REFERENCES categories(id) ON DELETE CASCADE,
+        category_id_2 INT REFERENCES categories(id) ON DELETE CASCADE,
+        combo_price NUMERIC(10, 2) NOT NULL,
+        discount_amount NUMERIC(10, 2) DEFAULT 0.50,
+        description TEXT,
+        is_active BOOLEAN DEFAULT TRUE
       );
 
       CREATE TABLE IF NOT EXISTS orders (
@@ -67,9 +84,14 @@ async function initDB() {
         total NUMERIC(10, 2) NOT NULL,
         amount_paid NUMERIC(10, 2) NOT NULL,
         change_due NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+        punch_awarded BOOLEAN DEFAULT TRUE,
+        reward_used BOOLEAN DEFAULT FALSE,
         notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS punch_awarded BOOLEAN DEFAULT TRUE;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS reward_used BOOLEAN DEFAULT FALSE;
 
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
@@ -127,7 +149,7 @@ async function initDB() {
       }
     }
 
-    console.log('🎉 Database initialized with clean schema.');
+    console.log('🎉 Database initialized with punch cards & auto-combos support.');
   } catch (err) {
     console.error('❌ Error initializing database:', err);
     throw err;

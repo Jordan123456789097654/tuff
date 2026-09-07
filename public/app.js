@@ -1,4 +1,4 @@
-// Jordan's Snack Shack POS - Complete Client Application Logic
+// Jordan's Snack Shack POS - Client Logic with Auto-Combos & Digital Punch Cards
 
 // ==========================================
 // STATE
@@ -14,7 +14,7 @@ let activeShift = null;
 let selectedStudentForCheckout = null;
 let soundEnabled = true;
 
-// Audio Context Synthesizer for POS Sounds
+// Audio Synthesizer
 let audioCtx = null;
 function getAudioContext() {
   if (!audioCtx) {
@@ -38,7 +38,6 @@ function playSound(type) {
     const now = ctx.currentTime;
 
     if (type === 'beep') {
-      // Pleasant high register scan chirp
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, now);
       osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
@@ -47,7 +46,6 @@ function playSound(type) {
       osc.start(now);
       osc.stop(now + 0.08);
     } else if (type === 'chaching') {
-      // Multi-tone cash register success chime
       const freqs = [523.25, 659.25, 783.99, 1046.5];
       freqs.forEach((freq, idx) => {
         const o = ctx.createOscillator();
@@ -62,8 +60,23 @@ function playSound(type) {
         o.start(startTime);
         o.stop(startTime + 0.25);
       });
+    } else if (type === 'fanfare') {
+      // Reward punch fanfare
+      const freqs = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+      freqs.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(ctx.destination);
+        const startTime = now + idx * 0.08;
+        g.gain.setValueAtTime(0.25, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+        o.start(startTime);
+        o.stop(startTime + 0.35);
+      });
     } else if (type === 'warning') {
-      // Alert warning tone
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(300, now);
       osc.frequency.linearRampToValueAtTime(200, now + 0.15);
@@ -73,7 +86,7 @@ function playSound(type) {
       osc.stop(now + 0.15);
     }
   } catch (e) {
-    console.warn('Audio not supported or permitted yet:', e);
+    console.warn('Audio note:', e);
   }
 }
 
@@ -105,6 +118,9 @@ function showToast(message, type = 'info') {
   } else if (type === 'error') {
     bg = 'bg-rose-950 text-rose-100 border-rose-500/50';
     icon = '⚠️';
+  } else if (type === 'reward') {
+    bg = 'bg-amber-950 text-amber-100 border-amber-500/50';
+    icon = '⭐';
   }
 
   toast.className = `toast-item px-4 py-3 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-semibold backdrop-blur-md pointer-events-auto ${bg}`;
@@ -115,25 +131,22 @@ function showToast(message, type = 'info') {
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s ease';
     setTimeout(() => toast.remove(), 300);
-  }, 3200);
+  }, 3400);
 }
 
 // ==========================================
 // NAVIGATION & TABS
 // ==========================================
 function switchTab(tabId) {
-  // Hide all sections
   document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
 
-  // Show target section
   const target = document.getElementById(`tab-${tabId}`);
   if (target) target.classList.remove('hidden');
 
   const btn = document.getElementById(`tab-btn-${tabId}`);
   if (btn) btn.classList.add('active');
 
-  // Trigger tab-specific refresh
   if (tabId === 'students') loadStudents();
   if (tabId === 'inventory') loadProducts();
   if (tabId === 'orders') loadOrders();
@@ -151,7 +164,7 @@ async function initApp() {
     await Promise.all([loadCategories(), loadProducts(), loadShiftStatus()]);
   } catch (err) {
     console.error('Initialization error:', err);
-    showToast('Failed to load initial snack shop data', 'error');
+    showToast('Ready to serve Jordan\'s Snack Shack!', 'info');
   }
 }
 
@@ -218,7 +231,7 @@ async function loadShiftStatus() {
 }
 
 // ==========================================
-// REGISTER VIEW LOGIC
+// REGISTER & PRODUCT GRID
 // ==========================================
 function renderCategories() {
   const container = document.getElementById('categories-pill-container');
@@ -305,24 +318,20 @@ function renderProductGrid() {
         class="product-card group relative bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer transition ${isSoldOut ? 'opacity-50 grayscale cursor-not-allowed' : ''}"
       >
         <div>
-          <!-- Top Row: Emoji & Stock Badge -->
           <div class="flex items-start justify-between gap-1 mb-2">
             <span class="text-3xl p-1 bg-slate-900 rounded-xl border border-slate-800 shadow-sm">${item.emoji || '🍿'}</span>
             ${badge}
           </div>
 
-          <!-- Product Name -->
           <h4 class="font-heading font-bold text-sm text-white group-hover:text-amber-400 transition line-clamp-2 leading-tight">
             ${item.name}
           </h4>
 
-          <!-- Category and Allergy info -->
           <div class="mt-1 flex flex-wrap gap-1 items-center">
             ${item.allergy_info ? `<span class="text-[9px] text-amber-300/90 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">⚠️ ${item.allergy_info}</span>` : ''}
           </div>
         </div>
 
-        <!-- Price & Quick Add -->
         <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
           <span class="font-heading font-extrabold text-base text-amber-400">$${parseFloat(item.price).toFixed(2)}</span>
           <button class="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-amber-500 text-slate-300 group-hover:text-slate-950 flex items-center justify-center font-bold text-sm transition">
@@ -337,7 +346,7 @@ function renderProductGrid() {
 }
 
 // ==========================================
-// CART & PRICING
+// CART & AUTO-COMBO DETECTION
 // ==========================================
 function addToCart(productId) {
   const product = products.find(p => p.id === productId);
@@ -358,6 +367,8 @@ function addToCart(productId) {
     cart.push({
       id: product.id,
       name: product.name,
+      category_id: product.category_id,
+      category_name: product.category_name || '',
       price: parseFloat(product.price),
       cost_price: parseFloat(product.cost_price),
       emoji: product.emoji,
@@ -404,12 +415,54 @@ function clearCart() {
   showToast('Cart cleared');
 }
 
+// Auto-detect combo pairings (e.g. Snack + Drink = 50¢ auto-discount)
+function detectComboSavings() {
+  let drinksCount = 0;
+  let snacksCount = 0;
+
+  cart.forEach(item => {
+    const catName = (item.category_name || '').toLowerCase();
+    const itemName = item.name.toLowerCase();
+    const isDrink = catName.includes('drink') || itemName.includes('drink') || itemName.includes('gatorade') || itemName.includes('water') || itemName.includes('juice') || itemName.includes('capri') || itemName.includes('milk');
+    const isSnack = catName.includes('chip') || catName.includes('crunch') || catName.includes('baked') || catName.includes('candy') || catName.includes('sweets') || itemName.includes('chips') || itemName.includes('pretzel') || itemName.includes('cookie') || itemName.includes('doritos') || itemName.includes('cheetos') || itemName.includes('takis');
+
+    if (isDrink) drinksCount += item.quantity;
+    else if (isSnack) snacksCount += item.quantity;
+  });
+
+  const eligibleCombos = Math.min(drinksCount, snacksCount);
+  const comboDiscount = eligibleCombos * 0.50; // 50 cents off per pair
+
+  return { eligibleCombos, comboDiscount };
+}
+
+function calculateTotals() {
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const { eligibleCombos, comboDiscount } = detectComboSavings();
+
+  const discountVal = document.getElementById('discount-select').value;
+  let manualDiscount = 0;
+
+  if (discountVal.startsWith('pct-')) {
+    const pct = parseFloat(discountVal.replace('pct-', '')) / 100;
+    manualDiscount = (subtotal - comboDiscount) * pct;
+  } else {
+    manualDiscount = parseFloat(discountVal) || 0;
+  }
+
+  const totalDiscount = Math.min(comboDiscount + manualDiscount, subtotal);
+  const total = Math.max(0, subtotal - totalDiscount);
+
+  return { subtotal, comboDiscount, eligibleCombos, manualDiscount, totalDiscount, total };
+}
+
 function renderCart() {
   const container = document.getElementById('cart-items-list');
   const countEl = document.getElementById('cart-item-count');
-  const emptyEl = document.getElementById('cart-empty-placeholder');
   const btnCash = document.getElementById('btn-pay-cash');
   const btnStudent = document.getElementById('btn-pay-student');
+  const comboBanner = document.getElementById('auto-combo-banner');
+  const comboText = document.getElementById('combo-banner-text');
 
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   countEl.textContent = `${totalItemsCount} ${totalItemsCount === 1 ? 'item' : 'items'} in order`;
@@ -424,6 +477,7 @@ function renderCart() {
     `;
     btnCash.disabled = true;
     btnStudent.disabled = true;
+    comboBanner.classList.add('hidden');
   } else {
     btnCash.disabled = false;
     btnStudent.disabled = false;
@@ -439,23 +493,16 @@ function renderCart() {
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- Quantity Controls -->
           <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">
-              -
-            </button>
+            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">-</button>
             <span class="w-6 text-center font-bold text-xs text-white">${item.quantity}</span>
-            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">
-              +
-            </button>
+            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">+</button>
           </div>
 
-          <!-- Total for item -->
           <span class="font-bold text-xs text-amber-400 w-12 text-right">
             $${(item.price * item.quantity).toFixed(2)}
           </span>
 
-          <!-- Delete -->
           <button onclick="removeFromCart(${item.id})" class="text-slate-500 hover:text-rose-400 p-1 transition">
             <i data-lucide="trash" class="w-3.5 h-3.5"></i>
           </button>
@@ -468,43 +515,42 @@ function renderCart() {
   lucide.createIcons();
 }
 
-function calculateTotals() {
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const discountVal = document.getElementById('discount-select').value;
-  let discountAmt = 0;
-
-  if (discountVal.startsWith('pct-')) {
-    const pct = parseFloat(discountVal.replace('pct-', '')) / 100;
-    discountAmt = subtotal * pct;
-  } else {
-    discountAmt = parseFloat(discountVal) || 0;
-  }
-
-  discountAmt = Math.min(discountAmt, subtotal);
-  const total = Math.max(0, subtotal - discountAmt);
-
-  return { subtotal, discountAmt, total };
-}
-
 function updateCartTotals() {
-  const { subtotal, discountAmt, total } = calculateTotals();
+  const { subtotal, comboDiscount, eligibleCombos, manualDiscount, totalDiscount, total } = calculateTotals();
 
   document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)}`;
   
+  // Auto-combo row & banner
+  const comboBanner = document.getElementById('auto-combo-banner');
+  const comboRow = document.getElementById('combo-discount-row');
+  const comboEl = document.getElementById('summary-combo-discount');
+
+  if (eligibleCombos > 0) {
+    comboBanner.classList.remove('hidden');
+    document.getElementById('combo-banner-text').textContent = `Auto-Combo Deal! (${eligibleCombos}x Snack + Drink bundle applied: -$${comboDiscount.toFixed(2)})`;
+    comboRow.classList.remove('hidden');
+    comboEl.textContent = `-$${comboDiscount.toFixed(2)}`;
+  } else {
+    comboBanner.classList.add('hidden');
+    comboRow.classList.add('hidden');
+  }
+
+  // Manual discount row
   const discountRow = document.getElementById('discount-row');
   const discountEl = document.getElementById('summary-discount');
-  if (discountAmt > 0) {
+  if (manualDiscount > 0) {
     discountRow.classList.remove('hidden');
-    discountEl.textContent = `-$${discountAmt.toFixed(2)}`;
+    discountEl.textContent = `-$${manualDiscount.toFixed(2)}`;
   } else {
     discountRow.classList.add('hidden');
   }
 
   document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
+  document.getElementById('cash-btn-total-preview').textContent = `$${total.toFixed(2)}`;
 }
 
 // ==========================================
-// CASH CHECKOUT FLOW
+// CASH CHECKOUT (WALK-IN OR DIRECT CASH)
 // ==========================================
 let currentCashTendered = 0;
 
@@ -558,13 +604,13 @@ function computeCashChange(givenStr) {
     changeBox.className = 'bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center';
     changeEl.className = 'font-heading font-extrabold text-3xl text-emerald-400';
     changeEl.textContent = `$${change.toFixed(2)}`;
-    subtextEl.textContent = change === 0 ? 'Exact change provided' : 'Give back change to student';
+    subtextEl.textContent = change === 0 ? 'Exact cash provided' : 'Return change to customer';
     completeBtn.disabled = false;
   }
 }
 
 async function submitCashCheckout() {
-  const { subtotal, discountAmt, total } = calculateTotals();
+  const { subtotal, totalDiscount, total } = calculateTotals();
   const paid = parseFloat(document.getElementById('cash-amount-input').value) || total;
 
   if (paid < total) {
@@ -580,7 +626,7 @@ async function submitCashCheckout() {
       body: JSON.stringify({
         cart: cart,
         payment_method: 'cash',
-        discount: discountAmt,
+        discount: totalDiscount,
         tax: 0,
         amount_paid: paid,
         cashier_name: 'Cashier Volunteer'
@@ -588,25 +634,22 @@ async function submitCashCheckout() {
     });
 
     const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Checkout failed');
-    }
+    if (!res.ok) throw new Error(data.error || 'Checkout failed');
 
     playSound('chaching');
     closeModal('modal-cash-checkout');
     clearCart();
-    loadProducts(); // refresh stock numbers
+    loadProducts();
     showReceiptModal(data.order);
     showToast(`Order ${data.order.order_number} completed! 🍿`, 'success');
   } catch (err) {
-    console.error('Checkout error:', err);
     showToast(err.message, 'error');
     playSound('warning');
   }
 }
 
 // ==========================================
-// STUDENT PASS CHECKOUT FLOW
+// STUDENT PASS & DIGITAL PUNCH CARDS
 // ==========================================
 async function openStudentCheckoutModal() {
   if (cart.length === 0) return;
@@ -616,7 +659,7 @@ async function openStudentCheckoutModal() {
   document.getElementById('student-lookup-input').value = '';
   document.getElementById('selected-student-card').classList.add('hidden');
   document.getElementById('student-allergy-alert').classList.add('hidden');
-  document.getElementById('btn-complete-student').disabled = true;
+  document.getElementById('student-actions-container').classList.add('hidden');
   selectedStudentForCheckout = null;
 
   if (students.length === 0) {
@@ -636,24 +679,31 @@ function searchStudentsForCheckout(query) {
   );
 
   if (matches.length === 0) {
-    matchesContainer.innerHTML = `<div class="text-xs text-slate-500 p-2 text-center">No matching students found</div>`;
+    matchesContainer.innerHTML = `<div class="text-xs text-slate-500 p-2 text-center">No student accounts found. You can pay with standard Cash or create a new student pass.</div>`;
     return;
   }
 
-  matchesContainer.innerHTML = matches.slice(0, 6).map(s => `
-    <div 
-      onclick="selectStudentForCheckout(${s.id})"
-      class="p-2 rounded-lg bg-slate-900 hover:bg-blue-600/20 border border-slate-800 hover:border-blue-500/50 cursor-pointer flex items-center justify-between transition"
-    >
-      <div>
-        <div class="font-bold text-xs text-white">${s.name} <span class="text-[10px] text-blue-300 font-normal">(${s.student_id} - ${s.grade})</span></div>
-        ${s.allergies ? `<div class="text-[10px] text-rose-300">⚠️ ${s.allergies}</div>` : ''}
+  matchesContainer.innerHTML = matches.slice(0, 5).map(s => {
+    const punches = s.punch_card || 0;
+    const rewards = s.free_rewards || 0;
+    return `
+      <div 
+        onclick="selectStudentForCheckout(${s.id})"
+        class="p-2 rounded-lg bg-slate-900 hover:bg-blue-600/20 border border-slate-800 hover:border-blue-500/50 cursor-pointer flex items-center justify-between transition"
+      >
+        <div>
+          <div class="font-bold text-xs text-white">${s.name} <span class="text-[10px] text-blue-300 font-normal">(${s.student_id} • ${s.grade})</span></div>
+          <div class="text-[10px] text-amber-300 flex items-center gap-1 mt-0.5">
+            <span>⭐ ${punches}/10 Punches</span>
+            ${rewards > 0 ? `<span class="bg-amber-500 text-slate-950 font-extrabold px-1 rounded text-[9px]">${rewards} Free Pass Available!</span>` : ''}
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="font-bold text-xs text-emerald-400">$${parseFloat(s.balance).toFixed(2)} balance</span>
+        </div>
       </div>
-      <div class="text-right">
-        <span class="font-bold text-xs text-emerald-400">$${parseFloat(s.balance).toFixed(2)}</span>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function selectStudentForCheckout(studentId) {
@@ -666,10 +716,24 @@ function selectStudentForCheckout(studentId) {
   const card = document.getElementById('selected-student-card');
   const alertBox = document.getElementById('student-allergy-alert');
   const alertText = document.getElementById('student-allergy-text');
-  const completeBtn = document.getElementById('btn-complete-student');
+  const actionsContainer = document.getElementById('student-actions-container');
+  const btnBalance = document.getElementById('btn-pay-balance');
+  const balancePreview = document.getElementById('balance-btn-preview');
+  const btnReward = document.getElementById('btn-pay-free-reward');
 
-  const balance = parseFloat(student.balance);
-  const remaining = balance - total;
+  const balance = parseFloat(student.balance) || 0;
+  const punches = student.punch_card || 0;
+  const freeRewards = student.free_rewards || 0;
+
+  // Render 10-stamp visual punch card
+  let punchCardStars = '';
+  for (let i = 1; i <= 10; i++) {
+    if (i <= punches) {
+      punchCardStars += `<span class="w-6 h-6 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shadow-sm">★</span>`;
+    } else {
+      punchCardStars += `<span class="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs">○</span>`;
+    }
+  }
 
   card.classList.remove('hidden');
   card.innerHTML = `
@@ -679,18 +743,28 @@ function selectStudentForCheckout(studentId) {
         <span class="text-xs text-blue-300">${student.student_id} • ${student.grade}</span>
       </div>
       <div class="text-right">
-        <span class="text-[10px] text-slate-400 block">Current Balance</span>
-        <span class="font-heading font-extrabold text-lg text-emerald-400">$${balance.toFixed(2)}</span>
+        <span class="text-[10px] text-slate-400 block">Prepaid Balance</span>
+        <span class="font-heading font-extrabold text-lg ${balance > 0 ? 'text-emerald-400' : 'text-slate-400'}">$${balance.toFixed(2)}</span>
       </div>
     </div>
 
-    <div class="flex justify-between text-xs pt-1">
-      <span class="text-slate-400">Balance after order:</span>
-      <span class="font-bold ${remaining < 0 ? 'text-rose-400' : 'text-slate-200'}">$${remaining.toFixed(2)}</span>
+    <!-- Digital Punch Card Visual -->
+    <div class="space-y-1.5 pt-1">
+      <div class="flex justify-between text-xs">
+        <span class="font-semibold text-amber-400 flex items-center gap-1">
+          <i data-lucide="award" class="w-3.5 h-3.5"></i>
+          Digital Punch Card:
+        </span>
+        <span class="text-slate-300 font-bold">${punches} / 10 Stamps</span>
+      </div>
+      <div class="grid grid-cols-10 gap-1">
+        ${punchCardStars}
+      </div>
+      <p class="text-[10px] text-slate-400 text-center pt-0.5">Every 10 orders = 1 FREE Snack Reward!</p>
     </div>
   `;
 
-  // Allergy Check with Cart Items
+  // Allergy Check
   let hasAllergyMatch = false;
   let matchingAllergens = [];
 
@@ -701,7 +775,7 @@ function selectStudentForCheckout(studentId) {
         studentAllergyWords.forEach(word => {
           if (word.length > 3 && item.allergy_info.toLowerCase().includes(word)) {
             hasAllergyMatch = true;
-            matchingAllergens.push(`"${item.name}" (${item.allergy_info})`);
+            matchingAllergens.push(`"${item.name}"`);
           }
         });
       }
@@ -710,28 +784,41 @@ function selectStudentForCheckout(studentId) {
 
   if (hasAllergyMatch) {
     alertBox.classList.remove('hidden');
-    alertText.textContent = `Caution! Student allergy (${student.allergies}) flags snack: ${matchingAllergens.join(', ')}`;
+    alertText.textContent = `Caution! Student allergy flags: ${matchingAllergens.join(', ')} (${student.allergies})`;
     playSound('warning');
   } else if (student.allergies && student.allergies.toLowerCase() !== 'none') {
     alertBox.classList.remove('hidden');
-    alertText.textContent = `Student has documented restrictions: ${student.allergies}. Please verify with student.`;
+    alertText.textContent = `Documented dietary note: ${student.allergies}`;
   } else {
     alertBox.classList.add('hidden');
   }
 
-  if (balance < total) {
-    completeBtn.disabled = true;
-    showToast(`Insufficient balance ($${balance.toFixed(2)}) for total ($${total.toFixed(2)})`, 'error');
-    playSound('warning');
+  // Update Buttons
+  actionsContainer.classList.remove('hidden');
+  balancePreview.textContent = `$${balance.toFixed(2)} available`;
+
+  if (balance >= total) {
+    btnBalance.disabled = false;
   } else {
-    completeBtn.disabled = false;
-    playSound('beep');
+    btnBalance.disabled = true;
+    btnBalance.title = 'Insufficient balance loaded. Choose "Student Pays Cash" instead!';
   }
+
+  // If free reward available
+  if (freeRewards > 0) {
+    btnReward.classList.remove('hidden');
+  } else {
+    btnReward.classList.add('hidden');
+  }
+
+  playSound('beep');
+  lucide.createIcons();
 }
 
-async function submitStudentCheckout() {
+async function submitStudentCheckout(paymentType) {
   if (!selectedStudentForCheckout) return;
-  const { subtotal, discountAmt, total } = calculateTotals();
+  const { totalDiscount, total } = calculateTotals();
+  const isReward = paymentType === 'reward_token';
 
   try {
     const res = await fetch('/api/checkout', {
@@ -739,29 +826,33 @@ async function submitStudentCheckout() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cart: cart,
-        payment_method: 'student_account',
+        payment_method: paymentType,
         student_id: selectedStudentForCheckout.id,
-        discount: discountAmt,
+        use_reward: isReward,
+        discount: totalDiscount,
         tax: 0,
-        amount_paid: total,
+        amount_paid: isReward ? 0 : total,
         cashier_name: 'Cashier Volunteer'
       })
     });
 
     const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Student checkout failed');
+    if (!res.ok) throw new Error(data.error || 'Student checkout failed');
+
+    if (isReward || (data.order && data.order.free_rewards > (selectedStudentForCheckout.free_rewards || 0))) {
+      playSound('fanfare');
+      showToast(`🎉 Congratulations! Student earned a FREE Snack Reward!`, 'reward');
+    } else {
+      playSound('chaching');
+      showToast(`Punch card stamped ⭐! Order completed!`, 'success');
     }
 
-    playSound('chaching');
     closeModal('modal-student-checkout');
     clearCart();
     loadProducts();
     loadStudents();
     showReceiptModal(data.order);
-    showToast(`Student Pass charged! Order completed 🍿`, 'success');
   } catch (err) {
-    console.error('Student checkout error:', err);
     showToast(err.message, 'error');
     playSound('warning');
   }
@@ -772,7 +863,7 @@ async function submitStudentCheckout() {
 // ==========================================
 async function quickOtherCheckout(methodName) {
   if (cart.length === 0) return;
-  const { subtotal, discountAmt, total } = calculateTotals();
+  const { totalDiscount, total } = calculateTotals();
 
   try {
     const res = await fetch('/api/checkout', {
@@ -781,7 +872,7 @@ async function quickOtherCheckout(methodName) {
       body: JSON.stringify({
         cart: cart,
         payment_method: methodName,
-        discount: discountAmt,
+        discount: totalDiscount,
         tax: 0,
         amount_paid: total,
         cashier_name: 'Cashier Volunteer'
@@ -819,6 +910,13 @@ function showReceiptModal(order) {
     `).join('');
   }
 
+  const punchInfo = order.punch_card_count !== undefined 
+    ? `<div style="text-align: center; margin-top: 8px; padding: 6px; background: #f3f4f6; border-radius: 6px; font-weight: bold; font-size: 11px;">
+        ⭐ PUNCH CARD: ${order.punch_card_count}/10 STAMPS
+        ${order.free_rewards > 0 ? `<div style="color: #d97706;">🎁 FREE SNACK UNLOCKED!</div>` : ''}
+       </div>`
+    : '';
+
   container.innerHTML = `
     <div style="text-align: center; border-bottom: 1px dashed #4b5563; padding-bottom: 8px; margin-bottom: 8px;">
       <h3 style="font-size: 14px; font-weight: bold; margin: 0;">JORDAN'S SNACK SHACK</h3>
@@ -838,30 +936,32 @@ function showReceiptModal(order) {
       </div>
       ${parseFloat(order.discount) > 0 ? `
         <div style="display: flex; justify-content: space-between; color: #059669;">
-          <span>Discount:</span>
+          <span>Savings & Discounts:</span>
           <span>-$${parseFloat(order.discount).toFixed(2)}</span>
         </div>` : ''}
       <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; border-top: 1px solid #111827; padding-top: 4px;">
-        <span>TOTAL DUE:</span>
+        <span>TOTAL:</span>
         <span>$${parseFloat(order.total).toFixed(2)}</span>
       </div>
       <div style="display: flex; justify-content: space-between; font-size: 10px; color: #4b5563; margin-top: 6px;">
         <span>Payment Method:</span>
         <span style="text-transform: uppercase;">${order.payment_method.replace('_', ' ')}</span>
       </div>
-      ${order.payment_method === 'cash' ? `
+      ${order.payment_method.includes('cash') ? `
         <div style="display: flex; justify-content: space-between; font-size: 10px; color: #4b5563;">
-          <span>Cash Paid:</span>
+          <span>Cash Tendered:</span>
           <span>$${parseFloat(order.amount_paid).toFixed(2)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; color: #059669;">
-          <span>Change Returned:</span>
+          <span>Change Due:</span>
           <span>$${parseFloat(order.change_due).toFixed(2)}</span>
         </div>` : ''}
     </div>
 
-    <div style="text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #4b5563; font-size: 10px; color: #4b5563;">
-      <p>Thank you for supporting our school!</p>
+    ${punchInfo}
+
+    <div style="text-align: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #4b5563; font-size: 10px; color: #4b5563;">
+      <p>Thank you for supporting our school snack shop!</p>
       <p style="font-size: 8px; margin-top: 4px;">★ HAVE A GREAT DAY ★</p>
     </div>
   `;
@@ -874,7 +974,7 @@ function printReceipt() {
 }
 
 // ==========================================
-// STUDENT PASS MANAGEMENT
+// STUDENT PASS & PUNCH CARDS TAB
 // ==========================================
 function renderStudentsTable(filterText = '') {
   const tbody = document.getElementById('students-table-body');
@@ -884,18 +984,22 @@ function renderStudentsTable(filterText = '') {
     !q || s.name.toLowerCase().includes(q) || s.student_id.toLowerCase().includes(q) || s.grade.toLowerCase().includes(q)
   );
 
-  document.getElementById('stat-total-students').textContent = students.length;
+  const totalPunches = students.reduce((sum, s) => sum + (s.punch_card || 0), 0);
+  document.getElementById('stat-total-punches').textContent = `${totalPunches} Stamps`;
+
   const totalPool = students.reduce((sum, s) => sum + parseFloat(s.balance), 0);
   document.getElementById('stat-total-balance').textContent = `$${totalPool.toFixed(2)}`;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No student accounts found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No student accounts found. Click "+ New Student Pass" above.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(s => {
-    const bal = parseFloat(s.balance);
-    const limit = parseFloat(s.daily_limit);
+    const bal = parseFloat(s.balance) || 0;
+    const punches = s.punch_card || 0;
+    const rewards = s.free_rewards || 0;
+
     return `
       <tr class="hover:bg-slate-900/60 transition">
         <td class="p-3.5 font-bold text-white">${s.student_id}</td>
@@ -904,11 +1008,18 @@ function renderStudentsTable(filterText = '') {
           <div class="text-[11px] text-slate-400">${s.grade}</div>
         </td>
         <td class="p-3.5">
-          <span class="font-heading font-extrabold text-sm ${bal <= 2.0 ? 'text-rose-400' : 'text-emerald-400'}">
+          <span class="font-heading font-extrabold text-sm ${bal > 0 ? 'text-emerald-400' : 'text-slate-400'}">
             $${bal.toFixed(2)}
           </span>
         </td>
-        <td class="p-3.5 text-slate-300">$${limit.toFixed(2)} / day</td>
+        <td class="p-3.5">
+          <div class="flex items-center gap-2">
+            <span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg font-bold text-xs">
+              ⭐ ${punches} / 10
+            </span>
+            ${rewards > 0 ? `<span class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 px-2 py-0.5 rounded-md font-extrabold text-[10px]">🎁 ${rewards} FREE</span>` : ''}
+          </div>
+        </td>
         <td class="p-3.5">
           ${s.allergies && s.allergies.toLowerCase() !== 'none'
             ? `<span class="bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full text-[10px] font-semibold">⚠️ ${s.allergies}</span>`
@@ -928,8 +1039,8 @@ function openNewStudentModal() {
   document.getElementById('new-stu-name').value = '';
   document.getElementById('new-stu-id').value = `STU${Math.floor(100 + Math.random() * 900)}`;
   document.getElementById('new-stu-grade').value = '7th Grade';
-  document.getElementById('new-stu-balance').value = '10.00';
-  document.getElementById('new-stu-limit').value = '5.00';
+  document.getElementById('new-stu-balance').value = '0.00';
+  document.getElementById('new-stu-limit').value = '10.00';
   document.getElementById('new-stu-allergies').value = '';
   document.getElementById('new-stu-notes').value = '';
 
@@ -941,7 +1052,7 @@ async function submitNewStudent() {
   const student_id = document.getElementById('new-stu-id').value.trim();
   const grade = document.getElementById('new-stu-grade').value.trim();
   const balance = parseFloat(document.getElementById('new-stu-balance').value) || 0;
-  const limit = parseFloat(document.getElementById('new-stu-limit').value) || 5;
+  const limit = parseFloat(document.getElementById('new-stu-limit').value) || 10;
   const allergies = document.getElementById('new-stu-allergies').value.trim();
   const notes = document.getElementById('new-stu-notes').value.trim();
 
@@ -983,7 +1094,7 @@ function openRechargeModal(studentId) {
 
   document.getElementById('recharge-student-id').value = student.id;
   document.getElementById('recharge-student-name').textContent = `Reload: ${student.name}`;
-  document.getElementById('recharge-current-balance').textContent = `Current Balance: $${parseFloat(student.balance).toFixed(2)}`;
+  document.getElementById('recharge-current-balance').textContent = `Current: $${parseFloat(student.balance).toFixed(2)}`;
   document.getElementById('recharge-amount-input').value = '10.00';
   document.getElementById('recharge-note-input').value = 'Parent Deposit';
 
@@ -1039,7 +1150,7 @@ function renderInventoryTable(filterText = '') {
   document.getElementById('stat-low-stock-count').textContent = `${lowCount} items`;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No items match your inventory search</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No items match your search. Click "+ Add New Snack" above.</td></tr>`;
     return;
   }
 
@@ -1187,14 +1298,14 @@ async function submitProductForm() {
     playSound('beep');
     closeModal('modal-product');
     loadProducts();
-    showToast(`Added ${name} to snack shop catalog! ✨`, 'success');
+    showToast(`Added ${name} to snack shack catalog! ✨`, 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
 // ==========================================
-// ORDERS & SALES HISTORY
+// ORDERS HISTORY
 // ==========================================
 function renderOrdersTable() {
   const tbody = document.getElementById('orders-table-body');
@@ -1218,7 +1329,7 @@ function renderOrdersTable() {
         <td class="p-3.5 text-slate-300 max-w-xs truncate">${itemsSummary}</td>
         <td class="p-3.5">
           <span class="capitalize px-2 py-0.5 rounded-md text-[10px] font-bold ${
-            o.payment_method === 'cash' 
+            o.payment_method.includes('cash') 
               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
               : o.payment_method === 'student_account'
                 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
@@ -1289,7 +1400,7 @@ async function loadShiftData() {
             <p class="text-xs text-slate-400">Shift started at ${openedTime}</p>
           </div>
           <div class="text-right">
-            <span class="text-xs text-slate-400">Starting Drawer Float</span>
+            <span class="text-xs text-slate-400">Starting Float</span>
             <div class="font-heading font-bold text-lg text-slate-200">$${parseFloat(activeShift.start_cash).toFixed(2)}</div>
           </div>
         </div>
@@ -1309,7 +1420,6 @@ async function loadShiftData() {
           </div>
         </div>
 
-        <!-- Shift Closing Form -->
         <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
           <h4 class="font-bold text-sm text-white flex items-center gap-2">
             <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i>
@@ -1413,7 +1523,6 @@ async function loadAnalytics() {
     document.getElementById('metric-today-orders').textContent = data.today.orders;
     document.getElementById('metric-all-rev').textContent = `$${data.all_time.revenue.toFixed(2)}`;
 
-    // Render Top Snacks
     const topList = document.getElementById('top-snacks-list');
     if (data.top_items.length === 0) {
       topList.innerHTML = `<p class="text-xs text-slate-500">No sales logged yet to calculate top items</p>`;
@@ -1432,7 +1541,6 @@ async function loadAnalytics() {
       `).join('');
     }
 
-    // Render Payment Breakdown
     const payList = document.getElementById('payment-breakdown-list');
     if (data.payments.length === 0) {
       payList.innerHTML = `<p class="text-xs text-slate-500">No orders logged yet</p>`;
@@ -1468,14 +1576,12 @@ function closeModal(id) {
   if (el) el.classList.add('hidden');
 }
 
-// Close modals when clicking backdrop
 window.addEventListener('click', (e) => {
   if (e.target.classList.contains('fixed') && e.target.classList.contains('backdrop-blur-sm')) {
     e.target.classList.add('hidden');
   }
 });
 
-// App Startup
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
