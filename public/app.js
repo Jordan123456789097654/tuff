@@ -4476,6 +4476,28 @@ function copyPairUrl() {
 }
 
 // ==========================================
+// ⚡ MORE TOOLS DROPDOWN CONTROLLER
+// ==========================================
+function toggleMoreToolsDropdown(show = null) {
+  const menu = document.getElementById('dropdown-more-tools');
+  if (!menu) return;
+  const isHidden = menu.classList.contains('hidden');
+  const shouldOpen = (show !== null) ? !!show : isHidden;
+  menu.classList.toggle('hidden', !shouldOpen);
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('dropdown-more-tools');
+  const btn = document.getElementById('btn-more-tools');
+  if (dropdown && !dropdown.classList.contains('hidden')) {
+    if (!dropdown.contains(e.target) && btn && !btn.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  }
+});
+
+// ==========================================
 // 🛒 REMOTE SELF-CHECKOUT KIOSK TOGGLER
 // ==========================================
 let isKioskRemoteActive = false;
@@ -4522,7 +4544,7 @@ async function toggleRemoteCustomerKiosk(force = null) {
 }
 
 // ==========================================
-// 🔴 CASHIER CCTV SECURITY MONITOR & CLIP RECORDER
+// 🔴 CASHIER CCTV SECURITY MONITOR & 1-HOUR DVR RECORDER
 // ==========================================
 let cashierCctvStream = null;
 let cashierMediaRecorder = null;
@@ -4531,6 +4553,15 @@ let isCashierRecordingClip = false;
 let cashierAiAnimFrame = null;
 let lastSubjectDetectTime = 0;
 let cctvDetectionLogsList = [];
+
+// ⏪ 1-HOUR DVR ROLLING RING BUFFER ENGINE
+const DVR_MAX_DURATION_SEC = 3600; // 60 minutes = 3600 seconds
+let dvrRollingBuffer = []; // Array of { timestamp: number, dataUrl: string, tag: string }
+let dvrCurrentOffsetSec = 0; // 0 = LIVE; negative numbers = past seconds
+let isDvrReplayPlaying = false;
+let dvrPlaybackSpeed = 1;
+let dvrPlaybackInterval = null;
+let dvrCaptureInterval = null;
 
 async function startCashierCctvFeed() {
   const video = document.getElementById('cashier-cctv-video');
@@ -4549,12 +4580,53 @@ async function startCashierCctvFeed() {
     video.play().catch(()=>{});
     if (pipVideo) pipVideo.play().catch(()=>{});
 
-    // Start AI Optical Detection Overlay
+    // Start Live AI Optical Detection Overlay
     startCashierAiDetectionLoop();
+
+    // Start 1-Hour Continuous DVR Snapshot Capture Ring Buffer
+    startDvrRollingBufferCapture();
   } catch (err) {
     console.warn('Cashier CCTV camera access notice:', err);
     showToast('⚠️ Camera access denied or not connected', 'error');
   }
+}
+
+// Continuous Frame Capture to 1-Hour Rolling Ring Buffer
+function startDvrRollingBufferCapture() {
+  if (dvrCaptureInterval) clearInterval(dvrCaptureInterval);
+
+  const captureCanvas = document.createElement('canvas');
+  captureCanvas.width = 320;
+  captureCanvas.height = 240;
+  const ctx = captureCanvas.getContext('2d');
+
+  dvrCaptureInterval = setInterval(() => {
+    const video = document.getElementById('cashier-cctv-video');
+    if (!video || !video.videoWidth || dvrCurrentOffsetSec < 0) return;
+
+    try {
+      ctx.drawImage(video, 0, 0, 320, 240);
+      const now = Date.now();
+      const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.65);
+      const currentTagBadge = document.getElementById('cashier-cctv-tag-badge');
+      const tagText = (currentTagBadge && !currentTagBadge.classList.contains('hidden')) ? currentTagBadge.textContent : null;
+
+      dvrRollingBuffer.push({
+        timestamp: now,
+        dataUrl: dataUrl,
+        tag: tagText
+      });
+
+      // Purge frames older than 1 hour (3600 seconds)
+      const oneHourAgo = now - (DVR_MAX_DURATION_SEC * 1000);
+      while (dvrRollingBuffer.length > 0 && dvrRollingBuffer[0].timestamp < oneHourAgo) {
+        dvrRollingBuffer.shift();
+      }
+
+      // Update timeline event markers
+      updateTimelineEventMarkers();
+    } catch(e){}
+  }, 1200); // 1 frame per 1.2s = lightweight, ~3000 frames for full 1-hr coverage
 }
 
 function openCashierSecurityCamera() {
@@ -4562,10 +4634,12 @@ function openCashierSecurityCamera() {
   toggleCashierFloatingCctv(false);
   startCashierCctvFeed();
   loadRecentCctvEvents();
+  jumpToLiveFeed();
 }
 
 function closeCashierSecurityCamera() {
   closeModal('modal-cashier-security-cam');
+  if (isDvrReplayPlaying) toggleDvrPlayback(false);
   // Dock to floating widget if stream is active
   if (cashierCctvStream) {
     toggleCashierFloatingCctv(true);
@@ -4583,6 +4657,7 @@ function toggleCashierSecurityCamera() {
 
 function dockCashierCctvWidget() {
   closeModal('modal-cashier-security-cam');
+  if (isDvrReplayPlaying) toggleDvrPlayback(false);
   toggleCashierFloatingCctv(true);
 }
 
@@ -4597,6 +4672,259 @@ function toggleCashierFloatingCctv(show = null) {
   }
 }
 
+// ==========================================
+// ⏱️ 1-HOUR TIME-MACHINE DVR SCRUBBER & REPLAY
+// ==========================================
+function onDvrScrubInput(val) {
+  const offset = parseInt(val, 10);
+  const offsetLabel = document.getElementById('dvr-time-offset-label');
+  if (!offsetLabel) return;
+
+  if (offset >= 0) {
+    offsetLabel.textContent = 'LIVE (NOW)';
+    offsetLabel.className = 'text-[11px] font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30';
+  } else {
+    const absSec = Math.abs(offset);
+    const m = Math.floor(absSec / 60);
+    const s = absSec % 60;
+    const pastTime = new Date(Date.now() - (absSec * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    offsetLabel.textContent = `-${m}m ${s}s ago (${pastTime})`;
+    offsetLabel.className = 'text-[11px] font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 animate-pulse';
+  }
+}
+
+function onDvrScrubChange(val) {
+  const offset = parseInt(val, 10);
+  dvrCurrentOffsetSec = offset;
+  onDvrScrubInput(val);
+
+  if (offset >= 0) {
+    jumpToLiveFeed();
+  } else {
+    renderHistoricalDvrFrame(offset);
+  }
+}
+
+function jumpToLiveFeed() {
+  dvrCurrentOffsetSec = 0;
+  if (isDvrReplayPlaying) toggleDvrPlayback(false);
+
+  const slider = document.getElementById('cctv-dvr-slider');
+  const offsetLabel = document.getElementById('dvr-time-offset-label');
+  const dvrBadge = document.getElementById('dvr-mode-badge');
+  const statusPill = document.getElementById('cctv-stream-status-pill');
+  const statusText = document.getElementById('cctv-stream-status-text');
+  const video = document.getElementById('cashier-cctv-video');
+  const watermark = document.getElementById('cctv-dvr-watermark');
+  const playBtn = document.getElementById('label-dvr-play');
+
+  if (slider) slider.value = '0';
+  if (offsetLabel) {
+    offsetLabel.textContent = 'LIVE (NOW)';
+    offsetLabel.className = 'text-[11px] font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30';
+  }
+  if (dvrBadge) {
+    dvrBadge.textContent = '🔴 LIVE FEED';
+    dvrBadge.className = 'text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full';
+  }
+  if (statusPill && statusText) {
+    statusText.textContent = 'REC • 30 FPS';
+    statusPill.className = 'bg-rose-950/90 border border-rose-500/60 text-rose-300 font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow';
+  }
+  if (video) video.style.display = 'block';
+  if (watermark) watermark.classList.add('hidden');
+  if (playBtn) playBtn.textContent = 'Play Replay';
+}
+
+function jumpDvrMinutes(min) {
+  const targetOffset = min * 60;
+  const slider = document.getElementById('cctv-dvr-slider');
+  if (slider) slider.value = targetOffset;
+  onDvrScrubChange(targetOffset);
+}
+
+function stepDvrSeconds(deltaSec) {
+  dvrCurrentOffsetSec = Math.min(0, Math.max(-DVR_MAX_DURATION_SEC, dvrCurrentOffsetSec + deltaSec));
+  const slider = document.getElementById('cctv-dvr-slider');
+  if (slider) slider.value = dvrCurrentOffsetSec;
+  onDvrScrubChange(dvrCurrentOffsetSec);
+}
+
+function setDvrPlaybackSpeed(speed) {
+  dvrPlaybackSpeed = parseFloat(speed) || 1;
+  if (isDvrReplayPlaying) {
+    toggleDvrPlayback(false);
+    toggleDvrPlayback(true);
+  }
+}
+
+function toggleDvrPlayback(force = null) {
+  isDvrReplayPlaying = (force !== null) ? !!force : !isDvrReplayPlaying;
+  const playBtn = document.getElementById('label-dvr-play');
+  const playIcon = document.getElementById('icon-dvr-play');
+
+  if (dvrPlaybackInterval) {
+    clearInterval(dvrPlaybackInterval);
+    dvrPlaybackInterval = null;
+  }
+
+  if (isDvrReplayPlaying) {
+    if (playBtn) playBtn.textContent = 'Pause';
+    if (playIcon) playIcon.setAttribute('data-lucide', 'pause');
+    lucide.createIcons();
+
+    // If already at LIVE, start 60s ago
+    if (dvrCurrentOffsetSec >= 0) {
+      dvrCurrentOffsetSec = -60;
+      const slider = document.getElementById('cctv-dvr-slider');
+      if (slider) slider.value = '-60';
+      onDvrScrubInput(-60);
+    }
+
+    const stepInterval = Math.max(250, 1000 / dvrPlaybackSpeed);
+    dvrPlaybackInterval = setInterval(() => {
+      dvrCurrentOffsetSec += Math.round(1 * dvrPlaybackSpeed);
+      if (dvrCurrentOffsetSec >= 0) {
+        jumpToLiveFeed();
+        return;
+      }
+      const slider = document.getElementById('cctv-dvr-slider');
+      if (slider) slider.value = dvrCurrentOffsetSec;
+      onDvrScrubInput(dvrCurrentOffsetSec);
+      renderHistoricalDvrFrame(dvrCurrentOffsetSec);
+    }, stepInterval);
+
+  } else {
+    if (playBtn) playBtn.textContent = 'Play Replay';
+    if (playIcon) playIcon.setAttribute('data-lucide', 'play');
+    lucide.createIcons();
+  }
+}
+
+// Render historical frame from ring buffer
+function renderHistoricalDvrFrame(offsetSec) {
+  const targetTimestamp = Date.now() + (offsetSec * 1000);
+  const canvas = document.getElementById('cashier-cctv-canvas');
+  const video = document.getElementById('cashier-cctv-video');
+  const dvrBadge = document.getElementById('dvr-mode-badge');
+  const statusPill = document.getElementById('cctv-stream-status-pill');
+  const statusText = document.getElementById('cctv-stream-status-text');
+  const watermark = document.getElementById('cctv-dvr-watermark');
+
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Hide live video element, canvas will display historical frame
+  if (video) video.style.display = 'none';
+
+  // Find frame with closest timestamp
+  let closestFrame = null;
+  let minDiff = Infinity;
+
+  for (let i = 0; i < dvrRollingBuffer.length; i++) {
+    const diff = Math.abs(dvrRollingBuffer[i].timestamp - targetTimestamp);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestFrame = dvrRollingBuffer[i];
+    }
+  }
+
+  const absSec = Math.abs(offsetSec);
+  const m = Math.floor(absSec / 60);
+  const s = absSec % 60;
+  const pastTimeStr = new Date(targetTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  // Update Badges
+  if (dvrBadge) {
+    dvrBadge.textContent = `⏪ REPLAY (-${m}m ${s}s)`;
+    dvrBadge.className = 'text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full';
+  }
+  if (statusPill && statusText) {
+    statusText.textContent = `DVR REPLAY • ${dvrPlaybackSpeed}X`;
+    statusPill.className = 'bg-amber-950/90 border border-amber-500/60 text-amber-300 font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow';
+  }
+  if (watermark) {
+    watermark.classList.remove('hidden');
+    watermark.textContent = `⏪ REPLAY: ${pastTimeStr} (-${m}m ${s}s)`;
+  }
+
+  if (closestFrame && closestFrame.dataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      // Draw flipped frame
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      // Draw Retro Amber/Cyan Rewind HUD Filter
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.04)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Rewind HUD Lines
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+
+      // Reconstructed Detection Tag Badge if present
+      if (closestFrame.tag) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+        ctx.fillRect(20, 20, 210, 22);
+        ctx.fillStyle = '#022c22';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(`HISTORICAL TAG: ${closestFrame.tag}`, 26, 35);
+      }
+    };
+    img.src = closestFrame.dataUrl;
+  } else {
+    // If no buffer frame exists for that second yet
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`⏪ TIME-MACHINE REPLAY BUFFER`, canvas.width / 2, canvas.height / 2 - 15);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(`Timestamp: ${pastTimeStr} (${m} mins ago)`, canvas.width / 2, canvas.height / 2 + 10);
+    ctx.fillText(`(Buffer begins caching upon station activation)`, canvas.width / 2, canvas.height / 2 + 30);
+    ctx.textAlign = 'start';
+  }
+}
+
+// Render colored event ticks on the 60-minute scrubber bar
+function updateTimelineEventMarkers() {
+  const container = document.getElementById('cctv-timeline-markers');
+  if (!container || cctvDetectionLogsList.length === 0) return;
+
+  const now = Date.now();
+  container.innerHTML = cctvDetectionLogsList.map(item => {
+    const itemTime = item.created_at || now;
+    const diffSec = (now - itemTime) / 1000;
+    if (diffSec > DVR_MAX_DURATION_SEC) return '';
+    const pct = ((DVR_MAX_DURATION_SEC - diffSec) / DVR_MAX_DURATION_SEC) * 100;
+    return `
+      <div 
+        onclick="jumpToIncidentTimestamp(${itemTime})" 
+        class="absolute top-0 w-1.5 h-2.5 bg-amber-400 hover:bg-amber-300 rounded-full cursor-pointer hover:scale-150 transition" 
+        style="left: ${pct}%;" 
+        title="${item.tag || 'Tag'} - ${item.label} (${item.timestamp})">
+      </div>
+    `;
+  }).join('');
+}
+
+function jumpToIncidentTimestamp(timestamp) {
+  const diffSec = Math.round((Date.now() - timestamp) / 1000);
+  const offset = -Math.min(DVR_MAX_DURATION_SEC, Math.max(0, diffSec));
+  const slider = document.getElementById('cctv-dvr-slider');
+  if (slider) slider.value = offset;
+  onDvrScrubChange(offset);
+  showToast(`⏪ Jumped to detection timestamp (${Math.round(diffSec / 60)}m ago)`, 'info');
+}
+
 // Real-time AI HUD Target & Optical Tagging Engine
 function startCashierAiDetectionLoop() {
   const video = document.getElementById('cashier-cctv-video');
@@ -4607,7 +4935,8 @@ function startCashierAiDetectionLoop() {
   let frameCount = 0;
 
   function detectionLoop() {
-    if (video.videoWidth && video.videoHeight) {
+    // Only run live AI detection when in LIVE mode (offset 0)
+    if (dvrCurrentOffsetSec >= 0 && video.videoWidth && video.videoHeight) {
       if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -4625,7 +4954,6 @@ function startCashierAiDetectionLoop() {
         ctx.lineWidth = 1.5;
         const w = canvas.width;
         const h = canvas.height;
-        const margin = 24;
 
         // Crosshair Grid lines
         ctx.beginPath();
@@ -4693,7 +5021,8 @@ function startCashierAiDetectionLoop() {
             tag: `TAG-${tagNum}`,
             label: 'Customer Approached Station Counter',
             confidence: '98%',
-            zone: 'Station Table 4B'
+            zone: 'Station Table 4B',
+            created_at: Date.now()
           });
         }
       }
@@ -4766,6 +5095,7 @@ async function recordCctvClip() {
         label: `Saved 5s Security Video Clip (${clipFileName})`,
         confidence: '100% Verified',
         zone: 'Station Table 4B',
+        created_at: Date.now(),
         clipUrl: clipUrl,
         clipName: clipFileName
       });
@@ -4802,10 +5132,42 @@ async function recordCctvClip() {
 
 // 📸 Capture High-Res Snapshot with Burned-in Timestamp
 function captureCctvSnapshot() {
+  const canvas = document.createElement('canvas');
   const video = document.getElementById('cashier-cctv-video');
+  const dvrCanvas = document.getElementById('cashier-cctv-canvas');
+  
+  // If in DVR replay mode, snapshot the canvas
+  if (dvrCurrentOffsetSec < 0 && dvrCanvas) {
+    canvas.width = dvrCanvas.width || 640;
+    canvas.height = dvrCanvas.height || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(dvrCanvas, 0, 0);
+
+    const pastTime = new Date(Date.now() + (dvrCurrentOffsetSec * 1000)).toLocaleString();
+    const filename = `Snack_Shack_DVR_Snapshot_${Date.now()}.png`;
+
+    const snapshotDataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = snapshotDataUrl;
+    link.click();
+
+    recordCctvDetectionIncident({
+      tag: `SNAP-${Date.now().toString().slice(-4)}`,
+      label: `Historical Snapshot Captured (${pastTime})`,
+      confidence: '100%',
+      zone: 'Station Table 4B',
+      created_at: Date.now() + (dvrCurrentOffsetSec * 1000),
+      snapshot: snapshotDataUrl
+    });
+
+    showToast(`📸 Historical Snapshot saved from ${pastTime}!`, 'success');
+    return;
+  }
+
+  // Otherwise snapshot live feed
   if (!video || !video.videoWidth) return showToast('⚠️ Video feed not ready', 'warning');
 
-  const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
@@ -4846,6 +5208,7 @@ function captureCctvSnapshot() {
     label: `Security Snapshot Captured (${filename})`,
     confidence: '100%',
     zone: 'Station Table 4B',
+    created_at: Date.now(),
     snapshot: snapshotDataUrl
   });
 
@@ -4857,6 +5220,7 @@ async function recordCctvDetectionIncident(eventData) {
   cctvDetectionLogsList.unshift(eventData);
   if (cctvDetectionLogsList.length > 50) cctvDetectionLogsList.pop();
   renderCctvDetectionLogUI();
+  updateTimelineEventMarkers();
 
   try {
     await fetch('/api/cctv/events', {
@@ -4874,6 +5238,7 @@ async function loadRecentCctvEvents() {
     if (data && Array.isArray(data)) {
       cctvDetectionLogsList = data;
       renderCctvDetectionLogUI();
+      updateTimelineEventMarkers();
     }
   } catch(e){}
 }
@@ -4884,7 +5249,7 @@ function renderCctvDetectionLogUI() {
 
   if (cctvDetectionLogsList.length === 0) {
     container.innerHTML = `
-      <div class="text-center text-slate-500 text-xs py-6">
+      <div class="text-center text-slate-500 text-xs py-8">
         Awaiting presence detection...<br>
         <span class="text-[10px]">Subjects approaching Table 4B will be tagged here.</span>
       </div>
@@ -4893,12 +5258,12 @@ function renderCctvDetectionLogUI() {
   }
 
   container.innerHTML = cctvDetectionLogsList.map(item => `
-    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 hover:border-slate-700 transition">
+    <div onclick="jumpToIncidentTimestamp(${item.created_at || Date.now()})" class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 hover:border-amber-500/50 hover:bg-slate-800/80 cursor-pointer transition">
       <div class="flex items-center justify-between text-[10px]">
         <span class="font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded">
           ${item.tag || 'TAG-#104'}
         </span>
-        <span class="text-slate-400 font-mono">${item.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span class="text-slate-400 font-mono">${item.timestamp || new Date(item.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
       <div class="font-bold text-xs text-slate-200">${item.label}</div>
       <div class="flex items-center justify-between text-[10px] text-slate-400">
@@ -4907,7 +5272,7 @@ function renderCctvDetectionLogUI() {
       </div>
       ${item.clipUrl ? `
         <div class="pt-1">
-          <a href="${item.clipUrl}" download="${item.clipName || 'clip.webm'}" class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 underline">
+          <a href="${item.clipUrl}" download="${item.clipName || 'clip.webm'}" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 underline">
             <span>📹 Download Recorded 5s Clip</span>
           </a>
         </div>
@@ -4919,6 +5284,7 @@ function renderCctvDetectionLogUI() {
 function clearCctvDetectionLog() {
   cctvDetectionLogsList = [];
   renderCctvDetectionLogUI();
+  updateTimelineEventMarkers();
   showToast('Detection feed cleared', 'info');
 }
 
@@ -4956,4 +5322,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }).catch(()=>{});
 });
-

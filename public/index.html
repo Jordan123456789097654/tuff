@@ -33,158 +33,197 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
 
   <!-- Top App Navigation Bar -->
-  <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3 md:px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+  <header class="bg-slate-950/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3 md:px-5 py-2 flex items-center justify-between gap-3 shadow-lg">
     <!-- Brand Logo (Double click triggers Stealth Assignment Disguise) -->
-    <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('register')" ondblclick="toggleStealthMode()" title="Double-click to toggle Stealth Assignment Disguise">
-      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/20">
+    <div class="flex items-center space-x-3 cursor-pointer shrink-0" onclick="switchTab('register')" ondblclick="toggleStealthMode()" title="Double-click to toggle Stealth Assignment Disguise">
+      <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-xl shadow-md shadow-orange-500/20">
         🍿
       </div>
       <div>
-        <h1 class="font-heading font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+        <h1 class="font-heading font-extrabold text-base text-white tracking-tight flex items-center gap-1.5 leading-none">
           Jordan's Snack Shack
-          <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">POS</span>
+          <span class="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded-md border border-amber-500/30">POS</span>
         </h1>
-        <p class="text-xs text-slate-400 font-medium">School Register & Scanner</p>
+        <p class="text-[11px] text-slate-400 font-medium mt-0.5">School Register & Scanner</p>
       </div>
     </div>
 
     <!-- Navigation Tabs -->
-    <nav class="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm overflow-x-auto max-w-full">
+    <nav class="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs overflow-x-auto max-w-full">
       <button onclick="switchTab('register')" id="tab-btn-register" class="nav-btn active flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all">
-        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
         <span>Register</span>
       </button>
 
       <!-- Pre-Orders Queue Tab with live badge -->
       <button onclick="switchTab('preorders')" id="tab-btn-preorders" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
-        <span>Pre-Order Queue</span>
+        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>Pre-Orders</span>
         <span id="nav-preorder-badge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-extrabold px-1.5 rounded-full">0</span>
       </button>
 
       <button onclick="switchTab('students')" id="tab-btn-students" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="award" class="w-4 h-4 text-blue-400"></i>
-        <span>Students & Badges</span>
+        <i data-lucide="award" class="w-3.5 h-3.5 text-blue-400"></i>
+        <span>Students</span>
       </button>
 
       <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="package" class="w-4 h-4"></i>
+        <i data-lucide="package" class="w-3.5 h-3.5"></i>
         <span>Inventory</span>
       </button>
 
       <button onclick="switchTab('orders')" id="tab-btn-orders" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="receipt" class="w-4 h-4"></i>
-        <span>Sales History</span>
+        <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+        <span>Sales</span>
       </button>
 
       <button onclick="switchTab('shifts')" id="tab-btn-shifts" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="wallet" class="w-4 h-4"></i>
+        <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
         <span>Drawer</span>
       </button>
 
       <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
-        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
         <span>Analytics</span>
       </button>
 
       <button onclick="openStaffModal()" id="tab-btn-staff" class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-purple-400 hover:text-white transition-all">
-        <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
-        <span>Staff & Roles</span>
+        <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i>
+        <span>Staff</span>
       </button>
     </nav>
 
-    <!-- Top Right Action Hub -->
-    <div class="flex items-center space-x-2">
-      <!-- Live Camera Scanner Button -->
-      <button onclick="openCameraScanner()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md shadow-orange-500/20 transition">
-        <i data-lucide="camera" class="w-4 h-4"></i>
-        <span>Scan Barcode</span>
-      </button>
-
-      <!-- Venmo / CashApp QR Code Modal -->
-      <button onclick="openQRPayModal()" class="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/50 text-emerald-400 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Show/Upload Payment QR">
-        <i data-lucide="qr-code" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">Pay QR</span>
-      </button>
-
-      <!-- Customer Facing 2nd Screen -->
-      <button onclick="openPairDisplayModal()" class="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Connect 2nd Screen (Same PC or External iPad / Phone)">
-        <i data-lucide="tv" class="w-3.5 h-3.5 text-amber-400"></i>
-        <span class="hidden sm:inline">2nd Screen</span>
-      </button>
-
-      <!-- Remote Self-Checkout Kiosk Toggle -->
-      <button id="btn-cashier-toggle-kiosk" onclick="toggleRemoteCustomerKiosk()" class="flex items-center gap-1.5 text-xs text-orange-300 hover:text-white bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Remotely Toggle Self-Checkout Kiosk Mode on 2nd Display">
-        <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-orange-400"></i>
-        <span id="label-cashier-kiosk-status" class="hidden sm:inline">Kiosk: OFF</span>
-      </button>
-
-      <!-- Cashier Security Cam & CCTV Monitor -->
-      <button id="btn-cashier-cctv" onclick="toggleCashierSecurityCamera()" class="flex items-center gap-1.5 text-xs text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="View Live CCTV Camera, Record 5s Clips & Real-Time Detection Tags">
-        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-        <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
-        <span class="hidden sm:inline">CCTV</span>
-      </button>
-
-      <!-- External Links Dropdown / Buttons -->
-      <a href="/order" target="_blank" class="hidden lg:flex items-center gap-1 text-xs text-slate-300 hover:text-white bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl transition">
-        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
-        <span>Pre-Order Menu</span>
-      </a>
-
-      <a href="/portal" target="_blank" class="hidden lg:flex items-center gap-1 text-xs text-blue-300 hover:text-white bg-blue-500/10 border border-blue-500/30 px-2.5 py-1.5 rounded-xl transition">
-        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-        <span>Portal</span>
-      </a>
-
-      <a href="/sop" target="_blank" class="hidden xl:flex items-center gap-1 text-xs text-emerald-300 hover:text-white bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="View & Print Simplified Standard Operating Procedures (SOP)">
-        <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-400"></i>
-        <span>SOP Manual</span>
-      </a>
-
-      <!-- Instant Speaker Broadcasts -->
-      <button onclick="openSpeakerBroadcastModal()" class="flex items-center gap-1.5 text-xs text-cyan-300 hover:text-white bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Instant Speaker Broadcasts to Customer Display">
-        <i data-lucide="megaphone" class="w-3.5 h-3.5 text-cyan-400"></i>
-        <span class="hidden md:inline">Speaker</span>
-      </button>
-
-      <!-- Customer Feedback Dashboard -->
-      <button onclick="openFeedbackDashboard()" class="flex items-center gap-1.5 text-xs text-yellow-300 hover:text-white bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Customer Rating & Emoji Feedback Dashboard">
-        <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400"></i>
-        <span class="hidden md:inline">Feedback</span>
-      </button>
-
-      <!-- Seasonal Theme Switcher Quick Modal/Button -->
-      <button onclick="openThemeSelectorModal()" class="flex items-center gap-1.5 text-xs text-purple-300 hover:text-white bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="1-Click Seasonal & Holiday Themes">
-        <span id="nav-theme-emoji">🎃</span>
-        <span class="hidden md:inline">Theme</span>
-      </button>
-
-      <!-- Screen & Feature Config Toggle Button -->
-      <button onclick="openConfigModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Configure POS & Customer Display Feature Toggles">
-        <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
-        <span class="hidden md:inline">Feature Config</span>
-      </button>
-
-      <!-- Shift Drawer Quick Indicator & Close Action -->
-      <div class="flex items-center gap-1.5">
-        <div onclick="openCloseRegisterModal()" id="top-shift-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition cursor-pointer" title="Cash Drawer Status (Click to manage/close)">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span id="top-shift-text" class="hidden sm:inline">Shift Open</span>
-        </div>
-
-        <button onclick="openCloseRegisterModal()" class="flex items-center gap-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white border border-rose-500/30 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Reconcile Cash & Close Register">
-          <i data-lucide="lock" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span class="hidden sm:inline">Close Register</span>
-        </button>
+    <!-- Top Right Shift & Status Hub -->
+    <div class="flex items-center space-x-2 shrink-0">
+      <!-- Shift Drawer Quick Indicator -->
+      <div onclick="openCloseRegisterModal()" id="top-shift-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition cursor-pointer" title="Cash Drawer Status (Click to reconcile/close)">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="top-shift-text" class="hidden sm:inline font-bold">Shift Open</span>
       </div>
 
+      <!-- Close Register Action -->
+      <button onclick="openCloseRegisterModal()" class="flex items-center gap-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white border border-rose-500/30 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Reconcile Cash & Close Register">
+        <i data-lucide="lock" class="w-3.5 h-3.5 text-rose-400"></i>
+        <span class="hidden sm:inline">Close</span>
+      </button>
+
       <!-- Sound FX Toggle -->
-      <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition" title="Toggle Sound FX">
+      <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition" title="Toggle Sound FX">
         <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
+
+  <!-- Organized Operations & Hardware Ribbon Toolbar -->
+  <div class="bg-slate-950/60 border-b border-slate-800/80 px-3 md:px-5 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+    
+    <!-- Group 1: Cashier Checkout Tools -->
+    <div class="flex items-center gap-2">
+      <!-- Scan Barcode Button -->
+      <button onclick="openCameraScanner()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md shadow-orange-500/20 transition active:scale-95">
+        <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+        <span>Scan Barcode</span>
+      </button>
+
+      <!-- Pay QR Button -->
+      <button onclick="openQRPayModal()" class="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-emerald-500/50 text-emerald-400 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold active:scale-95" title="Show Payment QR">
+        <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+        <span>Pay QR</span>
+      </button>
+    </div>
+
+    <!-- Group 2: Dual-Screen & Surveillance Hub (Segmented Controls) -->
+    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 shadow-inner">
+      <!-- 2nd Screen Pairing -->
+      <button onclick="openPairDisplayModal()" class="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-500/10 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Connect 2nd Screen (Same PC or iPad / Phone)">
+        <i data-lucide="tv" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>2nd Screen</span>
+      </button>
+
+      <!-- Remote Self-Checkout Kiosk Toggler -->
+      <button id="btn-cashier-toggle-kiosk" onclick="toggleRemoteCustomerKiosk()" class="flex items-center gap-1.5 text-xs text-orange-300 hover:text-white bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Remotely Toggle Self-Checkout Kiosk Mode on 2nd Display">
+        <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-orange-400"></i>
+        <span id="label-cashier-kiosk-status">Kiosk: OFF</span>
+      </button>
+
+      <!-- Security CCTV Monitor & 1-Hour DVR -->
+      <button id="btn-cashier-cctv" onclick="toggleCashierSecurityCamera()" class="flex items-center gap-1.5 text-xs text-rose-300 hover:text-white bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 px-2.5 py-1.5 rounded-xl transition font-bold shadow-sm" title="Live CCTV Stream, 1-Hour Time-Machine DVR Playback & Subject Tags">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+        <i data-lucide="video" class="w-3.5 h-3.5 text-rose-400"></i>
+        <span>CCTV (1-Hr DVR)</span>
+      </button>
+    </div>
+
+    <!-- Group 3: Store Utilities & Portals Dropdown Hub -->
+    <div class="relative">
+      <button onclick="toggleMoreToolsDropdown()" id="btn-more-tools" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl transition shadow-sm">
+        <span>⚡ Store Utilities & Links</span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+      </button>
+
+      <!-- Dropdown Menu Box -->
+      <div id="dropdown-more-tools" class="hidden absolute right-0 top-full mt-2 w-64 bg-slate-900 border-2 border-slate-800 rounded-2xl shadow-2xl p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-100">
+        <button onclick="openSpeakerBroadcastModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cyan-300 hover:bg-cyan-500/10 transition font-semibold">
+          <span class="text-base">📢</span>
+          <div>
+            <div class="text-white font-bold">Speaker Broadcasts</div>
+            <div class="text-[10px] text-slate-400">Speak aloud on 2nd screen</div>
+          </div>
+        </button>
+
+        <button onclick="openFeedbackDashboard(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-yellow-300 hover:bg-yellow-500/10 transition font-semibold">
+          <span class="text-base">⭐</span>
+          <div>
+            <div class="text-white font-bold">Customer Feedback</div>
+            <div class="text-[10px] text-slate-400">Live ratings & emoji reviews</div>
+          </div>
+        </button>
+
+        <button onclick="openThemeSelectorModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-purple-300 hover:bg-purple-500/10 transition font-semibold">
+          <span class="text-base" id="dropdown-theme-emoji">🎃</span>
+          <div>
+            <div class="text-white font-bold">Seasonal Themes</div>
+            <div class="text-[10px] text-slate-400">Halloween, Winter, Spirit Week</div>
+          </div>
+        </button>
+
+        <button onclick="openConfigModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
+          <span class="text-base">⚙️</span>
+          <div>
+            <div class="text-white font-bold">Feature Configuration</div>
+            <div class="text-[10px] text-slate-400">POS & Display toggle settings</div>
+          </div>
+        </button>
+
+        <div class="border-t border-slate-800 my-1 pt-1"></div>
+
+        <a href="/order" target="_blank" onclick="toggleMoreToolsDropdown(false);" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
+          <span class="text-base">⏱️</span>
+          <div>
+            <div class="text-white font-bold">Pre-Order Menu</div>
+            <div class="text-[10px] text-slate-400">Public ordering URL (/order)</div>
+          </div>
+        </a>
+
+        <a href="/portal" target="_blank" onclick="toggleMoreToolsDropdown(false);" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-blue-300 hover:bg-blue-500/10 transition font-semibold">
+          <span class="text-base">🌐</span>
+          <div>
+            <div class="text-white font-bold">Student Pass Portal</div>
+            <div class="text-[10px] text-slate-400">Balance & stamp lookup (/portal)</div>
+          </div>
+        </a>
+
+        <a href="/sop" target="_blank" onclick="toggleMoreToolsDropdown(false);" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-emerald-300 hover:bg-emerald-500/10 transition font-semibold">
+          <span class="text-base">📑</span>
+          <div>
+            <div class="text-white font-bold">Enterprise SOP Manual</div>
+            <div class="text-[10px] text-slate-400">Standard operating guide (/sop)</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </div>
 
   <!-- Main View Container -->
   <main class="flex-1 flex overflow-hidden">
@@ -2886,26 +2925,26 @@
   </div>
 
   <!-- ==================================================== -->
-  <!-- 🔴 CASHIER CCTV SECURITY MONITOR & CLIP RECORDER -->
+  <!-- 🔴 CASHIER CCTV SECURITY MONITOR & 1-HOUR DVR RECORDER -->
   <!-- ==================================================== -->
-  <div id="modal-cashier-security-cam" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-slate-900 border-2 border-rose-500/50 rounded-3xl w-full max-w-4xl p-5 sm:p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[95vh] flex flex-col">
-      <button onclick="closeCashierSecurityCamera()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+  <div id="modal-cashier-security-cam" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-slate-900 border-2 border-rose-500/50 rounded-3xl w-full max-w-5xl p-4 sm:p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[96vh] flex flex-col">
+      <button onclick="closeCashierSecurityCamera()" class="absolute right-4 top-4 text-slate-400 hover:text-white z-10">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-slate-800 pb-3 pr-8">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center justify-center text-xl font-bold">
+          <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center justify-center text-xl font-bold shrink-0">
             <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
           </div>
           <div>
             <h3 class="font-heading font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
-              <span>Station Security CCTV & Loss Prevention Feed</span>
-              <span class="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full">LIVE FEED</span>
+              <span>Station Security CCTV & 1-Hour DVR Playback</span>
+              <span id="dvr-mode-badge" class="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full">🔴 LIVE FEED</span>
             </h3>
-            <p class="text-xs text-slate-400 font-mono">Real-time Subject Detection, Auto-Tagging & 5s Clip Recorder</p>
+            <p class="text-xs text-slate-400 font-mono">Continuous 60-Minute Frame Buffer, Timeline Scrubbing & Incident Retrieval</p>
           </div>
         </div>
 
@@ -2918,32 +2957,39 @@
         </div>
       </div>
 
-      <!-- Main Layout: Live Stream + Detection Log -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-y-auto">
+      <!-- Main Layout: Video/Replay Canvas + Controls + Incident Log -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-y-auto pr-1">
         
-        <!-- Left: Video Stream & Tactical HUD Canvas (7 Cols) -->
-        <div class="lg:col-span-7 flex flex-col space-y-3">
+        <!-- Left: Video Viewport & DVR Controls (7.5 Cols) -->
+        <div class="lg:col-span-8 flex flex-col space-y-3">
+          
+          <!-- Viewport Box -->
           <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border-2 border-slate-800 shadow-inner group">
-            <!-- Video Element -->
+            <!-- Live Video Stream (Shown when in LIVE mode) -->
             <video id="cashier-cctv-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
             
-            <!-- AI Target Detection HUD Canvas Overlay -->
-            <canvas id="cashier-cctv-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+            <!-- Canvas Overlay (Used for AI HUD Target in Live, or Replay Frames in DVR mode) -->
+            <canvas id="cashier-cctv-canvas" class="absolute inset-0 w-full h-full"></canvas>
 
             <!-- Top HUD Badges -->
             <div class="absolute top-2 left-2 flex items-center gap-2">
-              <span class="bg-rose-950/80 border border-rose-500/50 text-rose-300 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+              <span id="cctv-stream-status-pill" class="bg-rose-950/90 border border-rose-500/60 text-rose-300 font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                <span>REC • 30 FPS</span>
+                <span id="cctv-stream-status-text">REC • 30 FPS</span>
               </span>
               <span id="cashier-cctv-tag-badge" class="bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shadow hidden">
                 🟢 Subject Detected
               </span>
             </div>
 
-            <!-- Bottom Left Location Badge -->
-            <div class="absolute bottom-2 left-2 bg-slate-950/80 border border-slate-700 text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded">
-              CAM-01 • Table 4B Node
+            <!-- Bottom Left Location / Mode Badge -->
+            <div class="absolute bottom-2 left-2 bg-slate-950/85 border border-slate-700 text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded shadow">
+              <span id="cctv-viewport-location">CAM-01 • Table 4B Station</span>
+            </div>
+
+            <!-- Bottom Right Historical Timestamp Watermark -->
+            <div id="cctv-dvr-watermark" class="absolute bottom-2 right-2 bg-black/80 border border-amber-500/40 text-amber-300 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow hidden">
+              REWIND: --:--:--
             </div>
 
             <!-- Clip Recording In-Progress Banner -->
@@ -2953,42 +2999,116 @@
             </div>
           </div>
 
-          <!-- Video Controls Toolbar -->
-          <div class="flex items-center justify-between gap-2 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
-            <div class="flex items-center gap-2">
-              <!-- 5s Clip Button -->
-              <button id="btn-cctv-record-clip" onclick="recordCctvClip()" class="bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5 active:scale-95">
-                <i data-lucide="video" class="w-4 h-4"></i>
-                <span>Save 5s Clip</span>
-              </button>
+          <!-- ========================================== -->
+          <!-- ⏪ 1-HOUR DVR TIMELINE SCRUBBER & CONTROLS -->
+          <!-- ========================================== -->
+          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2.5">
+            
+            <!-- Timeline Scrubber Header -->
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-300 flex items-center gap-1">
+                  <span>⏱️</span> 1-Hour Time-Machine Timeline
+                </span>
+                <span id="dvr-time-offset-label" class="text-[11px] font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                  LIVE (NOW)
+                </span>
+              </div>
 
-              <!-- Snapshot Button -->
-              <button onclick="captureCctvSnapshot()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 border border-slate-700 active:scale-95">
-                <i data-lucide="camera" class="w-4 h-4 text-amber-400"></i>
-                <span>Snapshot</span>
+              <!-- Go Live Button -->
+              <button onclick="jumpToLiveFeed()" id="btn-dvr-go-live" class="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black px-2.5 py-1 rounded-xl transition flex items-center gap-1 active:scale-95 shadow">
+                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                <span>🔴 GO LIVE</span>
               </button>
             </div>
 
-            <!-- AI Detection Toggle -->
-            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
-              <input type="checkbox" id="chk-cctv-ai-detect" checked class="w-4 h-4 text-rose-500 rounded bg-slate-900 border-slate-700 focus:ring-rose-500" />
-              <span>Auto-Tag Subjects</span>
-            </label>
+            <!-- Scrubber Slider Bar -->
+            <div class="space-y-1">
+              <div class="relative w-full">
+                <input
+                  type="range"
+                  id="cctv-dvr-slider"
+                  min="-3600"
+                  max="0"
+                  step="1"
+                  value="0"
+                  oninput="onDvrScrubInput(this.value)"
+                  onchange="onDvrScrubChange(this.value)"
+                  class="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
+                />
+                <!-- Timeline Event Marker Pins Overlay Container -->
+                <div id="cctv-timeline-markers" class="absolute inset-0 pointer-events-none"></div>
+              </div>
+
+              <!-- Timeline Tick Labels -->
+              <div class="flex justify-between text-[10px] font-mono text-slate-500 px-0.5">
+                <span onclick="jumpDvrMinutes(-60)" class="cursor-pointer hover:text-amber-400">-60 min</span>
+                <span onclick="jumpDvrMinutes(-45)" class="cursor-pointer hover:text-amber-400">-45 min</span>
+                <span onclick="jumpDvrMinutes(-30)" class="cursor-pointer hover:text-amber-400">-30 min</span>
+                <span onclick="jumpDvrMinutes(-15)" class="cursor-pointer hover:text-amber-400">-15 min</span>
+                <span onclick="jumpDvrMinutes(-5)" class="cursor-pointer hover:text-amber-400">-5 min</span>
+                <span onclick="jumpDvrMinutes(-1)" class="cursor-pointer hover:text-amber-400">-1 min</span>
+                <span onclick="jumpToLiveFeed()" class="cursor-pointer font-bold text-rose-400 hover:underline">LIVE</span>
+              </div>
+            </div>
+
+            <!-- Playback & Jump Buttons Row -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+              
+              <!-- Left: Playback controls -->
+              <div class="flex items-center gap-1.5">
+                <button onclick="stepDvrSeconds(-10)" class="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-mono font-bold" title="Step Back 10s">
+                  ⏮ -10s
+                </button>
+                <button onclick="toggleDvrPlayback()" id="btn-dvr-play-pause" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1">
+                  <i data-lucide="play" id="icon-dvr-play" class="w-3.5 h-3.5"></i>
+                  <span id="label-dvr-play">Play Replay</span>
+                </button>
+                <button onclick="stepDvrSeconds(10)" class="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-mono font-bold" title="Step Forward 10s">
+                  +10s ⏭
+                </button>
+
+                <!-- Speed Selector -->
+                <select id="sel-dvr-speed" onchange="setDvrPlaybackSpeed(this.value)" class="bg-slate-900 border border-slate-800 text-slate-300 text-[11px] rounded-lg px-2 py-1 font-mono">
+                  <option value="0.5">0.5x (Slow)</option>
+                  <option value="1" selected>1.0x (Normal)</option>
+                  <option value="2">2.0x (Fast)</option>
+                  <option value="4">4.0x (Scan)</option>
+                </select>
+              </div>
+
+              <!-- Right: Export & Snapshot Tools -->
+              <div class="flex items-center gap-1.5">
+                <button onclick="recordCctvClip()" class="bg-rose-600/90 hover:bg-rose-500 text-white text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
+                  <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                  <span>Save 5s Clip</span>
+                </button>
+                <button onclick="captureCctvSnapshot()" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>Snapshot</span>
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
 
-        <!-- Right: Real-time Incident Detection Tags Log (5 Cols) -->
-        <div class="lg:col-span-5 flex flex-col space-y-2 bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex-1 min-h-[220px]">
+        <!-- Right: Incident Detection Tags Log & History (4.5 Cols) -->
+        <div class="lg:col-span-4 flex flex-col space-y-2 bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex-1 min-h-[300px]">
           <div class="flex items-center justify-between border-b border-slate-800 pb-2">
             <span class="font-bold text-xs text-white flex items-center gap-1.5">
-              <span>🏷️</span> Detection Tags & Incident Log
+              <span>🏷️</span> Detection History (Last 1h)
             </span>
             <button onclick="clearCctvDetectionLog()" class="text-[10px] text-slate-400 hover:text-rose-400">Clear</button>
           </div>
 
+          <p class="text-[10px] text-slate-400 leading-tight">
+            Click any detection event to jump the DVR scrubber directly to that exact moment!
+          </p>
+
           <!-- Log List -->
-          <div id="cctv-detection-feed" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs max-h-[300px]">
-            <div class="text-center text-slate-500 text-xs py-6">
+          <div id="cctv-detection-feed" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs max-h-[340px]">
+            <div class="text-center text-slate-500 text-xs py-8">
               Awaiting presence detection...<br>
               <span class="text-[10px]">Subjects approaching Table 4B will be tagged here.</span>
             </div>
@@ -2998,11 +3118,11 @@
           <div id="cctv-recent-clip-container" class="hidden border-t border-slate-800 pt-2 space-y-1">
             <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Latest Saved Clip:</span>
             <div class="flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-800">
-              <div class="flex items-center gap-2">
-                <span class="text-base">📹</span>
-                <div class="text-[11px] font-mono text-slate-200" id="cctv-clip-label">Clip_08-14-22.webm</div>
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-base shrink-0">📹</span>
+                <div class="text-[10px] font-mono text-slate-200 truncate" id="cctv-clip-label">Clip_08-14-22.webm</div>
               </div>
-              <a id="cctv-clip-download-link" download="Snack_Shack_CCTV_Clip.webm" class="text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg transition">
+              <a id="cctv-clip-download-link" download="Snack_Shack_CCTV_Clip.webm" class="text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg transition shrink-0">
                 Download
               </a>
             </div>
@@ -3013,12 +3133,12 @@
     </div>
   </div>
 
-  <!-- FLOATING PERSISTENT CASHIER CCTV MINI-WIDGET -->
-  <div id="cashier-floating-cctv" class="hidden fixed bottom-5 right-5 z-40 bg-slate-950/95 border-2 border-rose-500/70 rounded-2xl shadow-2xl p-2 backdrop-blur-md w-56 space-y-1.5 animate-in fade-in slide-in-from-bottom-5">
+  <!-- FLOATING PERSISTENT CASHIER CCTV MINI-WIDGET (Positioned at bottom-left so cart checkout is unobstructed) -->
+  <div id="cashier-floating-cctv" class="hidden fixed bottom-5 left-5 z-40 bg-slate-950/95 border-2 border-rose-500/70 rounded-2xl shadow-2xl p-2 backdrop-blur-md w-56 space-y-1.5 animate-in fade-in slide-in-from-bottom-5">
     <div class="flex items-center justify-between text-[10px] font-extrabold text-rose-400">
       <div class="flex items-center gap-1.5 cursor-pointer" onclick="openCashierSecurityCamera()">
         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-        <span>🔴 CCTV (LIVE)</span>
+        <span>🔴 CCTV (1-HR DVR)</span>
       </div>
       <div class="flex items-center gap-1">
         <button onclick="openCashierSecurityCamera()" class="text-slate-400 hover:text-white" title="Maximize">
