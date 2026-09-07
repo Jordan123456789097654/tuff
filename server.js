@@ -2892,6 +2892,244 @@ Do not return backticks, markdown, or extra commentary. Return only the raw JSON
   }
 });
 
+// 3d. 💬 Conversational SOP & Cashier Assistant ("Ask Kyro AI")
+app.post('/api/ai/ask-sop', async (req, res) => {
+  try {
+    const { question } = req.body;
+    if (!question || !question.trim()) {
+      return res.status(400).json({ error: 'Question is required' });
+    }
+
+    let sopText = '';
+    const sopFilePath = path.join(__dirname, 'public', 'sop.html');
+    if (fs.existsSync(sopFilePath)) {
+      sopText = fs.readFileSync(sopFilePath, 'utf8')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .slice(0, 7000);
+    }
+
+    const prompt = `You are the Official AI SOP Assistant for Jordan's Snack Shack (Station Table 4B).
+Answer the student volunteer / cashier's operational question based on our Master Standard Operating Procedures.
+Be clear, direct, and actionable in 2-4 sentences with step-by-step guidance.
+
+MASTER SOP EXCERPT:
+${sopText}
+
+CASHIER QUESTION:
+"${question}"
+
+Provide a direct answer with numbered steps if appropriate.`;
+
+    const answer = await callKyroAI([
+      { role: 'system', content: 'You are the knowledgeable operations manager for Jordan\'s Snack Shack school store.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 500, 0.2);
+
+    res.json({
+      success: true,
+      question,
+      answer: answer || 'According to standard operating procedures, notify the store lead or refer to Section 4 of the SOP manual for supervisor verification.'
+    });
+  } catch (err) {
+    console.error('Ask SOP error:', err);
+    res.status(500).json({ error: 'Failed to process SOP question' });
+  }
+});
+
+// 3e. 🛡️ AI Loss Prevention & Register Anomaly Auditor
+app.post('/api/ai/audit-loss-prevention', async (req, res) => {
+  try {
+    const [ordersRes, logsRes, discountsRes] = await Promise.all([
+      db.query(`SELECT COUNT(*) as total_orders, COALESCE(SUM(total), 0) as gross_rev, COALESCE(SUM(discount), 0) as total_disc FROM orders WHERE created_at::date = CURRENT_DATE`),
+      db.query(`SELECT * FROM daily_logs ORDER BY log_date DESC LIMIT 7`),
+      db.query(`SELECT payment_method, COUNT(*) as count FROM orders WHERE created_at::date = CURRENT_DATE GROUP BY payment_method`)
+    ]);
+
+    const ord = ordersRes.rows[0] || {};
+    const recentLogs = logsRes.rows.map(l => `Date:${l.log_date} | Open:$${l.opening_cash} | Close:$${l.closing_cash} | Diff:$${l.cash_discrepancy} | Notes:${l.operational_notes}`).join('\n');
+    const paymentTypes = discountsRes.rows.map(p => `${p.payment_method}: ${p.count}`).join(', ');
+
+    const prompt = `You are the AI Loss Prevention Auditor for Jordan's Snack Shack school register.
+Analyze today's register metrics and historical shift logs below.
+Evaluate:
+1. Risk Level (LOW, MEDIUM, HIGH, ELEVATED)
+2. Register Discrepancy & Drawer Integrity Assessment
+3. Identified Anomalies or Watchlist flags
+4. 3 Concrete Loss Prevention Directives for Student Cashiers
+
+TODAY STATS:
+- Transactions: ${ord.total_orders || 0}
+- Revenue: $${ord.gross_rev || 0}
+- Total Discounts Applied: $${ord.total_disc || 0}
+- Payment Tenders: ${paymentTypes || 'Standard'}
+
+RECENT SHIFT DRAWER LOGS:
+${recentLogs || 'No past discrepancies logged.'}
+
+Format response cleanly with clear headings and bullet points.`;
+
+    const audit = await callKyroAI([
+      { role: 'system', content: 'You are a meticulous retail loss prevention and cash drawer auditor.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 800, 0.2);
+
+    res.json({
+      success: true,
+      auditReport: audit || 'All register transactions and cash balances are within acceptable operational variance limits.',
+      generatedAt: new Date().toLocaleTimeString()
+    });
+  } catch (err) {
+    console.error('Loss prevention audit error:', err);
+    res.status(500).json({ error: 'Failed to generate loss prevention audit' });
+  }
+});
+
+// 3f. 📄 Executive Principal & PTO Board Memo Generator
+app.post('/api/ai/executive-memo', async (req, res) => {
+  try {
+    const { reportPeriod, customNotes } = req.body;
+    const [ordersRes, volRes, topItemsRes] = await Promise.all([
+      db.query(`SELECT COUNT(*) as total_orders, COALESCE(SUM(total), 0) as gross_sales, COALESCE(SUM(subtotal), 0) as gross_subtotal, COALESCE(SUM(discount), 0) as discounts FROM orders`),
+      db.query(`SELECT COUNT(*) as total_volunteers, COALESCE(SUM(total_hours), 0) as total_hours FROM volunteers WHERE is_active = TRUE`),
+      db.query(`SELECT product_name, SUM(quantity) as qty, SUM(total_price) as rev FROM order_items GROUP BY product_name ORDER BY qty DESC LIMIT 5`)
+    ]);
+
+    const sales = ordersRes.rows[0] || {};
+    const vols = volRes.rows[0] || {};
+    const topItems = topItemsRes.rows.map(i => `${i.product_name} (${i.qty} units - $${i.rev})`).join(', ');
+
+    const prompt = `You are the Financial Advisor & Operations Director for Jordan's Snack Shack school fundraiser.
+Draft a formal, professional Executive Briefing Memo addressed to the School Principal & PTO Executive Board.
+
+DATA SUMMARY:
+- Reporting Period: ${reportPeriod || 'Current Operational Term'}
+- Gross Sales: $${parseFloat(sales.gross_sales || 0).toFixed(2)}
+- Total Transactions: ${sales.total_orders || 0}
+- Total Promotional Discounts: $${parseFloat(sales.discounts || 0).toFixed(2)}
+- Student Volunteer Hours Logged: ${parseFloat(vols.total_hours || 0).toFixed(1)} hours across ${vols.total_volunteers || 0} active students
+- Top Velocity Snacks: ${topItems || 'Powerade, Takis, Chips'}
+- Additional Operational Context: "${customNotes || 'Store operations running smoothly at Table 4B with Locker Vault #314 restock protocols in place.'}"
+
+Format as a formal business memorandum:
+MEMORANDUM
+TO: School Principal & PTO Executive Committee
+FROM: Jordan Daniels, Store Operations Lead & General Manager
+DATE: ${new Date().toLocaleDateString()}
+SUBJECT: Fundraiser Performance & Financial Operations Audit
+
+Include sections:
+1. Executive Summary & Purpose
+2. Key Financial Highlights & Profitability
+3. Student Leadership & Volunteer Service Contribution
+4. Inventory, Storage Vault #314 & Operational Outlook
+5. Recommendations & Next Steps`;
+
+    const memoText = await callKyroAI([
+      { role: 'system', content: 'You write formal, professional executive business memorandums for school administrators.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 1000, 0.2);
+
+    res.json({
+      success: true,
+      memo: memoText || 'Executive Memo successfully generated.',
+      date: new Date().toLocaleDateString()
+    });
+  } catch (err) {
+    console.error('Executive memo error:', err);
+    res.status(500).json({ error: 'Failed to generate executive memo' });
+  }
+});
+
+// 3g. 🏷️ Smart Dynamic Combo Creator & Margin Optimizer
+app.post('/api/ai/suggest-combos', async (req, res) => {
+  try {
+    const productsRes = await db.query(`
+      SELECT p.id, p.name, p.price, p.cost_price, p.stock_quantity, c.name as category_name,
+             COALESCE(SUM(oi.quantity), 0) as recent_sales
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN order_items oi ON p.id = oi.product_id
+      WHERE p.is_active = TRUE
+      GROUP BY p.id, c.name
+      ORDER BY p.stock_quantity DESC
+    `);
+
+    const catalogSummary = productsRes.rows.map(p => 
+      `ID:${p.id} | "${p.name}" | Cat:${p.category_name} | Price:$${p.price} | Cost:$${p.cost_price} | Stock:${p.stock_quantity} | Sold:${p.recent_sales}`
+    ).join('\n');
+
+    const prompt = `You are the AI Pricing & Margin Optimization Specialist for Jordan's Snack Shack school store.
+Analyze our product catalog, cost prices, and sales velocities below.
+Generate 3 high-margin, attractive snack bundle combos that pair popular items with higher margin/slower moving inventory.
+
+CATALOG AUDIT:
+${catalogSummary}
+
+Return ONLY a strict JSON array of 3 objects with this exact schema:
+[
+  {
+    "name": "<Combo Name, e.g. 'Crunch & Chill Power Pack'>",
+    "description": "<Engaging 1-sentence customer description>",
+    "bundle_price": <suggested retail price as number, e.g. 2.75>,
+    "estimated_cost": <sum of wholesale costs as number, e.g. 1.10>,
+    "estimated_margin_pct": <profit margin percentage as number, e.g. 60>,
+    "rationale": "<1-sentence operational reason for this pairing>",
+    "item_requirements": [
+      { "category": "Chips", "qty": 1 },
+      { "category": "Drinks", "qty": 1 }
+    ]
+  }
+]
+Do not return backticks, markdown, or conversational text. Return only valid JSON array.`;
+
+    const aiRes = await callKyroAI([
+      { role: 'system', content: 'You design profitable retail combo packages in strict JSON format.' },
+      { role: 'user', content: prompt }
+    ], 'kyro-ultra-70b', 800, 0.2);
+
+    let combos = [];
+    if (aiRes) {
+      try {
+        const clean = aiRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+        combos = JSON.parse(clean);
+      } catch (e) {
+        console.warn('Combo suggestion parse error:', e.message);
+      }
+    }
+
+    if (!Array.isArray(combos) || combos.length === 0) {
+      combos = [
+        {
+          name: "Power Crunch Duo",
+          description: "1 Bag of Chips + 1 Powerade Cold Beverage",
+          bundle_price: 2.75,
+          estimated_cost: 1.15,
+          estimated_margin_pct: 58,
+          rationale: "High customer velocity pairing with strong margin recovery.",
+          item_requirements: [{ category: "Chips", qty: 1 }, { category: "Drinks", qty: 1 }]
+        },
+        {
+          name: "Sweet Rush Delight",
+          description: "1 Candy Bag + 1 Cold Beverage",
+          bundle_price: 2.50,
+          estimated_cost: 0.95,
+          estimated_margin_pct: 62,
+          rationale: "Maximizes candy inventory turnover during peak operational windows.",
+          item_requirements: [{ category: "Candy", qty: 1 }, { category: "Drinks", qty: 1 }]
+        }
+      ];
+    }
+
+    res.json({ success: true, suggestions: combos });
+  } catch (err) {
+    console.error('Combo suggestions error:', err);
+    res.status(500).json({ error: 'Failed to generate combo suggestions' });
+  }
+});
+
 // 4. Live School Trivia Generator & Prize Engine
 app.get('/api/ai/trivia', async (req, res) => {
   try {

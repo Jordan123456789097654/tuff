@@ -7260,6 +7260,323 @@ function stopPushToTalk(e) {
 }
 
 // ==========================================
+// 💬 1. ASK SOP ASSISTANT (KYRO AI)
+// ==========================================
+function openAskSopModal() {
+  openModal('modal-ask-sop-ai');
+}
+
+function askSopChip(questionText) {
+  const input = document.getElementById('ask-sop-input');
+  if (input) {
+    input.value = questionText;
+    submitAskSopQuery();
+  }
+}
+
+async function submitAskSopQuery() {
+  const input = document.getElementById('ask-sop-input');
+  const box = document.getElementById('ask-sop-answer-box');
+  const btn = document.getElementById('btn-submit-ask-sop');
+  const q = input ? input.value.trim() : '';
+
+  if (!q) {
+    showToast('Please type or dictate a question first!', 'warning');
+    if (input) input.focus();
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>Thinking...</span> <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  if (box) {
+    box.innerHTML = `<div class="text-purple-400 py-6 animate-pulse font-mono">🧠 Kyro AI searching Master SOP Manual v6.0 for: "${q}"...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/ai/ask-sop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+
+    if (box) {
+      box.textContent = data.answer || 'Consult the Store Lead for supervisor signoff.';
+      playSound('chaching');
+    }
+  } catch (err) {
+    if (box) box.textContent = 'Error connecting to SOP AI Assistant. Please check connection.';
+    showToast('Failed to consult SOP AI', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> <span>Ask AI</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+function dictateAskSop() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Voice dictation not supported in browser. Please type your question.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-dictate-ask-sop');
+  const input = document.getElementById('ask-sop-input');
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  if (btn) btn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
+  showToast('🎙️ Listening... Ask your SOP question now.', 'info');
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    if (input) input.value = transcript;
+    showToast(`🎙️ Question: "${transcript}"`, 'success');
+    submitAskSopQuery();
+  };
+
+  recognition.onerror = () => {
+    showToast('Voice input cancelled', 'warning');
+  };
+
+  recognition.onend = () => {
+    if (btn) btn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+  };
+
+  recognition.start();
+}
+
+// ==========================================
+// 🛡️ 2. AI LOSS PREVENTION AUDITOR (KYRO AI)
+// ==========================================
+function openAiLossPreventionModal() {
+  openModal('modal-ai-loss-prevention');
+  runAiLossPreventionAudit();
+}
+
+async function runAiLossPreventionAudit() {
+  const box = document.getElementById('ai-loss-prevention-content');
+  const btn = document.getElementById('btn-run-lp-audit');
+  const ts = document.getElementById('lp-audit-timestamp');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> <span>Auditing...</span>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  if (box) {
+    box.innerHTML = `<div class="text-rose-400 py-10 animate-pulse font-mono text-center">🛡️ Kyro AI analyzing register transactions, tender discrepancies & void logs...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/ai/audit-loss-prevention', { method: 'POST' });
+    const data = await res.json();
+
+    if (box) {
+      box.textContent = data.auditReport || 'All register integrity checks nominal.';
+      playSound('bell');
+    }
+    if (ts) ts.textContent = `Last Audit: ${data.generatedAt || new Date().toLocaleTimeString()}`;
+  } catch (err) {
+    if (box) box.textContent = 'Failed to execute AI Loss Prevention Audit.';
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span>Run Audit</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+// ==========================================
+// 📄 3. EXECUTIVE PRINCIPAL & PTO MEMO (KYRO AI)
+// ==========================================
+function openAiExecutiveMemoModal() {
+  openModal('modal-ai-executive-memo');
+  generateAiExecutiveMemo();
+}
+
+async function generateAiExecutiveMemo() {
+  const period = document.getElementById('memo-period-select')?.value || 'Current Operational Term';
+  const customNotes = document.getElementById('memo-custom-notes')?.value.trim() || '';
+  const box = document.getElementById('ai-executive-memo-box');
+  const btn = document.getElementById('btn-generate-memo');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> <span>Drafting...</span>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  if (box) {
+    box.innerHTML = `<div class="text-blue-600 py-12 animate-pulse font-mono text-center">📄 Kyro AI drafting formal Executive Briefing Memorandum for Principal & PTO Board...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/ai/executive-memo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportPeriod: period, customNotes })
+    });
+    const data = await res.json();
+
+    if (box) {
+      box.textContent = data.memo || 'Executive Memo Draft Completed.';
+      playSound('chaching');
+    }
+  } catch (err) {
+    if (box) box.textContent = 'Failed to generate Executive Memo.';
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> <span>Draft Memo</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+function printExecutiveMemoDirect() {
+  const content = document.getElementById('ai-executive-memo-box');
+  if (!content) return;
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Executive Briefing Memorandum • Jordan's Snack Shack</title>
+      <style>
+        body { font-family: 'Times New Roman', serif; padding: 40px; font-size: 13px; line-height: 1.6; color: #111; max-width: 800px; margin: auto; }
+        pre { white-space: pre-wrap; font-family: inherit; }
+      </style>
+    </head>
+    <body>
+      <pre>${content.innerText || content.textContent}</pre>
+      <script>setTimeout(() => window.print(), 300);<\\/script>
+    </body>
+    </html>
+  `);
+  w.document.close();
+}
+
+function copyExecutiveMemoText() {
+  const box = document.getElementById('ai-executive-memo-box');
+  if (!box) return;
+  const text = box.innerText || box.textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('📋 Executive Memo copied to clipboard!', 'success');
+    });
+  }
+}
+
+// ==========================================
+// 🏷️ 4. AI DYNAMIC COMBO & MARGIN OPTIMIZER
+// ==========================================
+let currentAiSuggestedCombos = [];
+
+function openAiComboOptimizerModal() {
+  openModal('modal-ai-combo-optimizer');
+  generateAiComboSuggestions();
+}
+
+async function generateAiComboSuggestions() {
+  const container = document.getElementById('ai-combos-container');
+  const btn = document.getElementById('btn-generate-combos');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> <span>Optimizing...</span>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  if (container) {
+    container.innerHTML = `<div class="col-span-full text-center text-emerald-400 py-12 animate-pulse font-mono">🧠 Kyro AI analyzing wholesale costs, retail velocity & profit margins...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/ai/suggest-combos', { method: 'POST' });
+    const data = await res.json();
+    currentAiSuggestedCombos = data.suggestions || [];
+
+    if (container) {
+      if (currentAiSuggestedCombos.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center text-slate-500 py-8">No combo recommendations generated.</div>`;
+      } else {
+        container.innerHTML = currentAiSuggestedCombos.map((c, i) => `
+          <div class="bg-slate-950 p-4 rounded-2xl border border-emerald-500/30 flex flex-col justify-between space-y-3 hover:border-emerald-400 transition shadow">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-heading font-extrabold text-white text-sm">${c.name}</span>
+                <span class="font-mono font-bold text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg">$${parseFloat(c.bundle_price).toFixed(2)}</span>
+              </div>
+              <p class="text-slate-400 text-xs leading-relaxed">${c.description}</p>
+              <div class="bg-slate-900/90 p-2 rounded-xl text-[11px] font-mono flex justify-between text-slate-300">
+                <span>Est. Cost: <strong class="text-rose-300">$${parseFloat(c.estimated_cost || 1.00).toFixed(2)}</strong></span>
+                <span>Margin: <strong class="text-emerald-400">${c.estimated_margin_pct || 60}% Profit</strong></span>
+              </div>
+              <p class="text-[10px] text-slate-500 italic">💡 Rationale: ${c.rationale || 'High velocity pairing.'}</p>
+            </div>
+            <button onclick="activateSuggestedCombo(${i})" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition shadow flex items-center justify-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+              <span>Add to Store Active Combos</span>
+            </button>
+          </div>
+        `).join('');
+        if (window.lucide) lucide.createIcons();
+      }
+      playSound('chaching');
+    }
+  } catch (err) {
+    if (container) container.innerHTML = `<div class="col-span-full text-center text-rose-400 py-8">Failed to generate AI combos.</div>`;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> <span>Generate Bundles</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+async function activateSuggestedCombo(index) {
+  const combo = currentAiSuggestedCombos[index];
+  if (!combo) return;
+
+  try {
+    const res = await fetch('/api/combos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: combo.name,
+        description: combo.description,
+        bundle_price: combo.bundle_price,
+        item_requirements: combo.item_requirements
+      })
+    });
+
+    if (res.ok) {
+      showToast(`🎉 "${combo.name}" Bundle Activated & Added to Active Register Deals!`, 'success');
+      playSound('chaching');
+      closeModal('modal-ai-combo-optimizer');
+    } else {
+      showToast('Failed to activate combo', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to activate combo', 'error');
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {

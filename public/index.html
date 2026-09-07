@@ -244,6 +244,41 @@
         </button>
 
         <div class="border-t border-slate-800 my-1 pt-1"></div>
+        <div class="px-3 py-1 text-[10px] font-mono font-bold text-purple-400 uppercase tracking-wider">Kyro AI Suite</div>
+
+        <button onclick="openAskSopModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-purple-300 hover:bg-purple-500/10 transition font-semibold">
+          <span class="text-base">💬</span>
+          <div>
+            <div class="text-white font-bold">Ask SOP Assistant</div>
+            <div class="text-[10px] text-slate-400">Conversational policy &amp; cashier Q&amp;A</div>
+          </div>
+        </button>
+
+        <button onclick="openAiLossPreventionModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-rose-300 hover:bg-rose-500/10 transition font-semibold">
+          <span class="text-base">🛡️</span>
+          <div>
+            <div class="text-white font-bold">AI Loss Prevention Auditor</div>
+            <div class="text-[10px] text-slate-400">Register anomaly &amp; drawer integrity audit</div>
+          </div>
+        </button>
+
+        <button onclick="openAiExecutiveMemoModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-blue-300 hover:bg-blue-500/10 transition font-semibold">
+          <span class="text-base">📄</span>
+          <div>
+            <div class="text-white font-bold">Executive PTO Memo</div>
+            <div class="text-[10px] text-slate-400">Principal briefing &amp; financial audit memo</div>
+          </div>
+        </button>
+
+        <button onclick="openAiComboOptimizerModal(); toggleMoreToolsDropdown(false);" class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-emerald-300 hover:bg-emerald-500/10 transition font-semibold">
+          <span class="text-base">🏷️</span>
+          <div>
+            <div class="text-white font-bold">AI Combo &amp; Margin Optimizer</div>
+            <div class="text-[10px] text-slate-400">High-margin snack bundle creator</div>
+          </div>
+        </button>
+
+        <div class="border-t border-slate-800 my-1 pt-1"></div>
 
         <a href="/order" target="_blank" onclick="toggleMoreToolsDropdown(false);" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-amber-300 hover:bg-amber-500/10 transition font-semibold">
           <span class="text-base">⏱️</span>
@@ -4321,6 +4356,245 @@
       <div class="flex justify-end pt-2 border-t border-slate-800">
         <button onclick="closeModal('modal-intercom-broadcaster')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
           Close Intercom
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 💬 1. ASK SOP ASSISTANT MODAL (KYRO AI)             -->
+  <!-- ==================================================== -->
+  <div id="modal-ask-sop-ai" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-purple-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-ask-sop-ai')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl shadow-lg">
+          💬
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <span>Ask SOP Assistant</span>
+            <span class="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full">KYRO AI • MASTER SOP v6.0</span>
+          </h3>
+          <p class="text-xs text-slate-400">Ask any operational, register, or emergency protocol question in plain English</p>
+        </div>
+      </div>
+
+      <!-- Quick Question Preset Chips -->
+      <div class="space-y-1.5">
+        <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Inquiries:</label>
+        <div class="flex flex-wrap gap-1.5 text-[11px]">
+          <button onclick="askSopChip('What is the procedure if a student pass has a negative balance or flag?')" class="bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-xl transition">
+            💳 Negative Student Balance Policy
+          </button>
+          <button onclick="askSopChip('What are the exact end-of-shift cash drawer closing procedures?')" class="bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-xl transition">
+            💵 Table 4B Closing Steps
+          </button>
+          <button onclick="askSopChip('What is the protocol for severe peanut allergen warnings at checkout?')" class="bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-xl transition">
+            🥜 Peanut Allergen Alert Rule
+          </button>
+          <button onclick="askSopChip('How do volunteers request a stock restock from Locker Vault #314?')" class="bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-xl transition">
+            📦 Storage Locker Vault #314 Protocol
+          </button>
+        </div>
+      </div>
+
+      <!-- Input Bar with Voice Button -->
+      <div class="flex gap-2">
+        <input
+          type="text"
+          id="ask-sop-input"
+          placeholder="Ask a question about store procedures, register steps, or security rules..."
+          class="flex-1 bg-slate-950 border border-purple-500/40 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
+          onkeydown="if(event.key==='Enter') submitAskSopQuery()"
+        />
+        <button
+          onclick="dictateAskSop()"
+          id="btn-dictate-ask-sop"
+          class="bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/40 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shrink-0"
+          title="Voice Dictate Question"
+        >
+          <i data-lucide="mic" class="w-4 h-4"></i>
+        </button>
+        <button
+          onclick="submitAskSopQuery()"
+          id="btn-submit-ask-sop"
+          class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow shrink-0"
+        >
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Ask AI</span>
+        </button>
+      </div>
+
+      <!-- Answer Box -->
+      <div class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div id="ask-sop-answer-box" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-300 leading-relaxed min-h-[140px] whitespace-pre-wrap">
+          Ask any question above to receive instant guidance directly from the Master Standard Operating Procedures.
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+        <a href="/sop" target="_blank" class="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1">
+          <span>📖 Open Full SOP Manual (/sop)</span>
+        </a>
+        <button onclick="closeModal('modal-ask-sop-ai')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 🛡️ 2. AI LOSS PREVENTION AUDITOR MODAL (KYRO AI)   -->
+  <!-- ==================================================== -->
+  <div id="modal-ai-loss-prevention" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-rose-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-ai-loss-prevention')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-2xl shadow-lg">
+            🛡️
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <span>AI Loss Prevention &amp; Register Auditor</span>
+              <span class="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full">INTEGRITY GUARD</span>
+            </h3>
+            <p class="text-xs text-slate-400">Deep anomaly analysis of cash drawer counts, voids, and tender discrepancies</p>
+          </div>
+        </div>
+        <button onclick="runAiLossPreventionAudit()" id="btn-run-lp-audit" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Run Audit</span>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+        <div id="ai-loss-prevention-content" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
+          Click "Run Audit" to perform a real-time AI evaluation of register transactions, cash drawer logs, and loss prevention risk factors.
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+        <span class="text-slate-400 font-mono text-[11px]" id="lp-audit-timestamp">Status: Standby</span>
+        <button onclick="closeModal('modal-ai-loss-prevention')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 📄 3. EXECUTIVE PRINCIPAL & PTO MEMO MODAL (KYRO AI)-->
+  <!-- ==================================================== -->
+  <div id="modal-ai-executive-memo" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-blue-500/50 rounded-3xl w-full max-w-3xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-ai-executive-memo')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-2xl shadow-lg">
+            📄
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <span>Executive Briefing &amp; PTO Board Memorandum</span>
+              <span class="text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-full">KYRO AI ADVISOR</span>
+            </h3>
+            <p class="text-xs text-slate-400">Formal administrative briefing for School Principals and PTO Executive Committees</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="copyExecutiveMemoText()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-3 py-2 rounded-xl transition border border-slate-700 flex items-center gap-1">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copy</span>
+          </button>
+          <button onclick="printExecutiveMemoDirect()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Print Memo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Memo Parameters Controls -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+        <div>
+          <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Reporting Window:</label>
+          <select id="memo-period-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-white font-bold text-xs">
+            <option value="Current Operational Term">Current Operational Term</option>
+            <option value="Month-to-Date Performance">Month-to-Date Performance</option>
+            <option value="Weekly Fundraiser Audit">Weekly Fundraiser Audit</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2 flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Additional Operational Context:</label>
+            <input type="text" id="memo-custom-notes" placeholder="e.g. Raised funds for 8th Grade field trip; Table 4B volunteer team recognized..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-white text-xs" />
+          </div>
+          <button onclick="generateAiExecutiveMemo()" id="btn-generate-memo" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition shrink-0 shadow flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Draft Memo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Memo Preview Sheet -->
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+        <div id="ai-executive-memo-box" class="bg-white text-slate-900 p-6 rounded-2xl border border-slate-300 font-serif leading-relaxed text-xs shadow-inner select-all whitespace-pre-wrap">
+          Click "Draft Memo" to generate an official administrative memo synthesized by Kyro AI.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 🏷️ 4. AI SMART COMBO & MARGIN OPTIMIZER (KYRO AI)   -->
+  <!-- ==================================================== -->
+  <div id="modal-ai-combo-optimizer" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-3xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-ai-combo-optimizer')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-2xl shadow-lg">
+            🏷️
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <span>AI Dynamic Combo &amp; Margin Optimizer</span>
+              <span class="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">PROFIT MAXIMIZER</span>
+            </h3>
+            <p class="text-xs text-slate-400">Analyzes wholesale item costs &amp; stock velocity to generate high-margin snack bundles</p>
+          </div>
+        </div>
+        <button onclick="generateAiComboSuggestions()" id="btn-generate-combos" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Generate Bundles</span>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div id="ai-combos-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="col-span-full text-center text-slate-500 py-10">
+            Click "Generate Bundles" to have Kyro AI analyze wholesale item margins and build high-profit combo bundles.
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+        <span class="text-slate-400 text-[11px]">1-Click add directly activates the bundle in checkout register</span>
+        <button onclick="closeModal('modal-ai-combo-optimizer')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition">
+          Close
         </button>
       </div>
     </div>
