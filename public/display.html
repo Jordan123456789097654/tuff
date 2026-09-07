@@ -4005,16 +4005,18 @@
     }
 
     // ==========================================
-    // 🔴 ALWAYS-ON SECURITY CCTV MONITOR
+    // 🔴 2ND DISPLAY CCTV & AUDIO RECORDING RELAY
     // ==========================================
     let cctvStream = null;
     let isCctvMinimized = false;
-
+    let isDisplayRecordingClip = false;
     let displayMediaRecorder = null;
     let displayRecordedChunks = [];
-    let isDisplayRecordingClip = false;
-
-    let selectedDisplayCctvDeviceId = localStorage.getItem('snack_display_cctv_device') || null;
+    let selectedDisplayCctvDeviceId = localStorage.getItem('snack_display_cctv_device') || '';
+    let cctvAudioCtx = null;
+    let cctvAudioAnalyser = null;
+    let cctvAudioSource = null;
+    let currentDisplayAudioLevel = 0;
 
     async function populateDisplayCameraList() {
       const select = document.getElementById('display-cctv-camera-select');
@@ -4023,9 +4025,9 @@
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
         if (videoDevices.length > 0) {
-          select.innerHTML = videoDevices.map((dev, idx) => `
-            <option value="${dev.deviceId}" ${selectedDisplayCctvDeviceId === dev.deviceId ? 'selected' : ''}>
-              📷 ${dev.label || `Camera ${idx + 1}`}
+          select.innerHTML = videoDevices.map((d, i) => `
+            <option value="${d.deviceId}" ${d.deviceId === selectedDisplayCctvDeviceId ? 'selected' : ''}>
+              📷 ${d.label || 'Camera ' + (i + 1)}
             </option>
           `).join('');
         }
@@ -4042,6 +4044,41 @@
       await startSecurityCctv();
     }
 
+    function initCctvAudioAnalysis(stream) {
+      if (!stream || !stream.getAudioTracks().length) {
+        currentDisplayAudioLevel = 0;
+        return;
+      }
+      try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtxClass) return;
+        if (!cctvAudioCtx || cctvAudioCtx.state === 'closed') {
+          cctvAudioCtx = new AudioCtxClass();
+        }
+        if (cctvAudioCtx.state === 'suspended') {
+          cctvAudioCtx.resume().catch(()=>{});
+        }
+        cctvAudioAnalyser = cctvAudioCtx.createAnalyser();
+        cctvAudioAnalyser.fftSize = 64;
+        cctvAudioSource = cctvAudioCtx.createMediaStreamSource(stream);
+        cctvAudioSource.connect(cctvAudioAnalyser);
+
+        const sampleData = new Uint8Array(cctvAudioAnalyser.frequencyBinCount);
+        setInterval(() => {
+          if (!cctvAudioAnalyser) return;
+          cctvAudioAnalyser.getByteFrequencyData(sampleData);
+          let sum = 0;
+          for (let i = 0; i < sampleData.length; i++) {
+            sum += sampleData[i];
+          }
+          const avg = sum / sampleData.length;
+          currentDisplayAudioLevel = Math.min(100, Math.round((avg / 128) * 100));
+        }, 150);
+      } catch(e) {
+        console.warn('CCTV Audio analysis notice:', e);
+      }
+    }
+
     async function startSecurityCctv() {
       const video = document.getElementById('cctv-live-video');
       if (!video) return;
@@ -4050,18 +4087,28 @@
           cctvStream.getTracks().forEach(t => t.stop());
           cctvStream = null;
         }
-        const constraints = {
-          video: selectedDisplayCctvDeviceId 
-            ? { deviceId: { exact: selectedDisplayCctvDeviceId }, width: 320, height: 320 }
-            : { facingMode: 'user', width: 320, height: 320 }
-        };
+        const videoConstraints = selectedDisplayCctvDeviceId 
+          ? { deviceId: { exact: selectedDisplayCctvDeviceId }, width: 320, height: 320 }
+          : { facingMode: 'user', width: 320, height: 320 };
+
         try {
-          cctvStream = await navigator.mediaDevices.getUserMedia(constraints);
+          // Attempt Video + Microphone Audio
+          cctvStream = await navigator.mediaDevices.getUserMedia({
+            video: videoConstraints,
+            audio: { echoCancellation: true, noiseSuppression: true }
+          });
         } catch(err) {
-          cctvStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          // Fallback to video only if mic is unavailable or blocked
+          try {
+            cctvStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+          } catch(err2) {
+            cctvStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          }
         }
+
         video.srcObject = cctvStream;
         video.play().catch(()=>{});
+        initCctvAudioAnalysis(cctvStream);
         startDisplayCctvAiLoop();
         populateDisplayCameraList();
         startCustomerCctvRelay();
@@ -4070,7 +4117,7 @@
       }
     }
 
-    // 📡 Live Frame Transmitter from Customer Display to Cashier POS
+    // 📡 Live Frame & Audio Transmitter from Customer Display to Cashier POS
     let customerCctvRelayInterval = null;
     let customerHeartbeatInterval = null;
     const customerRelayCanvas = document.createElement('canvas');
@@ -4084,11 +4131,15 @@
 
       // Send immediate heartbeat on startup
       sendDisplayHeartbeat();
-      customerHeartbeatInterval = setInterval(sendDisplayHeartbeat, 2500);
+      customerHeartbeatInterval = setInterval(sendDisplayHeartbeat, 1500);
 
       customerCctvRelayInterval = setInterval(() => {
         const video = document.getElementById('cctv-live-video');
-        if (!video || !video.videoWidth || !cctvStream) return;
+        if (!video || !video.videoWidth || !cctvStream) {
+          // If video not ready yet, still send heartbeat
+          sendDisplayHeartbeat();
+          return;
+        }
 
         try {
           customerRelayCtx.drawImage(video, 0, 0, 320, 240);
@@ -4103,7 +4154,9 @@
             frame: frameData,
             tag: tagText,
             student: stu,
-            isHumanDetected: tagText && !tagText.includes('SCANNING')
+            isHumanDetected: tagText && !tagText.includes('SCANNING'),
+            hasAudio: !!(cctvStream && cctvStream.getAudioTracks().length > 0),
+            audioLevel: currentDisplayAudioLevel || 0
           };
 
           // 1. Local BroadcastChannel for 0ms latency on same machine
@@ -4122,18 +4175,27 @@
           }).catch(()=>{});
 
         } catch(e){}
-      }, 650); // High-responsiveness ~1.5 FPS lightweight stream
+      }, 500); // 2 FPS lightweight responsive CCTV stream
     }
 
     function sendDisplayHeartbeat() {
-      const hb = { type: 'display_heartbeat', timestamp: Date.now() };
+      const hb = { 
+        type: 'display_heartbeat', 
+        timestamp: Date.now(),
+        hasAudio: !!(cctvStream && cctvStream.getAudioTracks().length > 0),
+        audioLevel: currentDisplayAudioLevel || 0
+      };
       if (typeof BroadcastChannel !== 'undefined') {
         try {
           const bc = new BroadcastChannel('snack_display_sync');
           bc.postMessage(hb);
         } catch(e){}
       }
-      fetch('/api/display/heartbeat', { method: 'POST' }).catch(()=>{});
+      fetch('/api/display/heartbeat', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(hb)
+      }).catch(()=>{});
     }
 
     // Offscreen sampling canvas for customer display optical AI

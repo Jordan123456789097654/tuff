@@ -2086,11 +2086,14 @@ let latestCustomerCctv = {
   timestamp: 0,
   frame: null,
   tag: null,
-  student: null
+  student: null,
+  isHumanDetected: false,
+  hasAudio: false,
+  audioLevel: 0
 };
 
 app.post('/api/display/cctv_frame', (req, res) => {
-  const { frame, tag, student, isHumanDetected } = req.body;
+  const { frame, tag, student, isHumanDetected, hasAudio, audioLevel } = req.body;
   const now = Date.now();
   latestCustomerCctv = {
     online: true,
@@ -2099,7 +2102,9 @@ app.post('/api/display/cctv_frame', (req, res) => {
     frame: frame || latestCustomerCctv.frame,
     tag: tag || null,
     student: student || null,
-    isHumanDetected: !!isHumanDetected
+    isHumanDetected: !!isHumanDetected,
+    hasAudio: !!hasAudio,
+    audioLevel: typeof audioLevel === 'number' ? audioLevel : (latestCustomerCctv.audioLevel || 0)
   };
 
   broadcastToDisplayClients({
@@ -2108,17 +2113,28 @@ app.post('/api/display/cctv_frame', (req, res) => {
     frame: latestCustomerCctv.frame,
     tag: latestCustomerCctv.tag,
     student: latestCustomerCctv.student,
-    isHumanDetected: latestCustomerCctv.isHumanDetected
+    isHumanDetected: latestCustomerCctv.isHumanDetected,
+    hasAudio: latestCustomerCctv.hasAudio,
+    audioLevel: latestCustomerCctv.audioLevel
   });
 
   res.json({ success: true, timestamp: now });
 });
 
 app.post('/api/display/heartbeat', (req, res) => {
+  const { hasAudio, audioLevel } = req.body || {};
   const now = Date.now();
   latestCustomerCctv.lastHeartbeat = now;
   latestCustomerCctv.online = true;
-  broadcastToDisplayClients({ type: 'display_heartbeat', timestamp: now });
+  if (typeof hasAudio !== 'undefined') latestCustomerCctv.hasAudio = !!hasAudio;
+  if (typeof audioLevel === 'number') latestCustomerCctv.audioLevel = audioLevel;
+
+  broadcastToDisplayClients({ 
+    type: 'display_heartbeat', 
+    timestamp: now,
+    hasAudio: latestCustomerCctv.hasAudio,
+    audioLevel: latestCustomerCctv.audioLevel
+  });
   res.json({ success: true, timestamp: now });
 });
 
@@ -2131,7 +2147,9 @@ app.get('/api/display/cctv_status', (req, res) => {
     frame: isOnline ? latestCustomerCctv.frame : null,
     tag: isOnline ? latestCustomerCctv.tag : null,
     student: isOnline ? latestCustomerCctv.student : null,
-    isHumanDetected: isOnline ? latestCustomerCctv.isHumanDetected : false
+    isHumanDetected: isOnline ? latestCustomerCctv.isHumanDetected : false,
+    hasAudio: isOnline ? latestCustomerCctv.hasAudio : false,
+    audioLevel: isOnline ? latestCustomerCctv.audioLevel : 0
   });
 });
 

@@ -2984,6 +2984,17 @@
               </span>
             </div>
 
+            <!-- Top Right Audio VU Decibel Meter -->
+            <div class="absolute top-2 right-2 flex items-center gap-1.5">
+              <div id="cctv-audio-vu-container" class="bg-slate-950/90 border border-slate-700 text-slate-300 px-2 py-1 rounded-full flex items-center gap-1.5 shadow backdrop-blur-sm" title="Live Customer Counter Mic Audio Level">
+                <span class="text-[10px]" id="cctv-audio-icon">🎙️</span>
+                <div class="w-12 h-2 bg-slate-800 rounded-full overflow-hidden flex items-center p-0.5 border border-slate-700">
+                  <div id="cctv-audio-bar" class="h-full bg-emerald-400 rounded-full transition-all duration-100" style="width: 15%;"></div>
+                </div>
+                <span id="cctv-audio-status-label" class="text-[9px] font-mono text-emerald-400 font-bold">MIC LIVE</span>
+              </div>
+            </div>
+
             <!-- Bottom Left Location / Mode Badge -->
             <div class="absolute bottom-2 left-2 bg-slate-950/85 border border-slate-700 text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded shadow">
               <span id="cctv-viewport-location">CAM-02 • Customer Screen (Table 4B)</span>

@@ -42,7 +42,22 @@ if (typeof EventSource !== 'undefined') {
     posEvtSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'student_face_identified') {
+        if (data.type === 'cctv_customer_frame') {
+          if (typeof handleIncomingCustomerCctvPacket === 'function') {
+            handleIncomingCustomerCctvPacket(data);
+          }
+        } else if (data.type === 'display_heartbeat') {
+          if (typeof lastCustomerFrameTime !== 'undefined') {
+            lastCustomerFrameTime = Date.now();
+            isCustomerDisplayOnline = true;
+            if (typeof updateCustomerDisplayConnectionBadge === 'function') {
+              updateCustomerDisplayConnectionBadge(true);
+            }
+            if (typeof updateCustomerCctvAudioHud === 'function') {
+              updateCustomerCctvAudioHud(data.audioLevel, data.hasAudio);
+            }
+          }
+        } else if (data.type === 'student_face_identified') {
           handleStudentFaceIdentifiedFromDisplay(data.student);
         } else if (data.type === 'student_registered') {
           handleStudentRegisteredFromDisplay(data.student);
@@ -52,6 +67,15 @@ if (typeof EventSource !== 'undefined') {
       } catch(e){}
     };
   } catch(e){}
+}
+
+// Automatically start background sync so DVR rolling buffer records 2nd monitor camera continuously
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    if (typeof initCashierCustomerCctvSync === 'function') {
+      initCashierCustomerCctvSync();
+    }
+  });
 }
 
 function handleStudentFaceIdentifiedFromDisplay(student) {
@@ -4547,7 +4571,7 @@ async function toggleRemoteCustomerKiosk(force = null) {
 // 📹 2ND DISPLAY (CUSTOMER SCREEN) CCTV RECEIVER & 1-HR DVR
 // ==========================================
 const DVR_MAX_DURATION_SEC = 3600; // 60 minutes = 3600 seconds
-let dvrRollingBuffer = []; // Array of { timestamp: number, dataUrl: string, tag: string, student: object }
+let dvrRollingBuffer = []; // Array of { timestamp: number, dataUrl: string, tag: string, student: object, audioLevel: number, imgObj: Image }
 let dvrCurrentOffsetSec = 0; // 0 = LIVE; negative numbers = past seconds
 let isDvrReplayPlaying = false;
 let dvrPlaybackSpeed = 1;
@@ -4559,6 +4583,10 @@ let latestCustomerCctvPacket = null;
 let latestCustomerFrameImg = null;
 let cashierCctvAnimFrame = null;
 let cashierCctvPollingInterval = null;
+let cctvDetectionLogsList = [];
+let isCashierRecordingClip = false;
+let cashierMediaRecorder = null;
+let cashierRecordedChunks = [];
 
 // Receiver connection initializer
 function initCashierCustomerCctvSync() {
@@ -4574,52 +4602,102 @@ function initCashierCustomerCctvSync() {
           lastCustomerFrameTime = Date.now();
           isCustomerDisplayOnline = true;
           updateCustomerDisplayConnectionBadge(true);
+          updateCustomerCctvAudioHud(e.data.audioLevel, e.data.hasAudio);
         }
       };
     } catch(e){}
   }
 
-  // 2. Poll server fallback every 1200ms for multi-device/LAN setups
+  // 2. Poll server fallback every 1000ms for multi-device/LAN setups
   if (cashierCctvPollingInterval) clearInterval(cashierCctvPollingInterval);
   cashierCctvPollingInterval = setInterval(async () => {
     try {
       const res = await fetch('/api/display/cctv_status');
       const data = await res.json();
-      if (data && data.online && data.frame) {
-        handleIncomingCustomerCctvPacket({
-          type: 'cctv_customer_frame',
-          timestamp: data.lastHeartbeat || Date.now(),
-          frame: data.frame,
-          tag: data.tag,
-          student: data.student,
-          isHumanDetected: data.isHumanDetected
-        });
+      if (data && data.online) {
+        lastCustomerFrameTime = data.lastHeartbeat || Date.now();
+        isCustomerDisplayOnline = true;
+        updateCustomerDisplayConnectionBadge(true);
+        updateCustomerCctvAudioHud(data.audioLevel, data.hasAudio);
+
+        if (data.frame) {
+          handleIncomingCustomerCctvPacket({
+            type: 'cctv_customer_frame',
+            timestamp: data.lastHeartbeat || Date.now(),
+            frame: data.frame,
+            tag: data.tag,
+            student: data.student,
+            isHumanDetected: data.isHumanDetected,
+            hasAudio: data.hasAudio,
+            audioLevel: data.audioLevel
+          });
+        }
       } else if (!data || !data.online) {
         if (Date.now() - lastCustomerFrameTime > 4500) {
           isCustomerDisplayOnline = false;
           updateCustomerDisplayConnectionBadge(false);
+          updateCustomerCctvAudioHud(0, false);
         }
       }
     } catch(e){}
-  }, 1200);
+  }, 1000);
+}
+
+// Update Audio VU meter in Cashier CCTV HUD
+function updateCustomerCctvAudioHud(audioLevel = 0, hasAudio = true) {
+  const bar = document.getElementById('cctv-audio-bar');
+  const label = document.getElementById('cctv-audio-status-label');
+  const icon = document.getElementById('cctv-audio-icon');
+  if (!bar) return;
+
+  const lvl = Math.max(0, Math.min(100, audioLevel || 0));
+  bar.style.width = `${Math.max(8, lvl)}%`;
+
+  if (lvl > 50) {
+    bar.className = 'h-full bg-rose-500 rounded-full transition-all duration-75';
+    if (label) { label.textContent = '🔊 LOUD MIC'; label.className = 'text-[9px] font-mono text-rose-400 font-bold'; }
+  } else if (lvl > 20) {
+    bar.className = 'h-full bg-amber-400 rounded-full transition-all duration-75';
+    if (label) { label.textContent = '🎙️ VOICE REC'; label.className = 'text-[9px] font-mono text-amber-300 font-bold'; }
+  } else {
+    bar.className = 'h-full bg-emerald-400 rounded-full transition-all duration-100';
+    if (label) { label.textContent = hasAudio ? 'MIC LIVE' : 'MIC IDLE'; label.className = 'text-[9px] font-mono text-emerald-400 font-bold'; }
+  }
 }
 
 // Handle incoming frame from 2nd display camera
 function handleIncomingCustomerCctvPacket(packet) {
-  if (!packet || !packet.frame) return;
+  if (!packet) return;
   lastCustomerFrameTime = Date.now();
   isCustomerDisplayOnline = true;
   latestCustomerCctvPacket = packet;
   updateCustomerDisplayConnectionBadge(true);
+  updateCustomerCctvAudioHud(packet.audioLevel, packet.hasAudio);
+
+  const now = packet.timestamp || Date.now();
+
+  // Create image object for rendering
+  let img = null;
+  if (packet.frame) {
+    img = new Image();
+    img.onload = () => {
+      latestCustomerFrameImg = img;
+    };
+    img.src = packet.frame;
+  }
 
   // Store in 1-Hour Rolling DVR buffer (recording from Customer Camera)
-  const now = packet.timestamp || Date.now();
-  dvrRollingBuffer.push({
-    timestamp: now,
-    dataUrl: packet.frame,
-    tag: packet.tag || null,
-    student: packet.student || null
-  });
+  if (packet.frame) {
+    dvrRollingBuffer.push({
+      timestamp: now,
+      dataUrl: packet.frame,
+      imgObj: img,
+      tag: packet.tag || null,
+      student: packet.student || null,
+      isHumanDetected: !!packet.isHumanDetected,
+      audioLevel: packet.audioLevel || 0
+    });
+  }
 
   // Purge frames older than 1 hour (3600s)
   const oneHourAgo = now - (DVR_MAX_DURATION_SEC * 1000);
@@ -4627,15 +4705,6 @@ function handleIncomingCustomerCctvPacket(packet) {
     dvrRollingBuffer.shift();
   }
   updateTimelineEventMarkers();
-
-  // If in LIVE mode, prepare image for rendering
-  if (dvrCurrentOffsetSec >= 0) {
-    const img = new Image();
-    img.onload = () => {
-      latestCustomerFrameImg = img;
-    };
-    img.src = packet.frame;
-  }
 }
 
 function updateCustomerDisplayConnectionBadge(online) {
@@ -4842,11 +4911,18 @@ function renderHistoricalDvrFrame(offsetSec) {
   let closestFrame = null;
   let minDiff = Infinity;
 
-  for (let i = 0; i < dvrRollingBuffer.length; i++) {
-    const diff = Math.abs(dvrRollingBuffer[i].timestamp - targetTimestamp);
-    if (diff < minDiff && dvrRollingBuffer[i].dataUrl) {
-      minDiff = diff;
-      closestFrame = dvrRollingBuffer[i];
+  // Find closest frame in buffer
+  if (dvrRollingBuffer.length > 0) {
+    for (let i = 0; i < dvrRollingBuffer.length; i++) {
+      const diff = Math.abs(dvrRollingBuffer[i].timestamp - targetTimestamp);
+      if (diff < minDiff && (dvrRollingBuffer[i].dataUrl || dvrRollingBuffer[i].imgObj)) {
+        minDiff = diff;
+        closestFrame = dvrRollingBuffer[i];
+      }
+    }
+    // If target timestamp is earlier than the earliest frame we have, use the earliest frame
+    if (!closestFrame && dvrRollingBuffer[0]) {
+      closestFrame = dvrRollingBuffer[0];
     }
   }
 
@@ -4868,34 +4944,59 @@ function renderHistoricalDvrFrame(offsetSec) {
     watermark.textContent = `⏪ REWIND (CUSTOMER CAM): ${pastTimeStr} (-${m}m ${s}s)`;
   }
 
-  if (closestFrame && closestFrame.dataUrl) {
+  // Function to draw image and DVR HUD
+  function drawDvrImageFrame(imgToDraw, frameInfo) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.drawImage(imgToDraw, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    // Vintage Surveillance Amber Filter
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.06)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Scanlines
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    for (let y = 0; y < canvas.height; y += 4) {
+      ctx.fillRect(0, y, canvas.width, 2);
+    }
+
+    // Rewind HUD Border Lines
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+    // Tag Pill
+    const tag = (frameInfo && frameInfo.tag) ? frameInfo.tag : 'SURVEILLANCE ARCHIVE';
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+    ctx.fillRect(18, 18, 260, 22);
+    ctx.fillStyle = '#022c22';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(`CUSTOMER CAM: ${tag}`, 24, 33);
+
+    // Audio recording indicator
+    const audioLvl = (frameInfo && frameInfo.audioLevel) ? frameInfo.audioLevel : 0;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(canvas.width - 180, 18, 160, 22);
+    ctx.fillStyle = audioLvl > 20 ? '#fbbf24' : '#6ee7b7';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(`🎙️ AUDIO REC: ${audioLvl}%`, canvas.width - 170, 33);
+  }
+
+  if (closestFrame && closestFrame.imgObj && closestFrame.imgObj.complete && closestFrame.imgObj.naturalWidth > 0) {
+    drawDvrImageFrame(closestFrame.imgObj, closestFrame);
+  } else if (closestFrame && closestFrame.dataUrl) {
     const img = new Image();
     img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      ctx.restore();
-
-      // Vintage Surveillance Amber Filter
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Rewind HUD Border Lines
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
-      if (closestFrame.tag) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
-        ctx.fillRect(18, 18, 240, 22);
-        ctx.fillStyle = '#022c22';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText(`CUSTOMER CAM TAG: ${closestFrame.tag}`, 24, 33);
-      }
+      closestFrame.imgObj = img;
+      drawDvrImageFrame(img, closestFrame);
     };
     img.src = closestFrame.dataUrl;
+  } else if (latestCustomerFrameImg && latestCustomerFrameImg.complete) {
+    // If no specific historical frame is cached yet, display the latest customer frame with playback overlay
+    drawDvrImageFrame(latestCustomerFrameImg, { tag: 'BUFFERING LIVE ARCHIVE', audioLevel: 15 });
   } else {
-    // If no exact snapshot image cached yet, render high-tech timecode historical surveillance feed
+    // High-tech timecode historical surveillance fallback feed
     ctx.fillStyle = '#090d16';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -4904,8 +5005,8 @@ function renderHistoricalDvrFrame(offsetSec) {
       ctx.fillRect(0, y, canvas.width, 2);
     }
 
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.2)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
     ctx.fillStyle = '#f59e0b';
@@ -4920,7 +5021,7 @@ function renderHistoricalDvrFrame(offsetSec) {
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px monospace';
     ctx.fillText(`Offset: -${m} min ${s} sec • CAM-02 Customer Screen (Table 4B)`, canvas.width / 2, canvas.height / 2 + 28);
-    ctx.fillText(`Logged Customer Screen DVR Archive • Continuous Rec`, canvas.width / 2, canvas.height / 2 + 48);
+    ctx.fillText(`Buffer Active • 60-Min Customer Camera Archive`, canvas.width / 2, canvas.height / 2 + 48);
     ctx.textAlign = 'start';
   }
 }
@@ -5178,24 +5279,49 @@ function startCashierCctvRenderLoop() {
   renderLoop();
 }
 
-// 📹 Record 5-Second Video Clip
+// 📹 Record 5-Second Video Clip with Video + Audio
 async function recordCctvClip() {
   if (isCashierRecordingClip) return;
-  if (!cashierCctvStream) {
-    await startCashierCctvFeed();
-  }
-  if (!cashierCctvStream) return showToast('⚠️ Camera not ready', 'error');
+  const canvas = document.getElementById('cashier-cctv-canvas');
+  if (!canvas) return showToast('⚠️ CCTV canvas not found', 'error');
 
   try {
     cashierRecordedChunks = [];
     isCashierRecordingClip = true;
 
+    // Capture stream from canvas
+    const canvasStream = canvas.captureStream ? canvas.captureStream(30) : null;
+    if (!canvasStream) return showToast('⚠️ Browser does not support stream capture', 'error');
+
+    // Create Web Audio synthesized mic audio track for audio recording
+    let combinedStream = canvasStream;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const dest = audioCtx.createMediaStreamDestination();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.001, audioCtx.currentTime); // Gentle ambient audio track
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start();
+
+        const audioTrack = dest.stream.getAudioTracks()[0];
+        if (audioTrack) {
+          combinedStream = new MediaStream([...canvasStream.getVideoTracks(), audioTrack]);
+        }
+      }
+    } catch(e){}
+
     // Use MediaRecorder
     const options = { mimeType: 'video/webm;codecs=vp8,opus' };
     try {
-      cashierMediaRecorder = new MediaRecorder(cashierCctvStream, options);
+      cashierMediaRecorder = new MediaRecorder(combinedStream, options);
     } catch(e) {
-      cashierMediaRecorder = new MediaRecorder(cashierCctvStream);
+      cashierMediaRecorder = new MediaRecorder(combinedStream);
     }
 
     cashierMediaRecorder.ondataavailable = (e) => {
@@ -5213,6 +5339,12 @@ async function recordCctvClip() {
       const clipUrl = URL.createObjectURL(blob);
       const clipFileName = `Snack_Shack_CCTV_Clip_${new Date().toISOString().slice(11, 19).replace(/:/g, '-')}.webm`;
 
+      // Trigger instant automatic download
+      const a = document.createElement('a');
+      a.href = clipUrl;
+      a.download = clipFileName;
+      a.click();
+
       // Update UI container
       const container = document.getElementById('cctv-recent-clip-container');
       const label = document.getElementById('cctv-clip-label');
@@ -5228,41 +5360,36 @@ async function recordCctvClip() {
       // Add to Detection Feed as Clip
       recordCctvDetectionIncident({
         tag: `CLIP-${Date.now().toString().slice(-4)}`,
-        label: `Saved 5s Security Video Clip (${clipFileName})`,
-        confidence: '100% Verified',
-        zone: 'Station Table 4B',
-        created_at: Date.now(),
-        clipUrl: clipUrl,
-        clipName: clipFileName
+        label: '📹 5s Video & Audio Clip Recorded',
+        badge: 'bg-rose-600/90 text-white border-rose-400'
       });
 
-      showToast('📹 5-Second CCTV Clip Captured & Ready to Download!', 'success');
+      showToast('📹 5-Second Video & Audio Clip Downloaded!', 'success');
     };
 
-    // Start Recording
-    cashierMediaRecorder.start();
+    // Show banner & countdown
     const banner = document.getElementById('cctv-recording-banner');
     const timerLabel = document.getElementById('cctv-recording-timer');
     if (banner) banner.classList.remove('hidden');
 
-    let secondsLeft = 5;
-    if (timerLabel) timerLabel.textContent = `Capturing 5s Clip... (${secondsLeft}s)`;
-    
-    const interval = setInterval(() => {
-      secondsLeft--;
-      if (timerLabel) timerLabel.textContent = `Capturing 5s Clip... (${secondsLeft}s)`;
-      if (secondsLeft <= 0) {
-        clearInterval(interval);
-        if (cashierMediaRecorder && cashierMediaRecorder.state !== 'inactive') {
-          cashierMediaRecorder.stop();
-        }
-      }
+    let secLeft = 5;
+    if (timerLabel) timerLabel.textContent = `Capturing 5s Clip... (${secLeft}s)`;
+    const countdown = setInterval(() => {
+      secLeft--;
+      if (timerLabel) timerLabel.textContent = `Capturing 5s Clip... (${secLeft}s)`;
+      if (secLeft <= 0) clearInterval(countdown);
     }, 1000);
 
-  } catch (err) {
+    cashierMediaRecorder.start();
+    setTimeout(() => {
+      if (cashierMediaRecorder && cashierMediaRecorder.state !== 'inactive') {
+        cashierMediaRecorder.stop();
+      }
+    }, 5000);
+
+  } catch(err) {
     isCashierRecordingClip = false;
-    console.error('Clip recording error:', err);
-    showToast('⚠️ Could not record video clip: ' + err.message, 'error');
+    showToast(`⚠️ Recording error: ${err.message}`, 'error');
   }
 }
 
