@@ -438,7 +438,8 @@ app.post('/api/checkout', async (req, res) => {
       tax = 0,
       amount_paid,
       cashier_name = 'Student Volunteer',
-      notes = ''
+      notes = '',
+      fundraiser_id = null
     } = req.body;
 
     if (!cart || !Array.isArray(cart) || cart.length === 0) {
@@ -578,9 +579,9 @@ app.post('/api/checkout', async (req, res) => {
     const cleanPaymentMethod = payment_method === 'student_cash' ? 'cash (student pass)' : payment_method;
 
     const orderRes = await client.query(
-      `INSERT INTO orders (order_number, cashier_name, payment_method, student_id, subtotal, discount, discount_name, tax, total, amount_paid, change_due, punch_awarded, reward_used, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-      [orderNumber, cashier_name, cleanPaymentMethod, resolvedStudentId, subtotal, discountAmt, discount_name || '', taxAmt, total, paid, changeDue, punchAwarded, rewardUsed, notes]
+      `INSERT INTO orders (order_number, cashier_name, payment_method, student_id, subtotal, discount, discount_name, tax, total, amount_paid, change_due, punch_awarded, reward_used, notes, fundraiser_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [orderNumber, cashier_name, cleanPaymentMethod, resolvedStudentId, subtotal, discountAmt, discount_name || '', taxAmt, total, paid, changeDue, punchAwarded, rewardUsed, notes, fundraiser_id || null]
     );
     const order = orderRes.rows[0];
 
@@ -875,6 +876,188 @@ app.get('/api/analytics/export', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// FUNDRAISER CAMPAIGNS & ALLOCATIONS
+// ----------------------------------------------------
+
+app.get('/api/fundraisers', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        f.*,
+        COALESCE(SUM(o.total), 0) as total_raised,
+        COALESCE(SUM(o.tip_amount), 0) as total_tips,
+        COUNT(DISTINCT o.id) as order_count
+      FROM fundraiser_campaigns f
+      LEFT JOIN orders o ON f.id = o.fundraiser_id
+      WHERE f.is_active = TRUE
+      GROUP BY f.id
+      ORDER BY f.created_at ASC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching fundraisers:', err);
+    res.status(500).json({ error: 'Failed to fetch fundraisers' });
+  }
+});
+
+app.post('/api/fundraisers', async (req, res) => {
+  try {
+    const { name, goal_amount, description } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Fundraiser name is required.' });
+    }
+    const result = await db.query(
+      `INSERT INTO fundraiser_campaigns (name, goal_amount, description)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [name.trim(), parseFloat(goal_amount) || 500.00, description || '']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating fundraiser:', err);
+    res.status(500).json({ error: 'Failed to create fundraiser' });
+  }
+});
+
+// ----------------------------------------------------
+// INVENTORY SHRINKAGE, LOSS & SPOILAGE LOGS
+// ----------------------------------------------------
+
+app.get('/api/inventory/shrinkage', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        s.*,
+        p.emoji as product_emoji,
+        f.name as fundraiser_name
+      FROM inventory_shrinkage s
+      LEFT JOIN products p ON s.product_id = p.id
+      LEFT JOIN fundraiser_campaigns f ON s.fundraiser_id = f.id
+      ORDER BY s.created_at DESC
+      LIMIT 100
+    `);
+
+    const summaryRes = await db.query(`
+      SELECT 
+        COALESCE(SUM(quantity), 0) as total_units_lost,
+        COALESCE(SUM(total_cost_loss), 0) as total_cost_loss
+      FROM inventory_shrinkage
+    `);
+
+    const reasonsRes = await db.query(`
+      SELECT reason, COUNT(*) as count, SUM(quantity) as units, SUM(total_cost_loss) as cost_loss
+      FROM inventory_shrinkage
+      GROUP BY reason
+      ORDER BY cost_loss DESC
+    `);
+
+    res.json({
+      shrinkage_logs: result.rows,
+      summary: {
+        total_units_lost: parseInt(summaryRes.rows[0].total_units_lost, 10),
+        total_cost_loss: parseFloat(summaryRes.rows[0].total_cost_loss)
+      },
+      reasons_breakdown: reasonsRes.rows
+    });
+  } catch (err) {
+    console.error('Error fetching shrinkage logs:', err);
+    res.status(500).json({ error: 'Failed to fetch shrinkage logs' });
+  }
+});
+
+app.post('/api/inventory/shrinkage', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const { product_id, quantity, reason, notes, logged_by, fundraiser_id } = req.body;
+    const qty = parseInt(quantity, 10);
+
+    if (!product_id || isNaN(qty) || qty <= 0) {
+      return res.status(400).json({ error: 'Valid product and quantity are required.' });
+    }
+
+    await client.query('BEGIN');
+
+    const prodRes = await client.query('SELECT * FROM products WHERE id = $1 FOR UPDATE', [product_id]);
+    if (prodRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Product not found.' });
+    }
+
+    const product = prodRes.rows[0];
+    const unitCost = parseFloat(product.cost_price) || 0.00;
+    const totalCostLoss = unitCost * qty;
+    const prevStock = product.stock_quantity;
+    const newStock = Math.max(0, prevStock - qty);
+
+    await client.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [newStock, product.id]);
+
+    const reasonLabel = reason || 'expired';
+    await client.query(
+      `INSERT INTO inventory_logs (product_id, change_qty, previous_stock, new_stock, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [product.id, -qty, prevStock, newStock, `Shrinkage/Loss: ${reasonLabel} (${notes || ''})`]
+    );
+
+    const logRes = await client.query(
+      `INSERT INTO inventory_shrinkage (product_id, product_name, quantity, unit_cost, total_cost_loss, reason, notes, logged_by, fundraiser_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [product.id, product.name, qty, unitCost, totalCostLoss, reasonLabel, notes || '', logged_by || 'Cashier', fundraiser_id || null]
+    );
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      success: true,
+      shrinkage: logRes.rows[0],
+      updated_product: {
+        id: product.id,
+        stock_quantity: newStock
+      }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error logging inventory shrinkage:', err);
+    res.status(500).json({ error: 'Failed to record inventory shrinkage' });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete('/api/inventory/shrinkage/:id', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const { id } = req.params;
+    await client.query('BEGIN');
+
+    const logRes = await client.query('SELECT * FROM inventory_shrinkage WHERE id = $1', [id]);
+    if (logRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Shrinkage record not found.' });
+    }
+
+    const log = logRes.rows[0];
+
+    // Restore stock
+    await client.query('UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2', [log.quantity, log.product_id]);
+    await client.query(
+      `INSERT INTO inventory_logs (product_id, change_qty, previous_stock, new_stock, reason)
+       SELECT id, $1, stock_quantity - $1, stock_quantity, 'Voided Shrinkage Entry #${id}' FROM products WHERE id = $2`,
+      [log.quantity, log.product_id]
+    );
+
+    await client.query('DELETE FROM inventory_shrinkage WHERE id = $1', [id]);
+    await client.query('COMMIT');
+
+    res.json({ success: true, message: 'Shrinkage entry voided and inventory restored.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error voiding shrinkage:', err);
+    res.status(500).json({ error: 'Failed to void shrinkage entry' });
+  } finally {
+    client.release();
+  }
+});
+
+// ----------------------------------------------------
 // OFFICIAL SCHOOL ADVISOR / PRINCIPAL FINANCIAL REPORT
 // ----------------------------------------------------
 
@@ -909,6 +1092,51 @@ app.get('/api/reports/advisor-statement', async (req, res) => {
     const cogs = parseFloat(totalsRes.rows[0].total_cogs || 0);
     const netProfit = grossRev - cogs;
     const profitMargin = grossRev > 0 ? ((netProfit / grossRev) * 100).toFixed(1) : '0.0';
+
+    // Fundraiser Campaign Allocations Breakdown
+    const fundraiserRes = await db.query(`
+      SELECT 
+        f.id,
+        f.name,
+        f.goal_amount,
+        COUNT(DISTINCT o.id) as orders_count,
+        COALESCE(SUM(o.total), 0) as gross_raised,
+        COALESCE(SUM(o.tip_amount), 0) as tips_raised,
+        COALESCE(SUM(oi.unit_cost * oi.quantity), 0) as cogs,
+        COALESCE(SUM(o.total) - SUM(oi.unit_cost * oi.quantity), 0) as net_profit
+      FROM fundraiser_campaigns f
+      LEFT JOIN orders o ON f.id = o.fundraiser_id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      GROUP BY f.id, f.name, f.goal_amount
+      ORDER BY gross_raised DESC
+    `);
+
+    // Shrinkage & Spoilage Write-Off Breakdown
+    let shrinkageFilter = '';
+    const shrinkParams = [];
+    if (start_date && end_date) {
+      shrinkageFilter = ' WHERE created_at >= $1 AND created_at <= $2';
+      shrinkParams.push(new Date(start_date + 'T00:00:00Z'), new Date(end_date + 'T23:59:59Z'));
+    } else if (start_date) {
+      shrinkageFilter = ' WHERE created_at >= $1';
+      shrinkParams.push(new Date(start_date + 'T00:00:00Z'));
+    }
+
+    const shrinkageRes = await db.query(`
+      SELECT 
+        COALESCE(SUM(quantity), 0) as total_units_lost,
+        COALESCE(SUM(total_cost_loss), 0) as total_cost_loss
+      FROM inventory_shrinkage
+      ${shrinkageFilter}
+    `, shrinkParams);
+
+    const shrinkageBreakdown = await db.query(`
+      SELECT reason, SUM(quantity) as units, SUM(total_cost_loss) as cost_loss
+      FROM inventory_shrinkage
+      ${shrinkageFilter}
+      GROUP BY reason
+      ORDER BY cost_loss DESC
+    `, shrinkParams);
 
     const paymentsRes = await db.query(`
       SELECT payment_method, COUNT(*) as count, COALESCE(SUM(total), 0) as amount
@@ -962,8 +1190,12 @@ app.get('/api/reports/advisor-statement', async (req, res) => {
         net_profit: netProfit,
         profit_margin: profitMargin,
         total_discounts: parseFloat(totalsRes.rows[0].total_discounts || 0),
-        total_donations: parseFloat(totalsRes.rows[0].total_donations || 0)
+        total_donations: parseFloat(totalsRes.rows[0].total_donations || 0),
+        shrinkage_cost_loss: parseFloat(shrinkageRes.rows[0].total_cost_loss || 0),
+        shrinkage_units_lost: parseInt(shrinkageRes.rows[0].total_units_lost, 10)
       },
+      fundraisers: fundraiserRes.rows,
+      shrinkage_breakdown: shrinkageBreakdown.rows,
       student_funds: {
         total_students: parseInt(studentPoolRes.rows[0].total_students, 10),
         prepaid_pool: parseFloat(studentPoolRes.rows[0].prepaid_pool || 0),

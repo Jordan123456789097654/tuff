@@ -202,6 +202,22 @@
           </button>
         </div>
 
+        <!-- Cashier Fundraiser Allocator Bar -->
+        <div class="px-3.5 py-2 bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border-b border-blue-800/40 flex items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-sm">🎯</span>
+            <span class="text-blue-300 font-semibold truncate">Raising For:</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <select id="cart-fundraiser-select" onchange="onFundraiserSelectChange(this.value)" class="bg-slate-900 border border-blue-700/60 text-blue-200 text-[11px] font-bold rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 max-w-[180px] truncate">
+              <!-- Populated by JS -->
+            </select>
+            <button onclick="openNewFundraiserModal()" class="text-blue-300 hover:text-white p-1 rounded hover:bg-blue-800/40" title="Create New Fundraiser Campaign">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- Auto Combo Deal Notification Banner -->
         <div id="auto-combo-banner" class="hidden bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-b border-amber-500/30 px-3.5 py-2 text-xs text-amber-300 flex items-center justify-between animate-pulse">
           <div class="flex items-center gap-1.5 font-bold">
@@ -415,9 +431,13 @@
               <i data-lucide="boxes" class="w-6 h-6 text-amber-400"></i>
               Snack Shack Inventory & Restock Hub
             </h2>
-            <p class="text-xs text-slate-400">Track real-time snack counts, barcodes, wholesale costs, and open-price items.</p>
+            <p class="text-xs text-slate-400">Track real-time snack counts, barcodes, wholesale costs, loss/spoilage write-offs, and open-price items.</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="openShrinkageModal()" class="bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-rose-800/60 flex items-center gap-1.5 transition">
+              <i data-lucide="trash-2" class="w-4 h-4 text-rose-400"></i>
+              <span>Log Spoilage / Loss</span>
+            </button>
             <button onclick="openPrintLabelsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
               <i data-lucide="tag" class="w-4 h-4 text-amber-400"></i>
               <span>Print Bin & Cooler Labels</span>
@@ -1464,6 +1484,132 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: LOG INVENTORY SHRINKAGE / LOSS / SPOILAGE -->
+  <!-- ==================================================== -->
+  <div id="modal-shrinkage" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-shrinkage')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center text-2xl font-bold">
+          🗑️
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Log Loss, Spoilage & Expired Goods</h3>
+          <p class="text-xs text-slate-400">Write off damaged, expired, or sampled snacks without skewing cash drawer audits.</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Select Snack Item:</label>
+          <select id="shrinkage-product-select" onchange="onShrinkageProductChange()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Units Lost / Spoiled:</label>
+            <input type="number" min="1" id="shrinkage-qty" value="1" oninput="calculateShrinkageCost()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-rose-500" />
+          </div>
+          <div>
+            <label class="text-slate-400 font-semibold mb-1 block">Estimated Cost Loss ($):</label>
+            <div id="shrinkage-cost-display" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-rose-400 font-bold font-mono text-sm">
+              $0.00
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Reason for Loss:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-2.5 rounded-xl cursor-pointer flex items-center gap-2">
+              <input type="radio" name="shrinkage-reason" value="expired" checked class="text-rose-500" />
+              <span>🥛 Expired / Past Date</span>
+            </label>
+            <label class="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-2.5 rounded-xl cursor-pointer flex items-center gap-2">
+              <input type="radio" name="shrinkage-reason" value="damaged_melted" class="text-rose-500" />
+              <span>🍫 Damaged / Melted</span>
+            </label>
+            <label class="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-2.5 rounded-xl cursor-pointer flex items-center gap-2">
+              <input type="radio" name="shrinkage-reason" value="dropped_spilled" class="text-rose-500" />
+              <span>💥 Dropped / Spilled</span>
+            </label>
+            <label class="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-2.5 rounded-xl cursor-pointer flex items-center gap-2">
+              <input type="radio" name="shrinkage-reason" value="sample_giveaway" class="text-rose-500" />
+              <span>🎁 Taste Sample / Promo</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Associated Fundraiser (Optional Write-Off):</label>
+          <select id="shrinkage-fundraiser-select" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500">
+            <option value="">None (General Snack Shack Write-Off)</option>
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Detailed Notes / Staff Witness:</label>
+          <input type="text" id="shrinkage-notes" placeholder="e.g. Found torn package in storage bin #2" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+        </div>
+      </div>
+
+      <button onclick="submitShrinkageLog()" class="w-full bg-rose-700 hover:bg-rose-600 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span>Confirm & Deduct from Stock</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: NEW FUNDRAISER CAMPAIGN -->
+  <!-- ==================================================== -->
+  <div id="modal-new-fundraiser" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-new-fundraiser')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-2xl font-bold">
+          🎯
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Create Fundraiser Campaign</h3>
+          <p class="text-xs text-slate-400">Add school causes, class trips, or club equipment goals.</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Campaign Name:</label>
+          <input type="text" id="fundraiser-name-input" placeholder="e.g. Cheer Team Nationals or 8th Grade DC Trip" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Fundraising Goal Amount ($):</label>
+          <input type="number" step="50.00" id="fundraiser-goal-input" value="500.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Description & Purpose:</label>
+          <textarea id="fundraiser-desc-input" rows="2" placeholder="e.g. Travel tickets, tournament entry fees, team uniforms..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"></textarea>
+        </div>
+      </div>
+
+      <button onclick="submitNewFundraiser()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span>Create Campaign</span>
+      </button>
     </div>
   </div>
 

@@ -8,6 +8,8 @@ let categories = [];
 let students = [];
 let orders = [];
 let cart = [];
+let fundraisers = [];
+let activeFundraiserId = null;
 let currentCategory = null;
 let searchQuery = '';
 let activeShift = null;
@@ -20,8 +22,18 @@ let activeDiscount = null; // { name: string, type: 'pct' | 'fixed', value: numb
 // Display Synchronization (BroadcastChannel + SSE)
 const displayChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('snack_display_sync') : null;
 
+function getActiveFundraiser() {
+  if (!fundraisers || fundraisers.length === 0) return null;
+  if (activeFundraiserId) {
+    const f = fundraisers.find(item => item.id === parseInt(activeFundraiserId, 10));
+    if (f) return f;
+  }
+  return fundraisers[0] || null;
+}
+
 function syncCartToDisplay() {
   const { subtotal, comboDiscount, discountAmount, discountLabel, total } = calculateTotals();
+  const currentFund = getActiveFundraiser();
   const payload = {
     state: (cart.length === 0 && !selectedStudentForCheckout) ? 'idle' : 'active',
     cart: cart,
@@ -30,7 +42,8 @@ function syncCartToDisplay() {
     discountAmount: discountAmount,
     discountLabel: discountLabel,
     total: total,
-    student: selectedStudentForCheckout || null
+    student: selectedStudentForCheckout || null,
+    fundraiser: currentFund
   };
 
   if (displayChannel) {
@@ -45,9 +58,11 @@ function syncCartToDisplay() {
 }
 
 function celebrateDisplay(order) {
+  const currentFund = getActiveFundraiser();
   const payload = {
     state: 'celebrate',
-    order: order
+    order: order,
+    fundraiser: currentFund
   };
 
   if (displayChannel) {
@@ -57,7 +72,7 @@ function celebrateDisplay(order) {
   fetch('/api/display/celebrate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ order })
+    body: JSON.stringify({ order, fundraiser: currentFund })
   }).catch(() => {});
 }
 
@@ -211,9 +226,177 @@ function switchTab(tabId) {
 // ==========================================
 async function initApp() {
   try {
-    await Promise.all([loadCategories(), loadProducts(), loadShiftStatus()]);
+    await Promise.all([loadCategories(), loadProducts(), loadFundraisers(), loadShiftStatus()]);
   } catch (err) {
     console.error('Init error:', err);
+  }
+}
+
+async function loadFundraisers() {
+  try {
+    const res = await fetch('/api/fundraisers');
+    fundraisers = await res.json();
+    renderFundraiserSelectors();
+  } catch (err) {
+    console.error('Failed to load fundraisers', err);
+  }
+}
+
+function renderFundraiserSelectors() {
+  const cartSelect = document.getElementById('cart-fundraiser-select');
+  const shrinkSelect = document.getElementById('shrinkage-fundraiser-select');
+
+  if (cartSelect) {
+    if (fundraisers.length === 0) {
+      cartSelect.innerHTML = `<option value="">Default School Fund</option>`;
+    } else {
+      cartSelect.innerHTML = fundraisers.map(f => `
+        <option value="${f.id}" ${activeFundraiserId === f.id ? 'selected' : ''}>
+          ${f.name} (Goal: $${parseFloat(f.goal_amount).toFixed(0)})
+        </option>
+      `).join('');
+      if (!activeFundraiserId && fundraisers.length > 0) {
+        activeFundraiserId = fundraisers[0].id;
+      }
+    }
+  }
+
+  if (shrinkSelect) {
+    shrinkSelect.innerHTML = `
+      <option value="">None (General Snack Shack Write-Off)</option>
+      ${fundraisers.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
+    `;
+  }
+}
+
+function onFundraiserSelectChange(val) {
+  activeFundraiserId = val ? parseInt(val, 10) : null;
+  const f = getActiveFundraiser();
+  if (f) {
+    showToast(`Active Fundraiser: ${f.name} 🎯`, 'info');
+  }
+  syncCartToDisplay();
+}
+
+function openNewFundraiserModal() {
+  document.getElementById('fundraiser-name-input').value = '';
+  document.getElementById('fundraiser-goal-input').value = '500.00';
+  document.getElementById('fundraiser-desc-input').value = '';
+  openModal('modal-new-fundraiser');
+}
+
+async function submitNewFundraiser() {
+  const name = document.getElementById('fundraiser-name-input').value.trim();
+  const goal_amount = parseFloat(document.getElementById('fundraiser-goal-input').value);
+  const description = document.getElementById('fundraiser-desc-input').value.trim();
+
+  if (!name) {
+    showToast('Please enter a campaign name', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/fundraisers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, goal_amount, description })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create campaign');
+
+    playSound('chaching');
+    closeModal('modal-new-fundraiser');
+    await loadFundraisers();
+    activeFundraiserId = data.id;
+    renderFundraiserSelectors();
+    syncCartToDisplay();
+    showToast(`Fundraiser Campaign "${data.name}" created! 🎯`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ==========================================
+// INVENTORY SHRINKAGE & LOSS LOGGING
+// ==========================================
+function openShrinkageModal(preselectedProductId = null) {
+  const select = document.getElementById('shrinkage-product-select');
+  if (products.length === 0) {
+    showToast('No products available to log loss.', 'error');
+    return;
+  }
+
+  select.innerHTML = products.map(p => `
+    <option value="${p.id}" ${preselectedProductId === p.id ? 'selected' : ''}>
+      ${p.emoji || '🍿'} ${p.name} (Stock: ${p.stock_quantity}, Wholesale: $${parseFloat(p.cost_price).toFixed(2)})
+    </option>
+  `).join('');
+
+  document.getElementById('shrinkage-qty').value = '1';
+  document.getElementById('shrinkage-notes').value = '';
+  
+  onShrinkageProductChange();
+  openModal('modal-shrinkage');
+}
+
+function onShrinkageProductChange() {
+  calculateShrinkageCost();
+}
+
+function calculateShrinkageCost() {
+  const select = document.getElementById('shrinkage-product-select');
+  const productId = parseInt(select.value, 10);
+  const qty = parseInt(document.getElementById('shrinkage-qty').value, 10) || 0;
+  const costDisplay = document.getElementById('shrinkage-cost-display');
+
+  const product = products.find(p => p.id === productId);
+  if (!product) {
+    costDisplay.textContent = '$0.00';
+    return;
+  }
+
+  const cost = parseFloat(product.cost_price) || 0;
+  const totalLoss = cost * qty;
+  costDisplay.textContent = `$${totalLoss.toFixed(2)} ($${cost.toFixed(2)} each)`;
+}
+
+async function submitShrinkageLog() {
+  const select = document.getElementById('shrinkage-product-select');
+  const productId = parseInt(select.value, 10);
+  const qty = parseInt(document.getElementById('shrinkage-qty').value, 10);
+  const reasonRadio = document.querySelector('input[name="shrinkage-reason"]:checked');
+  const reason = reasonRadio ? reasonRadio.value : 'expired';
+  const notes = document.getElementById('shrinkage-notes').value.trim();
+  const fundraiserId = document.getElementById('shrinkage-fundraiser-select').value || null;
+
+  if (!productId || isNaN(qty) || qty <= 0) {
+    showToast('Please specify valid product and quantity.', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/inventory/shrinkage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id: productId,
+        quantity: qty,
+        reason: reason,
+        notes: notes,
+        fundraiser_id: fundraiserId ? parseInt(fundraiserId, 10) : null,
+        logged_by: 'Cashier Volunteer'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to log loss');
+
+    playSound('warning');
+    closeModal('modal-shrinkage');
+    await loadProducts();
+    showToast(`Logged ${qty} units written off as ${reason}! 🗑️`, 'info');
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }
 
@@ -841,7 +1024,8 @@ async function submitCashCheckout() {
         discount_name: discountLabel,
         tax: 0,
         amount_paid: paid,
-        cashier_name: 'Cashier Volunteer'
+        cashier_name: 'Cashier Volunteer',
+        fundraiser_id: activeFundraiserId || null
       })
     });
 
@@ -1042,7 +1226,8 @@ async function submitStudentCheckout(paymentType) {
         discount_name: isReward ? '100% Free Snack Reward Pass' : discountLabel,
         tax: 0,
         amount_paid: isReward ? 0 : total,
-        cashier_name: 'Cashier Volunteer'
+        cashier_name: 'Cashier Volunteer',
+        fundraiser_id: activeFundraiserId || null
       })
     });
 
@@ -1087,7 +1272,8 @@ async function quickOtherCheckout(methodName) {
         discount_name: discountLabel,
         tax: 0,
         amount_paid: total,
-        cashier_name: 'Cashier Volunteer'
+        cashier_name: 'Cashier Volunteer',
+        fundraiser_id: activeFundraiserId || null
       })
     });
 
@@ -1418,7 +1604,10 @@ function renderInventoryTable(filterText = '') {
               : `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold text-[10px]">${p.stock_quantity} in stock</span>`
           }
         </td>
-        <td class="p-3.5 text-right space-x-1">
+        <td class="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+          <button onclick="openShrinkageModal(${p.id})" class="bg-rose-500/10 hover:bg-rose-500 text-rose-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-rose-500/30 text-xs font-semibold transition" title="Log expired, damaged, or spilled snack">
+            🗑️ Spoilage
+          </button>
           <button onclick="openRestockModal(${p.id})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 px-2.5 py-1.5 rounded-lg border border-amber-500/30 text-xs font-semibold transition">
             + Restock Case
           </button>
@@ -2376,6 +2565,74 @@ async function loadAdvisorReport() {
             `).join('')}
           </tbody>
         </table>
+      </div>
+
+      <!-- Fundraiser Campaign Allocations Breakdown -->
+      ${data.fundraisers && data.fundraisers.length > 0 ? `
+        <div class="space-y-2">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-1">4. Fundraiser Campaign Allocations</h3>
+          <table class="w-full text-left text-xs border border-slate-200">
+            <thead class="bg-slate-100 text-slate-700 font-semibold text-[10px] uppercase">
+              <tr>
+                <th class="p-2 border-b">Campaign / School Cause</th>
+                <th class="p-2 border-b text-center">Orders</th>
+                <th class="p-2 border-b text-right">Gross Sales</th>
+                <th class="p-2 border-b text-right">Tips/Donations</th>
+                <th class="p-2 border-b text-right text-emerald-800">Net Raised</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              ${data.fundraisers.map(f => `
+                <tr>
+                  <td class="p-2 font-bold">🎯 ${f.name}</td>
+                  <td class="p-2 text-center text-slate-600">${f.orders_count}</td>
+                  <td class="p-2 text-right font-mono">$${parseFloat(f.gross_raised).toFixed(2)}</td>
+                  <td class="p-2 text-right font-mono text-amber-700">+$${parseFloat(f.tips_raised).toFixed(2)}</td>
+                  <td class="p-2 text-right font-mono font-bold text-emerald-700">$${parseFloat(f.net_profit).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
+
+      <!-- Inventory Loss, Spoilage & Shrinkage Audit -->
+      <div class="space-y-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-1">5. Spoilage, Damage & Shrinkage Write-Offs</h3>
+        <div class="grid grid-cols-3 gap-3 bg-rose-50 p-3 rounded-lg border border-rose-200 text-xs">
+          <div>
+            <span class="text-[10px] text-rose-800 font-semibold block">Total Units Lost</span>
+            <div class="font-bold text-rose-900">${data.summary.shrinkage_units_lost || 0} items</div>
+          </div>
+          <div>
+            <span class="text-[10px] text-rose-800 font-semibold block">Total Cost Write-Off</span>
+            <div class="font-bold text-rose-900">$${parseFloat(data.summary.shrinkage_cost_loss || 0).toFixed(2)}</div>
+          </div>
+          <div>
+            <span class="text-[10px] text-rose-800 font-semibold block">Audit Status</span>
+            <div class="font-bold text-emerald-800">Deducted from inventory</div>
+          </div>
+        </div>
+        ${data.shrinkage_breakdown && data.shrinkage_breakdown.length > 0 ? `
+          <table class="w-full text-left text-xs border border-slate-200 mt-2">
+            <thead class="bg-slate-100 text-slate-700 font-semibold text-[10px] uppercase">
+              <tr>
+                <th class="p-2 border-b">Loss Reason</th>
+                <th class="p-2 border-b text-center">Units Lost</th>
+                <th class="p-2 border-b text-right text-rose-800">Wholesale Cost Loss</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              ${data.shrinkage_breakdown.map(sb => `
+                <tr>
+                  <td class="p-2 capitalize font-medium">${sb.reason.replace('_', ' ')}</td>
+                  <td class="p-2 text-center text-slate-600">${sb.units}</td>
+                  <td class="p-2 text-right font-mono text-rose-700 font-bold">-$${parseFloat(sb.cost_loss).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
       </div>
 
       <!-- Official Sign-off & Verification Section -->

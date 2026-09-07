@@ -158,7 +158,48 @@ async function initDB() {
         comment TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS fundraiser_campaigns (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(150) NOT NULL UNIQUE,
+        goal_amount NUMERIC(10, 2) DEFAULT 500.00,
+        description TEXT DEFAULT '',
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS fundraiser_id INT REFERENCES fundraiser_campaigns(id) ON DELETE SET NULL;
+
+      CREATE TABLE IF NOT EXISTS inventory_shrinkage (
+        id SERIAL PRIMARY KEY,
+        product_id INT REFERENCES products(id) ON DELETE CASCADE,
+        product_name VARCHAR(150) NOT NULL,
+        quantity INT NOT NULL,
+        unit_cost NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+        total_cost_loss NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+        reason VARCHAR(100) NOT NULL, -- 'expired', 'damaged_melted', 'dropped_spilled', 'sample_giveaway', 'theft_missing'
+        notes TEXT DEFAULT '',
+        logged_by VARCHAR(100) DEFAULT 'Cashier',
+        fundraiser_id INT REFERENCES fundraiser_campaigns(id) ON DELETE SET NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
+
+    // Ensure default fundraiser campaigns exist
+    const fundCheck = await client.query('SELECT COUNT(*) FROM fundraiser_campaigns');
+    if (parseInt(fundCheck.rows[0].count, 10) === 0) {
+      const defaultFunds = [
+        { name: 'General Student Activity Fund', goal: 1000.00, desc: 'School-wide activities, pep rallies, student store operations' },
+        { name: '8th Grade Class DC / End of Year Trip', goal: 2500.00, desc: 'Subsidizing travel tickets and meals for 8th grade students' },
+        { name: 'Robotics & STEM Club Competition Fund', goal: 750.00, desc: 'Sensors, motors, and tournament registration fees' },
+        { name: 'Athletics & Gym Equipment', goal: 600.00, desc: 'New basketballs, recess gear, and team jerseys' },
+      ];
+      for (const fund of defaultFunds) {
+        await client.query('INSERT INTO fundraiser_campaigns (name, goal_amount, description) VALUES ($1, $2, $3)', [
+          fund.name, fund.goal, fund.desc
+        ]);
+      }
+    }
 
     // Ensure standard categories exist
     const catCheck = await client.query('SELECT COUNT(*) FROM categories');
