@@ -172,6 +172,12 @@
     <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
 
+      <!-- Two-Way Customer Intercom Push-to-Talk Button -->
+      <button id="btn-customer-intercom" onmousedown="startCustomerTalkback()" onmouseup="stopCustomerTalkback()" ontouchstart="startCustomerTalkback()" ontouchend="stopCustomerTalkback()" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow-lg transition active:scale-95 cursor-pointer" title="Hold down to talk directly to cashier speaker">
+        <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+        <span id="intercom-talk-label">Talk to Cashier</span>
+      </button>
+
       <!-- Apple Wallet & Digital ID Pass Generator -->
       <button id="display-btn-apple-wallet" onclick="openAppleWalletPassModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Generate Apple Wallet / Printable ID Pass">
         <span>💳</span>
@@ -253,6 +259,10 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Bento Box Creator Trigger -->
+          <button onclick="openDisplayBentoModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow-md transition flex items-center gap-1 active:scale-95">
+            <span>🎒 Build Bento Pack ($3)</span>
+          </button>
           <!-- Category Filter Buttons -->
           <div class="flex flex-wrap gap-1.5" id="kiosk-category-pills">
             <button onclick="filterKioskCategory(null)" class="kiosk-cat-pill active bg-orange-500 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl transition">All</button>

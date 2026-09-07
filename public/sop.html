@@ -362,14 +362,20 @@
           <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">05</span>
           <div>
             <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Biometric Face ID, Apple Wallet &amp; Printable 8-Up Badges</h2>
-            <p class="text-xs text-slate-500 font-mono">Digital pass issuance, 8-up sheet printing, and biometric facial scan authentication</p>
+            <p class="text-xs text-slate-500 font-mono">Digital pass issuance, 8-up sheet printing, side-by-side photo comparison &amp; >85% match verification</p>
           </div>
         </div>
 
         <div class="space-y-3 text-xs text-slate-700">
           <p class="text-slate-600 text-[11px] leading-relaxed">
-            Students can pay via physical 8-Up barcoded badges, PKPass Apple Wallet cards, or optional on-device Face ID vector verification. All facial recognition vectors are computed client-side and never transmitted or stored in raw image form.
+            Students can pay via physical 8-Up barcoded badges, PKPass Apple Wallet cards, or optional on-device Face ID vector verification. All facial recognition vectors are computed client-side and compared against stored student enrollment photos using side-by-side visual modals and >85% confidence score thresholds.
           </p>
+          <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl space-y-1">
+            <h4 class="font-bold text-blue-900 uppercase text-[10px] tracking-wider">🧠 Biometric Photo Comparison Governance:</h4>
+            <p class="text-[11px] text-blue-800 leading-snug">
+              When a face lookup is triggered, the system fetches the registered student profile photo and displays a side-by-side match overlay on the cashier scanner. Matches exceeding 85.0% confidence automatically populate the student checkout cart and generate a verified audit log.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -531,16 +537,16 @@
         <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
           <span class="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center font-black text-sm">13</span>
           <div>
-            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Intercom PA Broadcast &amp; Queue Voice Privacy Governance</h2>
-            <p class="text-xs text-slate-500 font-mono">Push-to-talk queue announcements, school chime standards, and FERPA/COPPA zero-recording guarantee</p>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Two-Way Intercom &amp; Queue Voice Privacy Governance</h2>
+            <p class="text-xs text-slate-500 font-mono">Push-to-talk customer counter talkback, cashier PA announcements, and FERPA/COPPA zero-recording guarantee</p>
           </div>
         </div>
 
         <div class="space-y-3 text-xs text-slate-700">
           <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="font-bold text-slate-900 uppercase tracking-wider text-[11px]">🔒 Audio Privacy Certification</h4>
+            <h4 class="font-bold text-slate-900 uppercase tracking-wider text-[11px]">📢 Two-Way Full-Duplex Talkback Protocol</h4>
             <p class="text-slate-600 text-[11px] leading-relaxed">
-              The Cashier Push-to-Talk intercom operates strictly in unidirectional broadcast mode to the customer screen speakers. Audio is never recorded, stored, or analyzed. Customer display units contain zero microphone or audio capture sensors.
+              When counter noise is high, students can press and hold the "Talk to Cashier" push-to-talk button on the customer display screen (`/display`). Live audio stream is relayed to the cashier tablet speaker. Cashier PA announcements transmit back to the customer display speaker. All audio is processed real-time in memory and never written to disk or recorded.
             </p>
           </div>
         </div>

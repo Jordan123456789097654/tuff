@@ -153,10 +153,21 @@
         <span>CCTV (24-Hr DVR)</span>
       </button>
 
+      <!-- Voice POS Assistant Button -->
+      <button id="btn-voice-pos" onclick="toggleVoicePosAssistant()" class="flex items-center gap-1.5 text-xs text-emerald-200 hover:text-white bg-emerald-600/80 hover:bg-emerald-500 border border-emerald-400 px-2.5 py-1.5 rounded-xl transition font-bold shadow-md shadow-emerald-950/60" title="Hold Spacebar to speak orders automatically">
+        <i data-lucide="mic" class="w-3.5 h-3.5 text-emerald-300"></i>
+        <span id="voice-pos-label">🎙️ Voice POS</span>
+      </button>
+
+      <!-- Lofi Beats Synthesizer Button -->
+      <button id="btn-lofi-beats" onclick="toggleLofiBeats()" class="flex items-center gap-1.5 text-xs text-purple-200 hover:text-white bg-purple-600/40 hover:bg-purple-600/60 border border-purple-500/50 px-2.5 py-1.5 rounded-xl transition font-bold shadow-md" title="Toggle Procedural Ambient Lofi Music & Vinyl Crackle">
+        <span>🎧 Lofi Beats</span>
+      </button>
+
       <!-- Cashier-to-Queue Voice Intercom PA Button -->
       <button onclick="openIntercomModal()" class="flex items-center gap-1.5 text-xs text-amber-200 hover:text-white bg-amber-600/80 hover:bg-amber-500 border border-amber-400 px-2.5 py-1.5 rounded-xl transition font-bold shadow-md shadow-amber-950/60" title="Cashier-to-Queue Intercom PA Broadcast">
         <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
-        <span>🎙️ PA Intercom</span>
+        <span>PA Intercom</span>
       </button>
 
       <!-- Manager Dashboard Button -->
@@ -955,6 +966,11 @@
           <i data-lucide="scan-face" class="w-3.5 h-3.5 text-blue-400"></i>
           <span>Or Scan Face on This Register Camera</span>
         </button>
+      </div>
+
+      <!-- Side-by-Side Biometric Face ID Verification Container -->
+      <div id="face-id-verification-container" class="hidden bg-slate-950 p-3 rounded-2xl border border-blue-500/30 space-y-2">
+        <!-- JS injects side-by-side live frame vs enrolled photo -->
       </div>
 
       <!-- Last Scanned Info Display -->
@@ -4608,6 +4624,94 @@
         <button onclick="closeModal('modal-ai-combo-optimizer')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl transition">
           Close
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- 🎒 BUILD-YOUR-OWN BENTO SNACK PACK BUNDLE MODAL     -->
+  <!-- ==================================================== -->
+  <div id="modal-bento-pack" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-bento-pack')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg">
+            🎒
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+              <span>Build-Your-Own Bento Snack Pack</span>
+              <span class="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">$3.00 BUNDLE</span>
+            </h3>
+            <p class="text-xs text-slate-400">Pick 1 Beverage + 1 Salty Snack + 1 Sweet Treat for a custom $3.00 snack combo!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
+        <!-- Step 1: Beverage Selector -->
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-amber-400 flex items-center gap-1.5">
+              <span>🥤 Step 1: Select Beverage</span>
+              <span class="text-[10px] text-slate-400 font-normal">(Choose 1)</span>
+            </span>
+          </div>
+          <div id="bento-bev-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <!-- Populated dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- Step 2: Salty Snack Selector -->
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-amber-400 flex items-center gap-1.5">
+              <span>🥨 Step 2: Select Salty Snack</span>
+              <span class="text-[10px] text-slate-400 font-normal">(Choose 1)</span>
+            </span>
+          </div>
+          <div id="bento-salty-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <!-- Populated dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- Step 3: Sweet Treat Selector -->
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-amber-400 flex items-center gap-1.5">
+              <span>🍫 Step 3: Select Sweet Treat</span>
+              <span class="text-[10px] text-slate-400 font-normal">(Choose 1)</span>
+            </span>
+          </div>
+          <div id="bento-sweet-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <!-- Populated dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- Bag Sticker Label Name Input -->
+        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
+          <label class="block text-slate-300 font-bold">Custom Bag Sticker Label Name (Printed on Receipt):</label>
+          <input type="text" id="bento-label-name" placeholder="e.g. Jordan's Power Pack, Alex Room 204" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-amber-500" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+        <div>
+          <span class="text-xs text-slate-400 font-medium">Bundle Price:</span>
+          <div class="font-heading font-extrabold text-2xl text-amber-400">$3.00</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="closeModal('modal-bento-pack')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+            Cancel
+          </button>
+          <button onclick="addBentoPackToCart()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl text-xs transition shadow-lg flex items-center gap-1.5">
+            <span>🎒 Add Bento Pack to Cart ($3.00)</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
