@@ -11,7 +11,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper to generate readable Order Number
 function generateOrderNumber() {
   const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
   const rand = Math.floor(1000 + Math.random() * 9000);
@@ -22,7 +21,6 @@ function generateOrderNumber() {
 // PRODUCT & CATEGORY ENDPOINTS
 // ----------------------------------------------------
 
-// Get all products with category info
 app.get('/api/products', async (req, res) => {
   try {
     const query = `
@@ -40,26 +38,26 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// Create a new product
 app.post('/api/products', async (req, res) => {
   try {
-    const { name, category_id, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info } = req.body;
-    if (!name || price === undefined) {
-      return res.status(400).json({ error: 'Product name and price are required.' });
+    const { name, category_id, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Product name is required.' });
     }
 
     const result = await db.query(
-      `INSERT INTO products (name, category_id, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      `INSERT INTO products (name, category_id, price, cost_price, stock_quantity, low_stock_threshold, emoji, allergy_info, is_open_price)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [
         name,
         category_id || null,
-        parseFloat(price) || 1.0,
-        parseFloat(cost_price) || 0.5,
+        parseFloat(price) || 0.00,
+        parseFloat(cost_price) || 0.00,
         parseInt(stock_quantity, 10) || 0,
         parseInt(low_stock_threshold, 10) || 10,
         emoji || '🍪',
-        allergy_info || ''
+        allergy_info || '',
+        Boolean(is_open_price)
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -69,11 +67,10 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-// Update product
 app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category_id, price, cost_price, low_stock_threshold, emoji, allergy_info, is_active } = req.body;
+    const { name, category_id, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active } = req.body;
 
     const result = await db.query(
       `UPDATE products
@@ -84,9 +81,10 @@ app.put('/api/products/:id', async (req, res) => {
            low_stock_threshold = COALESCE($5, low_stock_threshold),
            emoji = COALESCE($6, emoji),
            allergy_info = COALESCE($7, allergy_info),
-           is_active = COALESCE($8, is_active)
-       WHERE id = $9 RETURNING *`,
-      [name, category_id, price, cost_price, low_stock_threshold, emoji, allergy_info, is_active, id]
+           is_open_price = COALESCE($8, is_open_price),
+           is_active = COALESCE($9, is_active)
+       WHERE id = $10 RETURNING *`,
+      [name, category_id, price, cost_price, low_stock_threshold, emoji, allergy_info, is_open_price, is_active, id]
     );
 
     if (result.rows.length === 0) {
@@ -99,7 +97,6 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-// Restock product (add stock quantity)
 app.post('/api/products/:id/restock', async (req, res) => {
   const client = await db.pool.connect();
   try {
@@ -144,7 +141,6 @@ app.post('/api/products/:id/restock', async (req, res) => {
   }
 });
 
-// Categories list
 app.get('/api/categories', async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM categories ORDER BY sort_order ASC, name ASC');
@@ -156,10 +152,52 @@ app.get('/api/categories', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// DISCOUNT SYSTEM API
+// ----------------------------------------------------
+
+const BUILT_IN_DISCOUNTS = [
+  { code: 'HONORROLL', name: '10% Honor Roll Discount', type: 'percentage', value: 10 },
+  { code: 'TEACHER', name: '20% Teacher & Staff Discount', type: 'percentage', value: 20 },
+  { code: 'VOLUNTEER', name: '15% Volunteer Helper Discount', type: 'percentage', value: 15 },
+  { code: 'FRIDAY', name: '$0.50 Friday Recess Promo', type: 'fixed', value: 0.50 },
+  { code: 'CLEARANCE', name: '50% End-of-Day Clearance', type: 'percentage', value: 50 },
+  { code: 'FREEPASS', name: '100% Free Teacher Reward Pass', type: 'percentage', value: 100 },
+];
+
+app.post('/api/discounts/validate', async (req, res) => {
+  const { code, subtotal = 0 } = req.body;
+  if (!code) return res.status(400).json({ error: 'Please enter a coupon code.' });
+
+  const cleanCode = code.trim().toUpperCase();
+  const disc = BUILT_IN_DISCOUNTS.find(d => d.code === cleanCode);
+
+  if (!disc) {
+    return res.status(404).json({ error: 'Invalid coupon code.' });
+  }
+
+  let amount = 0;
+  if (disc.type === 'percentage') {
+    amount = subtotal * (disc.value / 100);
+  } else {
+    amount = disc.value;
+  }
+
+  amount = Math.min(amount, subtotal);
+
+  res.json({
+    valid: true,
+    code: disc.code,
+    name: disc.name,
+    discount_amount: amount,
+    type: disc.type,
+    value: disc.value
+  });
+});
+
+// ----------------------------------------------------
 // STUDENT ACCOUNTS & PUNCH CARDS
 // ----------------------------------------------------
 
-// Get all or search students
 app.get('/api/students', async (req, res) => {
   try {
     const { q } = req.query;
@@ -180,7 +218,6 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-// Get single student by ID
 app.get('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,7 +232,6 @@ app.get('/api/students/:id', async (req, res) => {
   }
 });
 
-// Create new student account
 app.post('/api/students', async (req, res) => {
   try {
     const { student_id, name, grade, balance, daily_limit, allergies, notes } = req.body;
@@ -226,7 +262,6 @@ app.post('/api/students', async (req, res) => {
   }
 });
 
-// Recharge student balance
 app.post('/api/students/:id/recharge', async (req, res) => {
   try {
     const { id } = req.params;
@@ -255,57 +290,6 @@ app.post('/api/students/:id/recharge', async (req, res) => {
   }
 });
 
-// Redeem Punch Card Reward
-app.post('/api/students/:id/redeem-reward', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const cur = await db.query('SELECT * FROM students WHERE id = $1', [id]);
-    if (cur.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
-
-    const stu = cur.rows[0];
-    if (stu.free_rewards <= 0) {
-      return res.status(400).json({ error: 'No free rewards available to redeem.' });
-    }
-
-    const result = await db.query(
-      `UPDATE students SET free_rewards = free_rewards - 1 WHERE id = $1 RETURNING *`,
-      [id]
-    );
-    res.json({ success: true, student: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to redeem reward' });
-  }
-});
-
-// Update student details
-app.put('/api/students/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, grade, daily_limit, allergies, notes, punch_card, free_rewards } = req.body;
-
-    const result = await db.query(
-      `UPDATE students
-       SET name = COALESCE($1, name),
-           grade = COALESCE($2, grade),
-           daily_limit = COALESCE($3, daily_limit),
-           allergies = COALESCE($4, allergies),
-           notes = COALESCE($5, notes),
-           punch_card = COALESCE($6, punch_card),
-           free_rewards = COALESCE($7, free_rewards)
-       WHERE id = $8 RETURNING *`,
-      [name, grade, daily_limit, allergies, notes, punch_card, free_rewards, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error updating student:', err);
-    res.status(500).json({ error: 'Failed to update student profile' });
-  }
-});
-
 // ----------------------------------------------------
 // CHECKOUT & ORDERS (Atomic Transaction)
 // ----------------------------------------------------
@@ -315,10 +299,11 @@ app.post('/api/checkout', async (req, res) => {
   try {
     const {
       cart,
-      payment_method, // 'cash', 'student_account', 'student_cash', 'reward_token', 'card', etc.
-      student_id,     // optional for cash / walk-ins, or provided for student link
-      use_reward = false, // if true, redeem free snack pass
+      payment_method, // 'cash', 'student_account', 'student_cash', 'reward_token', etc.
+      student_id,
+      use_reward = false,
       discount = 0,
+      discount_name = '',
       tax = 0,
       amount_paid,
       cashier_name = 'Student Volunteer',
@@ -331,7 +316,6 @@ app.post('/api/checkout', async (req, res) => {
 
     await client.query('BEGIN');
 
-    // 1. Calculate and verify cart items
     let subtotal = 0;
     const preparedItems = [];
 
@@ -345,36 +329,39 @@ app.post('/api/checkout', async (req, res) => {
       const product = prodRes.rows[0];
       const qty = parseInt(item.quantity, 10) || 1;
 
-      if (product.stock_quantity < qty) {
+      if (product.stock_quantity > 0 && product.stock_quantity < qty) {
         await client.query('ROLLBACK');
         return res.status(400).json({
           error: `Insufficient stock for "${product.name}". Only ${product.stock_quantity} left!`
         });
       }
 
-      const itemTotal = parseFloat(product.price) * qty;
+      // Use dynamic custom price if open price or overridden by cashier, else standard price
+      const unitPrice = (item.custom_price !== undefined && !isNaN(parseFloat(item.custom_price)))
+        ? parseFloat(item.custom_price)
+        : parseFloat(product.price);
+
+      const itemTotal = unitPrice * qty;
       subtotal += itemTotal;
 
       preparedItems.push({
         product_id: product.id,
         product_name: product.name,
-        unit_price: parseFloat(product.price),
+        unit_price: unitPrice,
         unit_cost: parseFloat(product.cost_price),
         quantity: qty,
         total_price: itemTotal,
-        new_stock: product.stock_quantity - qty,
+        new_stock: Math.max(0, product.stock_quantity - qty),
         prev_stock: product.stock_quantity
       });
     }
 
     let discountAmt = Math.min(parseFloat(discount) || 0, subtotal);
 
-    // If using reward pass, discount 1 snack item
     let rewardUsed = false;
     if (use_reward && student_id) {
       const stuRewardCheck = await client.query('SELECT free_rewards FROM students WHERE id = $1 OR student_id = $1 FOR UPDATE', [student_id]);
       if (stuRewardCheck.rows.length > 0 && stuRewardCheck.rows[0].free_rewards > 0) {
-        // Discount highest item price
         const maxPrice = Math.max(...preparedItems.map(i => i.unit_price));
         discountAmt = Math.min(subtotal, discountAmt + maxPrice);
         rewardUsed = true;
@@ -386,7 +373,6 @@ app.post('/api/checkout', async (req, res) => {
     const paid = parseFloat(amount_paid) !== undefined ? parseFloat(amount_paid) : total;
     const changeDue = Math.max(0, paid - total);
 
-    // 2. Student Account / Linking logic
     let resolvedStudentId = null;
     let punchAwarded = false;
     let newPunchCardCount = 0;
@@ -402,16 +388,14 @@ app.post('/api/checkout', async (req, res) => {
         const student = studentRes.rows[0];
         resolvedStudentId = student.id;
 
-        // If paying via PREPAID ACCOUNT BALANCE:
         if (payment_method === 'student_account') {
           if (parseFloat(student.balance) < total) {
             await client.query('ROLLBACK');
             return res.status(400).json({
-              error: `Insufficient prepaid balance ($${parseFloat(student.balance).toFixed(2)})! You can choose "Pay with Cash" instead.`
+              error: `Insufficient prepaid balance ($${parseFloat(student.balance).toFixed(2)})! You can choose "Student Pays Cash" instead.`
             });
           }
 
-          // Check daily limit (resets if date changed)
           const todayStr = new Date().toISOString().slice(0, 10);
           const lastSpentStr = student.last_spent_date ? new Date(student.last_spent_date).toISOString().slice(0, 10) : '';
           const spentToday = (lastSpentStr === todayStr) ? parseFloat(student.spent_today) : 0;
@@ -424,7 +408,6 @@ app.post('/api/checkout', async (req, res) => {
             });
           }
 
-          // Deduct prepaid balance
           await client.query(
             `UPDATE students
              SET balance = balance - $1,
@@ -435,7 +418,6 @@ app.post('/api/checkout', async (req, res) => {
           );
         }
 
-        // Increment Punch Card Rewards (whether paying Cash or Balance!)
         let currentPunches = (student.punch_card || 0) + 1;
         let currentRewards = student.free_rewards || 0;
 
@@ -444,8 +426,8 @@ app.post('/api/checkout', async (req, res) => {
         }
 
         if (currentPunches >= 10) {
-          currentPunches = 0; // Reset punch card
-          currentRewards += 1; // Award 1 free snack!
+          currentPunches = 0;
+          currentRewards += 1;
         }
 
         newPunchCardCount = currentPunches;
@@ -462,18 +444,16 @@ app.post('/api/checkout', async (req, res) => {
       }
     }
 
-    // 3. Create Order
     const orderNumber = generateOrderNumber();
     const cleanPaymentMethod = payment_method === 'student_cash' ? 'cash (student pass)' : payment_method;
 
     const orderRes = await client.query(
-      `INSERT INTO orders (order_number, cashier_name, payment_method, student_id, subtotal, discount, tax, total, amount_paid, change_due, punch_awarded, reward_used, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [orderNumber, cashier_name, cleanPaymentMethod, resolvedStudentId, subtotal, discountAmt, taxAmt, total, paid, changeDue, punchAwarded, rewardUsed, notes]
+      `INSERT INTO orders (order_number, cashier_name, payment_method, student_id, subtotal, discount, discount_name, tax, total, amount_paid, change_due, punch_awarded, reward_used, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      [orderNumber, cashier_name, cleanPaymentMethod, resolvedStudentId, subtotal, discountAmt, discount_name || '', taxAmt, total, paid, changeDue, punchAwarded, rewardUsed, notes]
     );
     const order = orderRes.rows[0];
 
-    // 4. Insert Order Items & Deduct Product Inventory
     for (const item of preparedItems) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, product_name, unit_price, unit_cost, quantity, total_price)
@@ -481,20 +461,19 @@ app.post('/api/checkout', async (req, res) => {
         [order.id, item.product_id, item.product_name, item.unit_price, item.unit_cost, item.quantity, item.total_price]
       );
 
-      // Deduct stock
-      await client.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [item.new_stock, item.product_id]);
+      if (item.prev_stock > 0) {
+        await client.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [item.new_stock, item.product_id]);
 
-      // Inventory log
-      await client.query(
-        `INSERT INTO inventory_logs (product_id, change_qty, previous_stock, new_stock, reason)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [item.product_id, -item.quantity, item.prev_stock, item.new_stock, `Order ${orderNumber}`]
-      );
+        await client.query(
+          `INSERT INTO inventory_logs (product_id, change_qty, previous_stock, new_stock, reason)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [item.product_id, -item.quantity, item.prev_stock, item.new_stock, `Order ${orderNumber}`]
+        );
+      }
     }
 
     await client.query('COMMIT');
 
-    // Return complete receipt data
     order.items = preparedItems;
     order.punch_card_count = newPunchCardCount;
     order.free_rewards = newFreeRewards;
@@ -512,7 +491,6 @@ app.post('/api/checkout', async (req, res) => {
   }
 });
 
-// Get Order History
 app.get('/api/orders', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 50;
@@ -539,7 +517,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// SHIFT & CASH DRAWER MANAGEMENT
+// SHIFTS & CASH DRAWER
 // ----------------------------------------------------
 
 app.get('/api/shifts/current', async (req, res) => {
@@ -659,7 +637,7 @@ app.post('/api/shifts/close', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// ANALYTICS & REPORTS
+// ANALYTICS & EXPORT
 // ----------------------------------------------------
 
 app.get('/api/analytics/summary', async (req, res) => {
@@ -732,7 +710,6 @@ app.get('/api/analytics/summary', async (req, res) => {
   }
 });
 
-// CSV Export Endpoint
 app.get('/api/analytics/export', async (req, res) => {
   try {
     const orders = await db.query(`
@@ -744,6 +721,7 @@ app.get('/api/analytics/export', async (req, res) => {
         s.name as student_name,
         o.subtotal, 
         o.discount, 
+        o.discount_name,
         o.tax, 
         o.total, 
         o.notes
@@ -752,9 +730,9 @@ app.get('/api/analytics/export', async (req, res) => {
       ORDER BY o.created_at DESC
     `);
 
-    let csv = 'Order Number,Date & Time,Cashier,Payment Method,Student Account,Subtotal,Discount,Tax,Total,Notes\n';
+    let csv = 'Order Number,Date & Time,Cashier,Payment Method,Student Account,Subtotal,Discount,Discount Name,Tax,Total,Notes\n';
     orders.rows.forEach(r => {
-      csv += `"${r.order_number}","${new Date(r.created_at).toLocaleString()}","${r.cashier_name}","${r.payment_method}","${r.student_name || 'N/A'}",${r.subtotal},${r.discount},${r.tax},${r.total},"${(r.notes || '').replace(/"/g, '""')}"\n`;
+      csv += `"${r.order_number}","${new Date(r.created_at).toLocaleString()}","${r.cashier_name}","${r.payment_method}","${r.student_name || 'N/A'}",${r.subtotal},${r.discount},"${r.discount_name || ''}",${r.tax},${r.total},"${(r.notes || '').replace(/"/g, '""')}"\n`;
     });
 
     res.header('Content-Type', 'text/csv');

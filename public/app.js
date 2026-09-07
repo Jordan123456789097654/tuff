@@ -1,4 +1,4 @@
-// Jordan's Snack Shack POS - Client Logic with Auto-Combos & Digital Punch Cards
+// Jordan's Snack Shack POS - Client Logic with Open Pricing & Full Discount System
 
 // ==========================================
 // STATE
@@ -13,6 +13,12 @@ let searchQuery = '';
 let activeShift = null;
 let selectedStudentForCheckout = null;
 let soundEnabled = true;
+
+// Discount State
+let activeDiscount = null; // { name: string, type: 'pct' | 'fixed', value: number, code?: string }
+
+// Open Price State
+let pendingOpenPriceProduct = null;
 
 // Audio Synthesizer
 let audioCtx = null;
@@ -61,7 +67,6 @@ function playSound(type) {
         o.stop(startTime + 0.25);
       });
     } else if (type === 'fanfare') {
-      // Reward punch fanfare
       const freqs = [523.25, 659.25, 783.99, 1046.5, 1318.5];
       freqs.forEach((freq, idx) => {
         const o = ctx.createOscillator();
@@ -163,8 +168,7 @@ async function initApp() {
   try {
     await Promise.all([loadCategories(), loadProducts(), loadShiftStatus()]);
   } catch (err) {
-    console.error('Initialization error:', err);
-    showToast('Ready to serve Jordan\'s Snack Shack!', 'info');
+    console.error('Init error:', err);
   }
 }
 
@@ -280,6 +284,24 @@ function clearSearch() {
   renderProductGrid();
 }
 
+function handleProductClick(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  if (product.stock_quantity <= 0 && product.stock_quantity !== 0 && !product.is_open_price) {
+    showToast('Item is sold out! Please restock.', 'error');
+    playSound('warning');
+    return;
+  }
+
+  // Check if Open / Variable Price
+  if (product.is_open_price || parseFloat(product.price) === 0) {
+    openPricePromptModal(product);
+  } else {
+    addToCart(product.id);
+  }
+}
+
 function renderProductGrid() {
   const grid = document.getElementById('products-grid');
   const noMsg = document.getElementById('no-products-msg');
@@ -302,19 +324,20 @@ function renderProductGrid() {
   noMsg.classList.add('hidden');
 
   grid.innerHTML = filtered.map(item => {
-    const isSoldOut = item.stock_quantity <= 0;
+    const isSoldOut = item.stock_quantity < 0;
     const isLowStock = item.stock_quantity > 0 && item.stock_quantity <= item.low_stock_threshold;
+    const isOpen = item.is_open_price || parseFloat(item.price) === 0;
 
     let badge = `<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">${item.stock_quantity} in stock</span>`;
-    if (isSoldOut) {
-      badge = `<span class="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md">SOLD OUT</span>`;
+    if (isOpen) {
+      badge = `<span class="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-md">✍️ Open Price</span>`;
     } else if (isLowStock) {
       badge = `<span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">LOW: ${item.stock_quantity} left</span>`;
     }
 
     return `
       <div 
-        onclick="${isSoldOut ? `showToast('Snack is currently sold out! Please restock.', 'error'); playSound('warning');` : `addToCart(${item.id})`}"
+        onclick="handleProductClick(${item.id})"
         class="product-card group relative bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer transition ${isSoldOut ? 'opacity-50 grayscale cursor-not-allowed' : ''}"
       >
         <div>
@@ -333,7 +356,9 @@ function renderProductGrid() {
         </div>
 
         <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-          <span class="font-heading font-extrabold text-base text-amber-400">$${parseFloat(item.price).toFixed(2)}</span>
+          <span class="font-heading font-extrabold text-base ${isOpen ? 'text-amber-300 text-xs' : 'text-amber-400'}">
+            ${isOpen ? 'Custom / Enter $' : '$' + parseFloat(item.price).toFixed(2)}
+          </span>
           <button class="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-amber-500 text-slate-300 group-hover:text-slate-950 flex items-center justify-center font-bold text-sm transition">
             +
           </button>
@@ -346,20 +371,48 @@ function renderProductGrid() {
 }
 
 // ==========================================
-// CART & AUTO-COMBO DETECTION
+// OPEN / VARIABLE PRICE MODAL
 // ==========================================
-function addToCart(productId) {
+function openPricePromptModal(product) {
+  pendingOpenPriceProduct = product;
+  document.getElementById('open-price-product-id').value = product.id;
+  document.getElementById('open-price-emoji').textContent = product.emoji || '🍰';
+  document.getElementById('open-price-item-title').textContent = `Set Price: ${product.name}`;
+  document.getElementById('open-price-input').value = parseFloat(product.price) > 0 ? parseFloat(product.price).toFixed(2) : '1.00';
+
+  openModal('modal-open-price');
+  document.getElementById('open-price-input').select();
+}
+
+function setOpenPrice(val) {
+  document.getElementById('open-price-input').value = parseFloat(val).toFixed(2);
+}
+
+function submitOpenPriceToCart() {
+  if (!pendingOpenPriceProduct) return;
+  const customPrice = parseFloat(document.getElementById('open-price-input').value);
+
+  if (isNaN(customPrice) || customPrice < 0) {
+    showToast('Please enter a valid price amount.', 'error');
+    return;
+  }
+
+  addToCart(pendingOpenPriceProduct.id, customPrice);
+  closeModal('modal-open-price');
+  pendingOpenPriceProduct = null;
+}
+
+// ==========================================
+// CART & PRICING
+// ==========================================
+function addToCart(productId, customPrice = null) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
 
-  const existing = cart.find(c => c.id === productId);
-  const currentInCart = existing ? existing.quantity : 0;
+  const priceToUse = (customPrice !== null) ? customPrice : parseFloat(product.price);
 
-  if (currentInCart + 1 > product.stock_quantity) {
-    showToast(`Only ${product.stock_quantity} available in stock!`, 'error');
-    playSound('warning');
-    return;
-  }
+  // If item has custom price, check if exact item with that custom price exists
+  const existing = cart.find(c => c.id === productId && c.custom_price === priceToUse);
 
   if (existing) {
     existing.quantity += 1;
@@ -369,12 +422,14 @@ function addToCart(productId) {
       name: product.name,
       category_id: product.category_id,
       category_name: product.category_name || '',
-      price: parseFloat(product.price),
+      price: priceToUse,
+      custom_price: priceToUse,
+      is_open_price: product.is_open_price,
       cost_price: parseFloat(product.cost_price),
       emoji: product.emoji,
       allergy_info: product.allergy_info,
       quantity: 1,
-      max_stock: product.stock_quantity
+      max_stock: product.stock_quantity || 999
     });
   }
 
@@ -382,19 +437,13 @@ function addToCart(productId) {
   renderCart();
 }
 
-function updateCartQty(productId, delta) {
-  const item = cart.find(c => c.id === productId);
+function updateCartQty(idx, delta) {
+  const item = cart[idx];
   if (!item) return;
 
   const newQty = item.quantity + delta;
   if (newQty <= 0) {
-    removeFromCart(productId);
-    return;
-  }
-
-  if (newQty > item.max_stock) {
-    showToast(`Cannot add more than ${item.max_stock} in stock!`, 'error');
-    playSound('warning');
+    removeFromCart(idx);
     return;
   }
 
@@ -403,19 +452,35 @@ function updateCartQty(productId, delta) {
   renderCart();
 }
 
-function removeFromCart(productId) {
-  cart = cart.filter(c => c.id !== productId);
+function removeFromCart(idx) {
+  cart.splice(idx, 1);
   renderCart();
 }
 
 function clearCart() {
   if (cart.length === 0) return;
   cart = [];
+  activeDiscount = null;
   renderCart();
   showToast('Cart cleared');
 }
 
-// Auto-detect combo pairings (e.g. Snack + Drink = 50¢ auto-discount)
+function editCartItemPrice(idx) {
+  const item = cart[idx];
+  if (!item) return;
+  const newPriceStr = prompt(`Enter new price for "${item.name}" ($):`, item.price.toFixed(2));
+  if (newPriceStr !== null) {
+    const newPrice = parseFloat(newPriceStr);
+    if (!isNaN(newPrice) && newPrice >= 0) {
+      item.price = newPrice;
+      item.custom_price = newPrice;
+      renderCart();
+      showToast(`Updated price for ${item.name} to $${newPrice.toFixed(2)}`);
+    }
+  }
+}
+
+// Auto-Combo detection (Snack + Drink)
 function detectComboSavings() {
   let drinksCount = 0;
   let snacksCount = 0;
@@ -431,7 +496,7 @@ function detectComboSavings() {
   });
 
   const eligibleCombos = Math.min(drinksCount, snacksCount);
-  const comboDiscount = eligibleCombos * 0.50; // 50 cents off per pair
+  const comboDiscount = eligibleCombos * 0.50;
 
   return { eligibleCombos, comboDiscount };
 }
@@ -440,20 +505,22 @@ function calculateTotals() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const { eligibleCombos, comboDiscount } = detectComboSavings();
 
-  const discountVal = document.getElementById('discount-select').value;
-  let manualDiscount = 0;
+  let discountAmount = 0;
+  let discountLabel = '';
 
-  if (discountVal.startsWith('pct-')) {
-    const pct = parseFloat(discountVal.replace('pct-', '')) / 100;
-    manualDiscount = (subtotal - comboDiscount) * pct;
-  } else {
-    manualDiscount = parseFloat(discountVal) || 0;
+  if (activeDiscount) {
+    discountLabel = activeDiscount.name;
+    if (activeDiscount.type === 'pct') {
+      discountAmount = (subtotal - comboDiscount) * (activeDiscount.value / 100);
+    } else {
+      discountAmount = activeDiscount.value;
+    }
   }
 
-  const totalDiscount = Math.min(comboDiscount + manualDiscount, subtotal);
+  const totalDiscount = Math.min(comboDiscount + discountAmount, subtotal);
   const total = Math.max(0, subtotal - totalDiscount);
 
-  return { subtotal, comboDiscount, eligibleCombos, manualDiscount, totalDiscount, total };
+  return { subtotal, comboDiscount, eligibleCombos, discountAmount, discountLabel, totalDiscount, total };
 }
 
 function renderCart() {
@@ -462,7 +529,6 @@ function renderCart() {
   const btnCash = document.getElementById('btn-pay-cash');
   const btnStudent = document.getElementById('btn-pay-student');
   const comboBanner = document.getElementById('auto-combo-banner');
-  const comboText = document.getElementById('combo-banner-text');
 
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   countEl.textContent = `${totalItemsCount} ${totalItemsCount === 1 ? 'item' : 'items'} in order`;
@@ -482,28 +548,30 @@ function renderCart() {
     btnCash.disabled = false;
     btnStudent.disabled = false;
 
-    container.innerHTML = cart.map(item => `
+    container.innerHTML = cart.map((item, idx) => `
       <div class="py-2.5 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 min-w-0">
           <span class="text-xl bg-slate-900 p-1 rounded-lg border border-slate-800">${item.emoji || '🍪'}</span>
           <div class="min-w-0">
             <h5 class="text-xs font-bold text-white truncate">${item.name}</h5>
-            <div class="text-[11px] text-slate-400">$${item.price.toFixed(2)} each</div>
+            <button onclick="editCartItemPrice(${idx})" class="text-[11px] text-amber-400/90 hover:text-amber-300 underline font-mono">
+              $${item.price.toFixed(2)} each ✏️
+            </button>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
           <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">-</button>
+            <button onclick="updateCartQty(${idx}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">-</button>
             <span class="w-6 text-center font-bold text-xs text-white">${item.quantity}</span>
-            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">+</button>
+            <button onclick="updateCartQty(${idx}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold transition">+</button>
           </div>
 
           <span class="font-bold text-xs text-amber-400 w-12 text-right">
             $${(item.price * item.quantity).toFixed(2)}
           </span>
 
-          <button onclick="removeFromCart(${item.id})" class="text-slate-500 hover:text-rose-400 p-1 transition">
+          <button onclick="removeFromCart(${idx})" class="text-slate-500 hover:text-rose-400 p-1 transition">
             <i data-lucide="trash" class="w-3.5 h-3.5"></i>
           </button>
         </div>
@@ -516,7 +584,7 @@ function renderCart() {
 }
 
 function updateCartTotals() {
-  const { subtotal, comboDiscount, eligibleCombos, manualDiscount, totalDiscount, total } = calculateTotals();
+  const { subtotal, comboDiscount, eligibleCombos, discountAmount, discountLabel, totalDiscount, total } = calculateTotals();
 
   document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)}`;
   
@@ -527,7 +595,7 @@ function updateCartTotals() {
 
   if (eligibleCombos > 0) {
     comboBanner.classList.remove('hidden');
-    document.getElementById('combo-banner-text').textContent = `Auto-Combo Deal! (${eligibleCombos}x Snack + Drink bundle applied: -$${comboDiscount.toFixed(2)})`;
+    document.getElementById('combo-banner-text').textContent = `Auto-Combo Deal! (${eligibleCombos}x Snack + Drink bundle: -$${comboDiscount.toFixed(2)})`;
     comboRow.classList.remove('hidden');
     comboEl.textContent = `-$${comboDiscount.toFixed(2)}`;
   } else {
@@ -535,13 +603,25 @@ function updateCartTotals() {
     comboRow.classList.add('hidden');
   }
 
-  // Manual discount row
+  // Active Discount Bar & Row
+  const activeLabel = document.getElementById('active-discount-label');
+  const removeBtn = document.getElementById('btn-remove-discount');
   const discountRow = document.getElementById('discount-row');
+  const discountTitle = document.getElementById('summary-discount-title');
   const discountEl = document.getElementById('summary-discount');
-  if (manualDiscount > 0) {
+
+  if (activeDiscount && discountAmount > 0) {
+    activeLabel.textContent = `${activeDiscount.name} (-$${discountAmount.toFixed(2)})`;
+    activeLabel.className = 'font-bold text-emerald-400';
+    removeBtn.classList.remove('hidden');
+
     discountRow.classList.remove('hidden');
-    discountEl.textContent = `-$${manualDiscount.toFixed(2)}`;
+    discountTitle.textContent = `${activeDiscount.name}:`;
+    discountEl.textContent = `-$${discountAmount.toFixed(2)}`;
   } else {
+    activeLabel.textContent = 'No Discount Applied';
+    activeLabel.className = 'font-semibold text-slate-400';
+    removeBtn.classList.add('hidden');
     discountRow.classList.add('hidden');
   }
 
@@ -550,7 +630,90 @@ function updateCartTotals() {
 }
 
 // ==========================================
-// CASH CHECKOUT (WALK-IN OR DIRECT CASH)
+// ADVANCED DISCOUNT SYSTEM
+// ==========================================
+function openDiscountModal() {
+  openModal('modal-discount');
+}
+
+function applyPresetDiscount(name, type, val) {
+  activeDiscount = {
+    name: name,
+    type: type,
+    value: parseFloat(val)
+  };
+  playSound('beep');
+  closeModal('modal-discount');
+  renderCart();
+  showToast(`Applied ${name}! 🏷️`, 'success');
+}
+
+function applyCustomDiscount() {
+  const type = document.getElementById('custom-disc-type').value;
+  const val = parseFloat(document.getElementById('custom-disc-val').value);
+
+  if (isNaN(val) || val <= 0) {
+    showToast('Please enter a valid discount amount.', 'error');
+    return;
+  }
+
+  const name = type === 'pct' ? `${val}% Custom Discount` : `$${val.toFixed(2)} Custom Discount`;
+  activeDiscount = {
+    name: name,
+    type: type,
+    value: val
+  };
+
+  playSound('beep');
+  closeModal('modal-discount');
+  renderCart();
+  showToast(`Applied ${name}! 🏷️`, 'success');
+}
+
+async function submitPromoCode() {
+  const code = document.getElementById('promo-code-input').value.trim();
+  if (!code) {
+    showToast('Please enter a coupon code.', 'error');
+    return;
+  }
+
+  const { subtotal } = calculateTotals();
+
+  try {
+    const res = await fetch('/api/discounts/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, subtotal })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Invalid code');
+
+    activeDiscount = {
+      name: data.name,
+      type: data.type === 'percentage' ? 'pct' : 'fixed',
+      value: data.value,
+      code: data.code
+    };
+
+    playSound('chaching');
+    closeModal('modal-discount');
+    renderCart();
+    showToast(`Promo Code Applied: ${data.name}! 🎉`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+    playSound('warning');
+  }
+}
+
+function removeDiscount() {
+  activeDiscount = null;
+  renderCart();
+  showToast('Discount removed.');
+}
+
+// ==========================================
+// CASH CHECKOUT FLOW
 // ==========================================
 let currentCashTendered = 0;
 
@@ -610,7 +773,7 @@ function computeCashChange(givenStr) {
 }
 
 async function submitCashCheckout() {
-  const { subtotal, totalDiscount, total } = calculateTotals();
+  const { subtotal, totalDiscount, discountLabel, total } = calculateTotals();
   const paid = parseFloat(document.getElementById('cash-amount-input').value) || total;
 
   if (paid < total) {
@@ -627,6 +790,7 @@ async function submitCashCheckout() {
         cart: cart,
         payment_method: 'cash',
         discount: totalDiscount,
+        discount_name: discountLabel,
         tax: 0,
         amount_paid: paid,
         cashier_name: 'Cashier Volunteer'
@@ -679,7 +843,7 @@ function searchStudentsForCheckout(query) {
   );
 
   if (matches.length === 0) {
-    matchesContainer.innerHTML = `<div class="text-xs text-slate-500 p-2 text-center">No student accounts found. You can pay with standard Cash or create a new student pass.</div>`;
+    matchesContainer.innerHTML = `<div class="text-xs text-slate-500 p-2 text-center">No student accounts found.</div>`;
     return;
   }
 
@@ -695,7 +859,7 @@ function searchStudentsForCheckout(query) {
           <div class="font-bold text-xs text-white">${s.name} <span class="text-[10px] text-blue-300 font-normal">(${s.student_id} • ${s.grade})</span></div>
           <div class="text-[10px] text-amber-300 flex items-center gap-1 mt-0.5">
             <span>⭐ ${punches}/10 Punches</span>
-            ${rewards > 0 ? `<span class="bg-amber-500 text-slate-950 font-extrabold px-1 rounded text-[9px]">${rewards} Free Pass Available!</span>` : ''}
+            ${rewards > 0 ? `<span class="bg-amber-500 text-slate-950 font-extrabold px-1 rounded text-[9px]">${rewards} Free Pass!</span>` : ''}
           </div>
         </div>
         <div class="text-right">
@@ -725,7 +889,6 @@ function selectStudentForCheckout(studentId) {
   const punches = student.punch_card || 0;
   const freeRewards = student.free_rewards || 0;
 
-  // Render 10-stamp visual punch card
   let punchCardStars = '';
   for (let i = 1; i <= 10; i++) {
     if (i <= punches) {
@@ -748,7 +911,6 @@ function selectStudentForCheckout(studentId) {
       </div>
     </div>
 
-    <!-- Digital Punch Card Visual -->
     <div class="space-y-1.5 pt-1">
       <div class="flex justify-between text-xs">
         <span class="font-semibold text-amber-400 flex items-center gap-1">
@@ -793,7 +955,6 @@ function selectStudentForCheckout(studentId) {
     alertBox.classList.add('hidden');
   }
 
-  // Update Buttons
   actionsContainer.classList.remove('hidden');
   balancePreview.textContent = `$${balance.toFixed(2)} available`;
 
@@ -801,10 +962,8 @@ function selectStudentForCheckout(studentId) {
     btnBalance.disabled = false;
   } else {
     btnBalance.disabled = true;
-    btnBalance.title = 'Insufficient balance loaded. Choose "Student Pays Cash" instead!';
   }
 
-  // If free reward available
   if (freeRewards > 0) {
     btnReward.classList.remove('hidden');
   } else {
@@ -817,7 +976,7 @@ function selectStudentForCheckout(studentId) {
 
 async function submitStudentCheckout(paymentType) {
   if (!selectedStudentForCheckout) return;
-  const { totalDiscount, total } = calculateTotals();
+  const { totalDiscount, discountLabel, total } = calculateTotals();
   const isReward = paymentType === 'reward_token';
 
   try {
@@ -830,6 +989,7 @@ async function submitStudentCheckout(paymentType) {
         student_id: selectedStudentForCheckout.id,
         use_reward: isReward,
         discount: totalDiscount,
+        discount_name: isReward ? '100% Free Snack Reward Pass' : discountLabel,
         tax: 0,
         amount_paid: isReward ? 0 : total,
         cashier_name: 'Cashier Volunteer'
@@ -863,7 +1023,7 @@ async function submitStudentCheckout(paymentType) {
 // ==========================================
 async function quickOtherCheckout(methodName) {
   if (cart.length === 0) return;
-  const { totalDiscount, total } = calculateTotals();
+  const { totalDiscount, discountLabel, total } = calculateTotals();
 
   try {
     const res = await fetch('/api/checkout', {
@@ -873,6 +1033,7 @@ async function quickOtherCheckout(methodName) {
         cart: cart,
         payment_method: methodName,
         discount: totalDiscount,
+        discount_name: discountLabel,
         tax: 0,
         amount_paid: total,
         cashier_name: 'Cashier Volunteer'
@@ -936,7 +1097,7 @@ function showReceiptModal(order) {
       </div>
       ${parseFloat(order.discount) > 0 ? `
         <div style="display: flex; justify-content: space-between; color: #059669;">
-          <span>Savings & Discounts:</span>
+          <span>Savings (${order.discount_name || 'Discount'}):</span>
           <span>-$${parseFloat(order.discount).toFixed(2)}</span>
         </div>` : ''}
       <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; border-top: 1px solid #111827; padding-top: 4px;">
@@ -1135,8 +1296,21 @@ async function submitRecharge() {
 }
 
 // ==========================================
-// INVENTORY & RESTOCK MANAGEMENT
+// INVENTORY & PRODUCT MANAGEMENT
 // ==========================================
+function toggleOpenPriceFields(isOpen) {
+  const priceFields = document.getElementById('fixed-price-fields');
+  if (isOpen) {
+    priceFields.classList.add('opacity-50');
+    document.getElementById('prod-price').value = '0.00';
+  } else {
+    priceFields.classList.remove('opacity-50');
+    if (parseFloat(document.getElementById('prod-price').value) === 0) {
+      document.getElementById('prod-price').value = '1.50';
+    }
+  }
+}
+
 function renderInventoryTable(filterText = '') {
   const tbody = document.getElementById('inventory-table-body');
   const q = (filterText || document.getElementById('inventory-search-input')?.value || '').toLowerCase().trim();
@@ -1157,8 +1331,7 @@ function renderInventoryTable(filterText = '') {
   tbody.innerHTML = filtered.map(p => {
     const price = parseFloat(p.price);
     const cost = parseFloat(p.cost_price);
-    const profit = price - cost;
-    const margin = price > 0 ? ((profit / price) * 100).toFixed(0) : 0;
+    const isOpen = p.is_open_price || price === 0;
     const isLow = p.stock_quantity <= p.low_stock_threshold;
     const isOut = p.stock_quantity <= 0;
 
@@ -1174,12 +1347,14 @@ function renderInventoryTable(filterText = '') {
           </div>
         </td>
         <td class="p-3.5 text-slate-400">${p.category_name || 'General'}</td>
-        <td class="p-3.5 font-bold text-white">$${price.toFixed(2)}</td>
-        <td class="p-3.5 text-slate-400">$${cost.toFixed(2)}</td>
         <td class="p-3.5">
-          <span class="text-emerald-400 font-bold">$${profit.toFixed(2)}</span>
-          <span class="text-[10px] text-slate-500">(${margin}%)</span>
+          ${isOpen 
+            ? `<span class="bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold text-[10px]">✍️ Open Price</span>` 
+            : `<span class="text-slate-400 text-[11px]">Fixed Price</span>`
+          }
         </td>
+        <td class="p-3.5 font-bold text-white">${isOpen ? 'Prompt at register' : '$' + price.toFixed(2)}</td>
+        <td class="p-3.5 text-slate-400">$${cost.toFixed(2)}</td>
         <td class="p-3.5">
           ${isOut 
             ? `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold text-[10px]">0 (SOLD OUT)</span>`
@@ -1252,6 +1427,8 @@ function openNewProductModal() {
   document.getElementById('prod-low').value = '10';
   document.getElementById('prod-emoji').value = '🍿';
   document.getElementById('prod-allergy').value = '';
+  document.getElementById('prod-is-open-price').checked = false;
+  toggleOpenPriceFields(false);
 
   renderCategories();
   openModal('modal-product');
@@ -1265,14 +1442,15 @@ async function submitProductForm() {
   const name = document.getElementById('prod-name').value.trim();
   const category_id = parseInt(document.getElementById('prod-category').value, 10);
   const emoji = document.getElementById('prod-emoji').value.trim() || '🍪';
-  const price = parseFloat(document.getElementById('prod-price').value) || 1.0;
-  const cost_price = parseFloat(document.getElementById('prod-cost').value) || 0.5;
+  const is_open_price = document.getElementById('prod-is-open-price').checked;
+  const price = is_open_price ? 0 : (parseFloat(document.getElementById('prod-price').value) || 1.0);
+  const cost_price = parseFloat(document.getElementById('prod-cost').value) || 0.0;
   const stock_quantity = parseInt(document.getElementById('prod-stock').value, 10) || 0;
   const low_stock_threshold = parseInt(document.getElementById('prod-low').value, 10) || 10;
   const allergy_info = document.getElementById('prod-allergy').value.trim();
 
   if (!name) {
-    showToast('Product name is required', 'error');
+    showToast('Item name is required', 'error');
     return;
   }
 
@@ -1288,7 +1466,8 @@ async function submitProductForm() {
         cost_price,
         stock_quantity,
         low_stock_threshold,
-        allergy_info
+        allergy_info,
+        is_open_price
       })
     });
 
@@ -1298,7 +1477,7 @@ async function submitProductForm() {
     playSound('beep');
     closeModal('modal-product');
     loadProducts();
-    showToast(`Added ${name} to snack shack catalog! ✨`, 'success');
+    showToast(`Added "${name}" to catalog! ✨`, 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }

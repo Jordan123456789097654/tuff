@@ -37,9 +37,12 @@ async function initDB() {
         low_stock_threshold INT NOT NULL DEFAULT 10,
         emoji VARCHAR(50) DEFAULT '🍪',
         allergy_info TEXT DEFAULT '',
+        is_open_price BOOLEAN DEFAULT FALSE,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS is_open_price BOOLEAN DEFAULT FALSE;
 
       CREATE TABLE IF NOT EXISTS students (
         id SERIAL PRIMARY KEY,
@@ -57,18 +60,16 @@ async function initDB() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Ensure punch_card and free_rewards columns exist if table was already created
       ALTER TABLE students ADD COLUMN IF NOT EXISTS punch_card INT NOT NULL DEFAULT 0;
       ALTER TABLE students ADD COLUMN IF NOT EXISTS free_rewards INT NOT NULL DEFAULT 0;
 
-      CREATE TABLE IF NOT EXISTS combos (
+      CREATE TABLE IF NOT EXISTS discounts (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(150) NOT NULL,
-        category_id_1 INT REFERENCES categories(id) ON DELETE CASCADE,
-        category_id_2 INT REFERENCES categories(id) ON DELETE CASCADE,
-        combo_price NUMERIC(10, 2) NOT NULL,
-        discount_amount NUMERIC(10, 2) DEFAULT 0.50,
-        description TEXT,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
+        discount_type VARCHAR(20) NOT NULL DEFAULT 'percentage', -- 'percentage' or 'fixed'
+        discount_value NUMERIC(10, 2) NOT NULL,
+        min_order NUMERIC(10, 2) DEFAULT 0.00,
         is_active BOOLEAN DEFAULT TRUE
       );
 
@@ -80,6 +81,7 @@ async function initDB() {
         student_id INT REFERENCES students(id) ON DELETE SET NULL,
         subtotal NUMERIC(10, 2) NOT NULL,
         discount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+        discount_name VARCHAR(100),
         tax NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
         total NUMERIC(10, 2) NOT NULL,
         amount_paid NUMERIC(10, 2) NOT NULL,
@@ -90,8 +92,7 @@ async function initDB() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS punch_awarded BOOLEAN DEFAULT TRUE;
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS reward_used BOOLEAN DEFAULT FALSE;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_name VARCHAR(100);
 
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
@@ -128,7 +129,7 @@ async function initDB() {
       );
     `);
 
-    // Ensure standard categories exist so cashier can categorize items immediately
+    // Ensure standard categories exist
     const catCheck = await client.query('SELECT COUNT(*) FROM categories');
     if (parseInt(catCheck.rows[0].count, 10) === 0) {
       const catInserts = [
@@ -137,7 +138,8 @@ async function initDB() {
         { name: 'Cold Drinks', icon: '🧃', sort: 3 },
         { name: 'Ice Cream & Pops', icon: '🍦', sort: 4 },
         { name: 'Baked & Fresh', icon: '🥨', sort: 5 },
-        { name: 'Combos & Deals', icon: '⭐', sort: 6 },
+        { name: 'Bake Sale & Custom', icon: '🍰', sort: 6 },
+        { name: 'Combos & Deals', icon: '⭐', sort: 7 },
       ];
 
       for (const cat of catInserts) {
@@ -149,7 +151,7 @@ async function initDB() {
       }
     }
 
-    console.log('🎉 Database initialized with punch cards & auto-combos support.');
+    console.log('🎉 Database initialized with open pricing & discount system.');
   } catch (err) {
     console.error('❌ Error initializing database:', err);
     throw err;

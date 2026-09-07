@@ -42,7 +42,6 @@
 
   <!-- Top App Navigation Bar -->
   <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-    <!-- Brand Logo -->
     <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('register')">
       <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/20">
         🍿
@@ -52,7 +51,7 @@
           Jordan's Snack Shack
           <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">POS</span>
         </h1>
-        <p class="text-xs text-slate-400 font-medium">School Snack Bar Register & Punch Rewards</p>
+        <p class="text-xs text-slate-400 font-medium">School Snack Register & Discount Hub</p>
       </div>
     </div>
 
@@ -64,7 +63,7 @@
       </button>
       <button onclick="switchTab('students')" id="tab-btn-students" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
-        <span>Student Passes & Punch Cards</span>
+        <span>Student Passes & Punches</span>
       </button>
       <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
         <i data-lucide="package" class="w-4 h-4"></i>
@@ -86,18 +85,15 @@
 
     <!-- Top Right Status & Controls -->
     <div class="flex items-center space-x-2">
-      <!-- Active Shift Badge -->
       <button onclick="switchTab('shifts')" id="top-shift-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold hover:bg-emerald-500/20 transition">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span id="top-shift-text">Shift Open</span>
       </button>
 
-      <!-- Audio Mute/Unmute Toggle -->
       <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition" title="Toggle Sound FX">
         <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>
       </button>
 
-      <!-- Cashier Name Pill -->
       <div class="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300">
         <i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-400"></i>
         <span id="top-cashier-name">Cashier Volunteer</span>
@@ -117,7 +113,6 @@
       <div class="flex-1 flex flex-col overflow-hidden border-r border-slate-800 bg-slate-900/50">
         <!-- Search & Filter Bar -->
         <div class="p-3 bg-slate-950/60 border-b border-slate-800 flex flex-wrap items-center gap-2">
-          <!-- Search input -->
           <div class="relative flex-1 min-w-[200px]">
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
             <input
@@ -132,10 +127,10 @@
             </button>
           </div>
 
-          <!-- Quick Action: Fast Add Custom Snack -->
+          <!-- Fast Add / Open Price Item Button -->
           <button onclick="openCustomItemModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
             <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
-            <span>Add Snack Item</span>
+            <span>Add Item</span>
           </button>
         </div>
 
@@ -155,7 +150,7 @@
           <div id="no-products-msg" class="hidden flex flex-col items-center justify-center h-64 text-center text-slate-400">
             <i data-lucide="search-x" class="w-12 h-12 mb-2 text-slate-600"></i>
             <p class="font-bold text-slate-300">No snacks found</p>
-            <p class="text-xs text-slate-500">Click "+ Add Snack Item" above to add your first snack or candy!</p>
+            <p class="text-xs text-slate-500">Click "+ Add Item" above to add items to your catalog.</p>
           </div>
         </div>
       </div>
@@ -197,23 +192,26 @@
           </div>
         </div>
 
-        <!-- Cart Summary & Discount/Tax -->
-        <div class="p-4 bg-slate-900/80 border-t border-slate-800 space-y-2 text-xs">
-          <!-- Discount Selector -->
-          <div class="flex items-center justify-between gap-2 pb-1">
-            <span class="text-slate-400 font-medium">Discount / Coupon:</span>
-            <select id="discount-select" onchange="updateCartTotals()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-amber-500">
-              <option value="0">No Manual Discount ($0.00)</option>
-              <option value="0.50">50¢ Off Coupon</option>
-              <option value="1.00">$1.00 Off Promo</option>
-              <option value="pct-10">10% Student Honor Roll</option>
-              <option value="pct-20">20% Staff Discount</option>
-              <option value="pct-50">50% End-of-Day Clearance</option>
-            </select>
+        <!-- Cart Summary & Discount Center -->
+        <div class="p-4 bg-slate-900/80 border-t border-slate-800 space-y-2.5 text-xs">
+          <!-- Discount Trigger / Management Bar -->
+          <div class="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
+              <span id="active-discount-label" class="font-semibold text-slate-300">No Discount</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="openDiscountModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg font-bold text-[11px] border border-slate-700 transition">
+                🏷️ Add Discount
+              </button>
+              <button onclick="removeDiscount()" id="btn-remove-discount" class="hidden text-slate-400 hover:text-rose-400 p-1">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
           </div>
 
           <!-- Subtotal & Math -->
-          <div class="flex justify-between text-slate-300">
+          <div class="flex justify-between text-slate-300 pt-1">
             <span>Subtotal:</span>
             <span id="summary-subtotal" class="font-bold text-white">$0.00</span>
           </div>
@@ -222,7 +220,7 @@
             <span id="summary-combo-discount" class="font-bold">-$0.00</span>
           </div>
           <div id="discount-row" class="hidden flex justify-between text-emerald-400">
-            <span>Coupon / Manual Discount:</span>
+            <span id="summary-discount-title">Discount:</span>
             <span id="summary-discount" class="font-bold">-$0.00</span>
           </div>
 
@@ -235,7 +233,7 @@
 
         <!-- Checkout Action Buttons -->
         <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-          <!-- Direct Cash Button (No account or loaded balance needed!) -->
+          <!-- Direct Cash Button -->
           <button onclick="openCashCheckoutModal()" id="btn-pay-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-3 rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-between transition active:scale-98 disabled:opacity-50 disabled:pointer-events-none">
             <div class="flex items-center gap-2">
               <i data-lucide="banknote" class="w-5 h-5"></i>
@@ -274,7 +272,6 @@
     <!-- ==================================================== -->
     <section id="tab-students" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
-        <!-- Header & Action Bar -->
         <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
           <div>
             <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
@@ -349,14 +346,13 @@
     <!-- ==================================================== -->
     <section id="tab-inventory" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
-        <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
           <div>
             <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
               <i data-lucide="boxes" class="w-6 h-6 text-amber-400"></i>
               Snack Shack Inventory & Restock Hub
             </h2>
-            <p class="text-xs text-slate-400">Track real-time snack counts, wholesale costs, profit margins, and quick-add bulk cases.</p>
+            <p class="text-xs text-slate-400">Track real-time snack counts, wholesale costs, profit margins, and open-price / variable items.</p>
           </div>
           <button onclick="openNewProductModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/30 flex items-center gap-2 transition">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -404,9 +400,9 @@
                 <tr>
                   <th class="p-3.5">Snack Item</th>
                   <th class="p-3.5">Category</th>
+                  <th class="p-3.5">Pricing Mode</th>
                   <th class="p-3.5">Retail Price</th>
                   <th class="p-3.5">Wholesale Cost</th>
-                  <th class="p-3.5">Profit Margin</th>
                   <th class="p-3.5">Stock Status</th>
                   <th class="p-3.5 text-right">Actions</th>
                 </tr>
@@ -425,7 +421,6 @@
     <!-- ==================================================== -->
     <section id="tab-orders" class="hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-5 bg-slate-900">
       <div class="max-w-6xl mx-auto space-y-4">
-        <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
           <div>
             <h2 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
@@ -440,7 +435,6 @@
           </button>
         </div>
 
-        <!-- Orders Table -->
         <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-300">
@@ -573,7 +567,153 @@
   </main>
 
   <!-- ==================================================== -->
-  <!-- MODAL: CASH CHECKOUT (WALK-IN OR FAST CASH) -->
+  <!-- MODAL: OPEN PRICE / VARIABLE PRICE KEYPAD -->
+  <!-- ==================================================== -->
+  <div id="modal-open-price" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-open-price')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold" id="open-price-emoji">
+          🍰
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-base text-white" id="open-price-item-title">Enter Custom Price</h3>
+          <p class="text-xs text-slate-400">Variable / Open Price Item</p>
+        </div>
+      </div>
+
+      <input type="hidden" id="open-price-product-id" />
+
+      <!-- Quick Price Presets -->
+      <div class="space-y-1.5">
+        <span class="text-xs text-slate-400 font-semibold">Quick Amounts:</span>
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="setOpenPrice(0.50)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2 rounded-xl font-bold text-xs transition">$0.50</button>
+          <button onclick="setOpenPrice(1.00)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2 rounded-xl font-bold text-xs transition">$1.00</button>
+          <button onclick="setOpenPrice(1.50)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2 rounded-xl font-bold text-xs transition">$1.50</button>
+          <button onclick="setOpenPrice(2.00)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2 rounded-xl font-bold text-xs transition">$2.00</button>
+          <button onclick="setOpenPrice(3.00)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2 rounded-xl font-bold text-xs transition">$3.00</button>
+          <button onclick="setOpenPrice(5.00)" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 py-2 rounded-xl font-bold text-xs transition">$5.00</button>
+        </div>
+      </div>
+
+      <!-- Custom Amount Input -->
+      <div>
+        <label class="text-xs text-slate-400 font-semibold mb-1 block">Price for this item ($):</label>
+        <div class="relative">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
+          <input
+            type="number"
+            step="0.05"
+            min="0.01"
+            id="open-price-input"
+            value="1.00"
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-xl font-bold text-amber-400 focus:outline-none focus:border-amber-500 transition"
+          />
+        </div>
+      </div>
+
+      <button onclick="submitOpenPriceToCart()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 transition">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        <span>Add to Cart with this Price</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: ADVANCED DISCOUNT CENTER & PROMO CODES -->
+  <!-- ==================================================== -->
+  <div id="modal-discount" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-discount')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl font-bold">
+          🏷️
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">Discounts & Coupon Codes</h3>
+          <p class="text-xs text-slate-400">Apply order discounts, staff rates, or promo codes</p>
+        </div>
+      </div>
+
+      <!-- Quick Preset Discounts -->
+      <div class="space-y-2">
+        <span class="text-xs text-slate-400 font-semibold">Quick Presets:</span>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="applyPresetDiscount('10% Honor Roll', 'pct', 10)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2.5 rounded-xl font-bold text-left flex justify-between items-center transition">
+            <span>🎓 Honor Roll</span>
+            <span class="text-amber-400 font-mono">10% OFF</span>
+          </button>
+          <button onclick="applyPresetDiscount('20% Teacher / Staff', 'pct', 20)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2.5 rounded-xl font-bold text-left flex justify-between items-center transition">
+            <span>🍎 Teacher/Staff</span>
+            <span class="text-amber-400 font-mono">20% OFF</span>
+          </button>
+          <button onclick="applyPresetDiscount('50¢ Friday Promo', 'fixed', 0.50)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2.5 rounded-xl font-bold text-left flex justify-between items-center transition">
+            <span>🎉 Friday Special</span>
+            <span class="text-emerald-400 font-mono">-$0.50</span>
+          </button>
+          <button onclick="applyPresetDiscount('$1.00 Off Coupon', 'fixed', 1.00)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2.5 rounded-xl font-bold text-left flex justify-between items-center transition">
+            <span>🎟️ $1 Coupon</span>
+            <span class="text-emerald-400 font-mono">-$1.00</span>
+          </button>
+          <button onclick="applyPresetDiscount('50% Clearance', 'pct', 50)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2.5 rounded-xl font-bold text-left flex justify-between items-center transition">
+            <span>⚡ End of Day</span>
+            <span class="text-amber-400 font-mono">50% OFF</span>
+          </button>
+          <button onclick="applyPresetDiscount('100% Free Comp / Token', 'pct', 100)" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 p-2.5 rounded-xl font-bold text-left flex justify-between items-center transition">
+            <span>🎁 100% Free Comp</span>
+            <span class="text-emerald-400 font-mono">FREE</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Discount -->
+      <div class="space-y-2 pt-2 border-t border-slate-800">
+        <span class="text-xs text-slate-400 font-semibold">Custom Discount Amount:</span>
+        <div class="flex gap-2">
+          <select id="custom-disc-type" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            <option value="fixed">Dollar Amount ($)</option>
+            <option value="pct">Percentage (%)</option>
+          </select>
+          <input
+            type="number"
+            step="0.05"
+            id="custom-disc-val"
+            placeholder="e.g. 0.75 or 15"
+            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold"
+          />
+          <button onclick="applyCustomDiscount()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+            Apply
+          </button>
+        </div>
+      </div>
+
+      <!-- Coupon Promo Code -->
+      <div class="space-y-2 pt-2 border-t border-slate-800">
+        <span class="text-xs text-slate-400 font-semibold">Promo Code (e.g. HONORROLL, TEACHER, FRIDAY):</span>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="promo-code-input"
+            placeholder="Enter promo code..."
+            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs uppercase font-mono text-white"
+          />
+          <button onclick="submitPromoCode()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+            Redeem Code
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: CASH CHECKOUT -->
   <!-- ==================================================== -->
   <div id="modal-cash-checkout" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
@@ -591,13 +731,11 @@
         </div>
       </div>
 
-      <!-- Total Due Banner -->
       <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
         <span class="text-xs text-slate-400 uppercase font-semibold">Total Due</span>
         <span id="cash-modal-total-due" class="font-heading font-extrabold text-3xl text-amber-400">$0.00</span>
       </div>
 
-      <!-- Quick Cash Bills -->
       <div class="space-y-2">
         <span class="text-xs text-slate-400 font-semibold">Quick Cash Tendered:</span>
         <div class="grid grid-cols-4 gap-2">
@@ -612,7 +750,6 @@
         </div>
       </div>
 
-      <!-- Custom Input -->
       <div>
         <label class="text-xs text-slate-400 font-semibold mb-1 block">Cash Given by Student / Customer ($):</label>
         <input
@@ -624,7 +761,6 @@
         />
       </div>
 
-      <!-- Change Due Box -->
       <div id="cash-change-box" class="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center">
         <div>
           <span class="text-xs font-semibold text-emerald-400 uppercase">Change Due Back:</span>
@@ -633,7 +769,6 @@
         <span id="cash-modal-change-due" class="font-heading font-extrabold text-3xl text-emerald-400">$0.00</span>
       </div>
 
-      <!-- Complete Button -->
       <button onclick="submitCashCheckout()" id="btn-complete-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl text-base shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition active:scale-98">
         <i data-lucide="check-circle" class="w-5 h-5"></i>
         <span>Complete Cash Sale & Print Receipt</span>
@@ -660,13 +795,11 @@
         </div>
       </div>
 
-      <!-- Total Due Banner -->
       <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex justify-between items-center">
         <span class="text-xs text-slate-400 uppercase font-semibold">Total Due</span>
         <span id="student-modal-total-due" class="font-heading font-extrabold text-2xl text-blue-400">$0.00</span>
       </div>
 
-      <!-- Student Lookup Search -->
       <div class="space-y-1.5">
         <label class="text-xs text-slate-400 font-semibold block">Find Student by Name or ID:</label>
         <div class="relative">
@@ -685,12 +818,10 @@
         </div>
       </div>
 
-      <!-- Selected Student Profile Card with Punch Card Visual -->
       <div id="selected-student-card" class="hidden bg-slate-950 p-4 rounded-2xl border border-blue-500/40 space-y-3">
         <!-- Populated by JS -->
       </div>
 
-      <!-- Allergen Warning Alert Box if applicable -->
       <div id="student-allergy-alert" class="hidden bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-xs text-rose-300 flex items-start gap-2">
         <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
         <div>
@@ -699,9 +830,7 @@
         </div>
       </div>
 
-      <!-- Action Buttons for Selected Student -->
       <div id="student-actions-container" class="hidden space-y-2 pt-1">
-        <!-- Option 1: Pay with Loaded Account Balance -->
         <button onclick="submitStudentCheckout('student_account')" id="btn-pay-balance" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-between transition disabled:opacity-40 disabled:pointer-events-none">
           <div class="flex items-center gap-2">
             <i data-lucide="credit-card" class="w-4 h-4"></i>
@@ -710,7 +839,6 @@
           <span class="text-xs font-mono font-bold" id="balance-btn-preview">$0.00 available</span>
         </button>
 
-        <!-- Option 2: Pay with Cash in Hand (No balance needed!) -->
         <button onclick="submitStudentCheckout('student_cash')" id="btn-pay-student-cash" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-between transition">
           <div class="flex items-center gap-2">
             <i data-lucide="banknote" class="w-4 h-4"></i>
@@ -719,7 +847,6 @@
           <span class="text-xs text-emerald-200">Take Cash in Hand</span>
         </button>
 
-        <!-- Option 3: Free Snack Pass (if unlocked) -->
         <button onclick="submitStudentCheckout('reward_token')" id="btn-pay-free-reward" class="hidden w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2.5 px-4 rounded-xl text-sm flex items-center justify-between transition shadow-md shadow-amber-500/20">
           <div class="flex items-center gap-2">
             <i data-lucide="gift" class="w-4 h-4"></i>
@@ -824,12 +951,12 @@
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-heading font-bold text-lg text-white" id="product-modal-title">Add New Snack Item</h3>
+      <h3 class="font-heading font-bold text-lg text-white" id="product-modal-title">Add New Item</h3>
 
       <div class="space-y-3 text-xs">
         <div>
-          <label class="text-slate-400 font-semibold mb-1 block">Snack Name:</label>
-          <input type="text" id="prod-name" placeholder="e.g. Doritos Cool Ranch" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+          <label class="text-slate-400 font-semibold mb-1 block">Item Name:</label>
+          <input type="text" id="prod-name" placeholder="e.g. Doritos or Fresh Bake Sale Brownie" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -845,7 +972,21 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <!-- Open Price Toggle -->
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="font-bold text-white block">Open / Variable Price?</span>
+            <span class="text-[11px] text-slate-400">Cashier enters custom price at register (e.g. Bake sale)</span>
+          </div>
+          <input
+            type="checkbox"
+            id="prod-is-open-price"
+            onchange="toggleOpenPriceFields(this.checked)"
+            class="w-5 h-5 text-amber-500 bg-slate-900 border-slate-700 rounded focus:ring-amber-500 cursor-pointer"
+          />
+        </div>
+
+        <div id="fixed-price-fields" class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-slate-400 font-semibold mb-1 block">Selling Price ($):</label>
             <input type="number" step="0.05" id="prod-price" value="1.50" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-amber-500" />
@@ -875,7 +1016,7 @@
 
       <button onclick="submitProductForm()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 transition">
         <i data-lucide="check" class="w-4 h-4"></i>
-        <span>Save Snack Item</span>
+        <span>Save Item to Catalog</span>
       </button>
     </div>
   </div>
@@ -996,10 +1137,8 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- App Logic Scripts -->
   <script src="app.js"></script>
   <script>
     lucide.createIcons();
