@@ -1884,7 +1884,8 @@ const DEFAULT_SETTINGS = {
   cfg_happy_hour_start: '15:00',
   cfg_happy_hour_end: '15:30',
   cfg_happy_hour_discount: '0.25',
-  cfg_happy_hour_label: '25¢ Off All Cold Drinks & Snacks'
+  cfg_happy_hour_label: '25¢ Off All Cold Drinks & Snacks',
+  current_theme: 'default'
 };
 
 app.get('/api/settings', async (req, res) => {

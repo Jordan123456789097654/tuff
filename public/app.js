@@ -169,6 +169,67 @@ function playSound(type) {
         o.start(startTime);
         o.stop(startTime + 0.35);
       });
+    } else if (type === 'spooky') {
+      const notes = [440, 523.25, 622.25, 880];
+      notes.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq, now + idx * 0.12);
+        o.frequency.linearRampToValueAtTime(freq - 15, now + idx * 0.12 + 0.3);
+        o.connect(g);
+        g.connect(ctx.destination);
+        const st = now + idx * 0.12;
+        g.gain.setValueAtTime(0.2, st);
+        g.gain.exponentialRampToValueAtTime(0.001, st + 0.4);
+        o.start(st);
+        o.stop(st + 0.4);
+      });
+    } else if (type === 'winter_bell') {
+      const bells = [1200, 1600, 2000, 2400];
+      bells.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(ctx.destination);
+        const st = now + idx * 0.07;
+        g.gain.setValueAtTime(0.2, st);
+        g.gain.exponentialRampToValueAtTime(0.001, st + 0.35);
+        o.start(st);
+        o.stop(st + 0.35);
+      });
+    } else if (type === 'celtic') {
+      const harp = [523.25, 659.25, 783.99, 987.77, 1046.5];
+      harp.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(ctx.destination);
+        const st = now + idx * 0.08;
+        g.gain.setValueAtTime(0.22, st);
+        g.gain.exponentialRampToValueAtTime(0.001, st + 0.35);
+        o.start(st);
+        o.stop(st + 0.35);
+      });
+    } else if (type === 'rose_chime') {
+      const melody = [587.33, 739.99, 880, 1174.66];
+      melody.forEach((freq, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(ctx.destination);
+        const st = now + idx * 0.09;
+        g.gain.setValueAtTime(0.22, st);
+        g.gain.exponentialRampToValueAtTime(0.001, st + 0.4);
+        o.start(st);
+        o.stop(st + 0.4);
+      });
     } else if (type === 'warning') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(300, now);
@@ -3820,7 +3881,8 @@ const FEATURE_KEYS = [
   'cfg_display_spin_wheel',
   'cfg_display_balance_check',
   'cfg_display_scratch_card',
-  'cfg_display_tip_jar'
+  'cfg_display_tip_jar',
+  'current_theme'
 ];
 
 async function loadFeatureConfig() {
@@ -3967,6 +4029,11 @@ function applyPOSFeatureConfig(settings) {
   // 9. Auto-Combo computation & banner update
   renderCart();
 
+  // 10. Seasonal Theme Engine
+  if (settings.current_theme) {
+    selectTheme(settings.current_theme, false);
+  }
+
   lucide.createIcons();
 }
 
@@ -4078,6 +4145,173 @@ async function loadWishlistManager() {
   } catch (err) {
     container.innerHTML = `<div class="text-rose-400 text-xs py-4">Error loading wishlist: ${err.message}</div>`;
   }
+}
+
+// ==========================================
+// 🍂 SEASONAL & HOLIDAY THEME ENGINE
+// ==========================================
+let currentAppTheme = 'default';
+let posParticleAnimationId = null;
+let posThemeParticles = [];
+
+const THEME_CONFIG_DATA = {
+  default: { name: 'Classic Snack Shack', emoji: '🍿', sound: 'chaching' },
+  halloween: { name: 'Halloween Spooktacular', emoji: '🎃', sound: 'spooky' },
+  winter: { name: 'Winter Wonderland', emoji: '❄️', sound: 'winter_bell' },
+  st_patricks: { name: "St. Patrick's Lucky Pot", emoji: '🍀', sound: 'celtic' },
+  spirit_week: { name: 'Spirit Week / Game Day', emoji: '🏆', sound: 'fanfare' },
+  valentines: { name: "Valentine's Sweet Heart", emoji: '💖', sound: 'rose_chime' }
+};
+
+const POS_THEME_PARTICLES = {
+  halloween: ['🦇', '🎃', '👻', '🕸️', '🍬'],
+  winter: ['❄️', '⛄', '✨', '❄️', '☕'],
+  st_patricks: ['🍀', '🪙', '✨', '🌈', '🍀'],
+  spirit_week: ['🏆', '⭐', '🐯', '💙', '📣'],
+  valentines: ['💖', '💌', '💕', '✨', '🌹']
+};
+
+function openThemeSelectorModal() {
+  openModal('modal-theme-selector');
+  applyThemeUI(currentAppTheme);
+}
+
+async function selectTheme(themeName, saveToServer = true) {
+  if (!THEME_CONFIG_DATA[themeName]) themeName = 'default';
+  currentAppTheme = themeName;
+  applyThemeUI(themeName);
+
+  if (saveToServer) {
+    const soundToPlay = THEME_CONFIG_DATA[themeName].sound;
+    if (soundToPlay) playSound(soundToPlay);
+
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_theme: themeName })
+      });
+      featureSettings.current_theme = themeName;
+
+      // Broadcast theme change to 2nd customer screen via BroadcastChannel
+      if (displayChannel) {
+        try {
+          displayChannel.postMessage({ type: 'theme_change', theme: themeName });
+        } catch(e) {}
+      }
+
+      showToast(`Seasonal theme switched to ${THEME_CONFIG_DATA[themeName].emoji} ${THEME_CONFIG_DATA[themeName].name}!`, 'success');
+    } catch(err) {
+      console.warn('Error saving theme setting:', err);
+    }
+  }
+}
+
+function applyThemeUI(themeName) {
+  document.body.setAttribute('data-theme', themeName);
+
+  // Update navbar emoji
+  const navEmoji = document.getElementById('nav-theme-emoji');
+  if (navEmoji && THEME_CONFIG_DATA[themeName]) {
+    navEmoji.textContent = THEME_CONFIG_DATA[themeName].emoji;
+  }
+
+  // Update active border/badge state across all theme cards
+  const allCards = document.querySelectorAll('.theme-card');
+  allCards.forEach(card => {
+    const isTarget = card.id === `theme-card-${themeName}` || card.id === `quick-theme-card-${themeName}`;
+    const badge = card.querySelector('.theme-active-badge');
+
+    if (isTarget) {
+      card.classList.add('border-amber-500', 'ring-2', 'ring-amber-500/40');
+      card.classList.remove('border-slate-800');
+      if (badge) badge.classList.remove('hidden');
+    } else {
+      card.classList.remove('border-amber-500', 'ring-2', 'ring-amber-500/40');
+      card.classList.add('border-slate-800');
+      if (badge) badge.classList.add('hidden');
+    }
+  });
+
+  initPOSThemeParticles(themeName);
+}
+
+function initPOSThemeParticles(theme) {
+  const canvas = document.getElementById('theme-particles-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if (posParticleAnimationId) {
+    cancelAnimationFrame(posParticleAnimationId);
+    posParticleAnimationId = null;
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!theme || theme === 'default' || !POS_THEME_PARTICLES[theme]) {
+    return;
+  }
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.removeEventListener('resize', resize);
+  window.addEventListener('resize', resize);
+
+  const emojis = POS_THEME_PARTICLES[theme];
+  const count = 18;
+  posThemeParticles = [];
+
+  for (let i = 0; i < count; i++) {
+    posThemeParticles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      size: Math.random() * 14 + 16,
+      vx: (Math.random() - 0.5) * 1.0 + (theme === 'halloween' ? -0.6 : 0),
+      vy: theme === 'valentines' ? -(Math.random() * 1.0 + 0.5) : (Math.random() * 1.0 + 0.5),
+      swaySpeed: Math.random() * 0.03 + 0.01,
+      swayOffset: Math.random() * Math.PI * 2,
+      rotation: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 0.02,
+      opacity: Math.random() * 0.5 + 0.3
+    });
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const p of posThemeParticles) {
+      p.swayOffset += p.swaySpeed;
+      p.x += p.vx + Math.sin(p.swayOffset) * 0.7;
+      p.y += p.vy;
+      p.rotation += p.vRot;
+
+      if (p.y > canvas.height + 40) {
+        p.y = -30;
+        p.x = Math.random() * canvas.width;
+      } else if (p.y < -40) {
+        p.y = canvas.height + 30;
+        p.x = Math.random() * canvas.width;
+      }
+      if (p.x > canvas.width + 40) p.x = -30;
+      if (p.x < -40) p.x = canvas.width + 30;
+
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.font = `${p.size}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.emoji, 0, 0);
+      ctx.restore();
+    }
+
+    posParticleAnimationId = requestAnimationFrame(render);
+  }
+  render();
 }
 
 // ==========================================

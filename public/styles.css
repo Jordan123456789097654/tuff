@@ -121,3 +121,147 @@ h1, h2, h3, h4, .font-heading {
 .toast-item {
   animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==================================================== */
+/* 🍂 SEASONAL & HOLIDAY THEME ENGINE STYLING */
+/* ==================================================== */
+
+/* Theme Particle Overlay Canvas */
+#theme-particles-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 35;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* 🎃 THEME 1: HALLOWEEN */
+body[data-theme="halloween"] {
+  background: radial-gradient(circle at 50% 0%, #1a0b2e 0%, #090314 100%) !important;
+}
+
+body[data-theme="halloween"] header {
+  background: rgba(18, 6, 32, 0.9) !important;
+  border-bottom-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+body[data-theme="halloween"] .nav-btn.active {
+  background: linear-gradient(135deg, #f97316, #a855f7) !important;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4) !important;
+}
+
+body[data-theme="halloween"] .category-pill.active {
+  background: #f97316 !important;
+  border-color: #f97316 !important;
+  color: #1a0b2e !important;
+}
+
+body[data-theme="halloween"] .product-card:hover {
+  border-color: rgba(249, 115, 22, 0.6) !important;
+  box-shadow: 0 10px 25px -5px rgba(249, 115, 22, 0.25) !important;
+}
+
+/* ❄️ THEME 2: WINTER WONDERLAND */
+body[data-theme="winter"] {
+  background: radial-gradient(circle at 50% 0%, #082f49 0%, #031422 100%) !important;
+}
+
+body[data-theme="winter"] header {
+  background: rgba(3, 27, 46, 0.9) !important;
+  border-bottom-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+body[data-theme="winter"] .nav-btn.active {
+  background: linear-gradient(135deg, #38bdf8, #0284c7) !important;
+  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4) !important;
+}
+
+body[data-theme="winter"] .category-pill.active {
+  background: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+  color: #031422 !important;
+}
+
+body[data-theme="winter"] .product-card:hover {
+  border-color: rgba(56, 189, 248, 0.6) !important;
+  box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* 🍀 THEME 3: ST. PATRICK'S DAY */
+body[data-theme="st_patricks"] {
+  background: radial-gradient(circle at 50% 0%, #064e3b 0%, #022018 100%) !important;
+}
+
+body[data-theme="st_patricks"] header {
+  background: rgba(2, 39, 28, 0.9) !important;
+  border-bottom-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+body[data-theme="st_patricks"] .nav-btn.active {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+body[data-theme="st_patricks"] .category-pill.active {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #022018 !important;
+}
+
+body[data-theme="st_patricks"] .product-card:hover {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.25) !important;
+}
+
+/* 🏆 THEME 4: SPIRIT WEEK / GAME DAY */
+body[data-theme="spirit_week"] {
+  background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #09091b 100%) !important;
+}
+
+body[data-theme="spirit_week"] header {
+  background: rgba(15, 13, 44, 0.9) !important;
+  border-bottom-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+body[data-theme="spirit_week"] .nav-btn.active {
+  background: linear-gradient(135deg, #2563eb, #f59e0b) !important;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+}
+
+body[data-theme="spirit_week"] .category-pill.active {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #09091b !important;
+}
+
+body[data-theme="spirit_week"] .product-card:hover {
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 💖 THEME 5: VALENTINE'S DAY */
+body[data-theme="valentines"] {
+  background: radial-gradient(circle at 50% 0%, #4c0519 0%, #1a0208 100%) !important;
+}
+
+body[data-theme="valentines"] header {
+  background: rgba(36, 3, 12, 0.9) !important;
+  border-bottom-color: rgba(244, 63, 94, 0.35) !important;
+}
+
+body[data-theme="valentines"] .nav-btn.active {
+  background: linear-gradient(135deg, #f43f5e, #ec4899) !important;
+  box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4) !important;
+}
+
+body[data-theme="valentines"] .category-pill.active {
+  background: #f43f5e !important;
+  border-color: #f43f5e !important;
+  color: #ffffff !important;
+}
+
+body[data-theme="valentines"] .product-card:hover {
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.25) !important;
+}

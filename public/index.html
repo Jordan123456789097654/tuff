@@ -136,6 +136,12 @@
         <span class="hidden md:inline">Feedback</span>
       </button>
 
+      <!-- Seasonal Theme Switcher Quick Modal/Button -->
+      <button onclick="openThemeSelectorModal()" class="flex items-center gap-1.5 text-xs text-purple-300 hover:text-white bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="1-Click Seasonal & Holiday Themes">
+        <span id="nav-theme-emoji">🎃</span>
+        <span class="hidden md:inline">Theme</span>
+      </button>
+
       <!-- Screen & Feature Config Toggle Button -->
       <button onclick="openConfigModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Configure POS & Customer Display Feature Toggles">
         <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
@@ -1936,6 +1942,9 @@
         <button onclick="switchConfigTab('wishlist')" id="cfg-tab-btn-wishlist" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
           💡 Wishlist Requests
         </button>
+        <button onclick="switchConfigTab('themes')" id="cfg-tab-btn-themes" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-purple-300 border border-purple-500/40 px-3.5 py-1.5 rounded-xl transition whitespace-nowrap">
+          🎃 Seasonal Themes
+        </button>
       </div>
 
       <!-- TAB 1: POS REGISTER TOGGLES -->
@@ -2258,6 +2267,118 @@
         <!-- Populated by JS -->
       </div>
 
+      <!-- TAB 6: 🎃 1-CLICK SEASONAL & HOLIDAY THEMES -->
+      <div id="cfg-panel-themes" class="cfg-panel hidden flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 mb-2">
+          <span class="text-purple-400 font-bold block mb-0.5">Instant Seasonal Theme Engine</span>
+          <p class="text-[11px] text-slate-400">1-click transform both the POS register and Customer 2nd Screen with holiday atmosphere, floating particles, and sound FX.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Default / Classic -->
+          <div onclick="selectTheme('default')" id="theme-card-default" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-amber-500/80 hover:border-amber-400 transition relative space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">🍿</span>
+              <span class="theme-active-badge text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">Active</span>
+            </div>
+            <div>
+              <h5 class="font-bold text-white text-sm">Classic Snack Shack</h5>
+              <p class="text-[11px] text-slate-400">Original Amber & Midnight Slate design with gold accents.</p>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-900 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 border border-white/20"></span>
+            </div>
+          </div>
+
+          <!-- Halloween -->
+          <div onclick="selectTheme('halloween')" id="theme-card-halloween" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-orange-500 transition relative space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">🎃 🦇</span>
+              <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-orange-500 text-slate-950">Active</span>
+            </div>
+            <div>
+              <h5 class="font-bold text-orange-400 text-sm">Halloween Spooktacular</h5>
+              <p class="text-[11px] text-slate-400">Floating bats, pumpkin orange glow, and ghostly synthesizer sounds.</p>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-orange-500 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-purple-600 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-purple-950 border border-white/20"></span>
+            </div>
+          </div>
+
+          <!-- Winter Wonderland -->
+          <div onclick="selectTheme('winter')" id="theme-card-winter" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-sky-400 transition relative space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">❄️ ⛄</span>
+              <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-400 text-slate-950">Active</span>
+            </div>
+            <div>
+              <h5 class="font-bold text-sky-400 text-sm">Winter Wonderland</h5>
+              <p class="text-[11px] text-slate-400">Falling snowflakes, frost crystal blues, and hot cocoa vibes.</p>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-sky-400 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-cyan-200 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-sky-950 border border-white/20"></span>
+            </div>
+          </div>
+
+          <!-- St. Patrick's Day -->
+          <div onclick="selectTheme('st_patricks')" id="theme-card-st_patricks" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-emerald-400 transition relative space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">🍀 🪙</span>
+              <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950">Active</span>
+            </div>
+            <div>
+              <h5 class="font-bold text-emerald-400 text-sm">St. Patrick's Lucky Pot</h5>
+              <p class="text-[11px] text-slate-400">Lucky four-leaf clovers, pot of gold charity jar, and emerald green.</p>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-950 border border-white/20"></span>
+            </div>
+          </div>
+
+          <!-- Spirit Week / Game Day -->
+          <div onclick="selectTheme('spirit_week')" id="theme-card-spirit_week" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-yellow-400 transition relative space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">🏆 🐯</span>
+              <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">Active</span>
+            </div>
+            <div>
+              <h5 class="font-bold text-amber-400 text-sm">Spirit Week / Game Day</h5>
+              <p class="text-[11px] text-slate-400">Varsity blue & school gold banners, stadium fanfare, and mascot cheer.</p>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-blue-600 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-amber-400 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-indigo-950 border border-white/20"></span>
+            </div>
+          </div>
+
+          <!-- Valentine's Day -->
+          <div onclick="selectTheme('valentines')" id="theme-card-valentines" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-rose-400 transition relative space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">💖 💌</span>
+              <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-400 text-slate-950">Active</span>
+            </div>
+            <div>
+              <h5 class="font-bold text-rose-400 text-sm">Valentine's Sweet Heart</h5>
+              <p class="text-[11px] text-slate-400">Floating sweetheart hearts, candy pink & rose red glow, and sweet chimes.</p>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-rose-500 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-pink-400 border border-white/20"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-rose-950 border border-white/20"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Footer Action Buttons -->
       <div class="flex gap-2 pt-2 border-t border-slate-800">
         <button onclick="saveFeatureConfig()" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold py-3 rounded-2xl text-sm shadow-xl shadow-amber-500/20 transition">
@@ -2433,6 +2554,140 @@
       </div>
     </div>
   </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 1-CLICK SEASONAL & HOLIDAY THEMES -->
+  <!-- ==================================================== -->
+  <div id="modal-theme-selector" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-theme-selector')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-2xl font-bold">
+          🎨
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white">Seasonal & Holiday Theme Engine</h3>
+          <p class="text-xs text-slate-400">1-click instant theme transformation across POS register and 2nd Customer Screen.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- Default / Classic -->
+        <div onclick="selectTheme('default')" id="quick-theme-card-default" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-amber-500/80 hover:border-amber-400 transition relative space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">🍿</span>
+            <span class="theme-active-badge text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">Active</span>
+          </div>
+          <div>
+            <h5 class="font-bold text-white text-sm">Classic Snack Shack</h5>
+            <p class="text-[11px] text-slate-400">Original Amber & Midnight Slate design with gold accents.</p>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-slate-900 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-slate-800 border border-white/20"></span>
+          </div>
+        </div>
+
+        <!-- Halloween -->
+        <div onclick="selectTheme('halloween')" id="quick-theme-card-halloween" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-orange-500 transition relative space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">🎃 🦇</span>
+            <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-orange-500 text-slate-950">Active</span>
+          </div>
+          <div>
+            <h5 class="font-bold text-orange-400 text-sm">Halloween Spooktacular</h5>
+            <p class="text-[11px] text-slate-400">Floating bats, pumpkin orange glow, and ghostly synthesizer sounds.</p>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <span class="w-3.5 h-3.5 rounded-full bg-orange-500 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-purple-600 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-purple-950 border border-white/20"></span>
+          </div>
+        </div>
+
+        <!-- Winter Wonderland -->
+        <div onclick="selectTheme('winter')" id="quick-theme-card-winter" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-sky-400 transition relative space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">❄️ ⛄</span>
+            <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-400 text-slate-950">Active</span>
+          </div>
+          <div>
+            <h5 class="font-bold text-sky-400 text-sm">Winter Wonderland</h5>
+            <p class="text-[11px] text-slate-400">Falling snowflakes, frost crystal blues, and hot cocoa vibes.</p>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <span class="w-3.5 h-3.5 rounded-full bg-sky-400 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-cyan-200 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-sky-950 border border-white/20"></span>
+          </div>
+        </div>
+
+        <!-- St. Patrick's Day -->
+        <div onclick="selectTheme('st_patricks')" id="quick-theme-card-st_patricks" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-emerald-400 transition relative space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">🍀 🪙</span>
+            <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950">Active</span>
+          </div>
+          <div>
+            <h5 class="font-bold text-emerald-400 text-sm">St. Patrick's Lucky Pot</h5>
+            <p class="text-[11px] text-slate-400">Lucky four-leaf clovers, pot of gold charity jar, and emerald green.</p>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-950 border border-white/20"></span>
+          </div>
+        </div>
+
+        <!-- Spirit Week / Game Day -->
+        <div onclick="selectTheme('spirit_week')" id="quick-theme-card-spirit_week" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-yellow-400 transition relative space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">🏆 🐯</span>
+            <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">Active</span>
+          </div>
+          <div>
+            <h5 class="font-bold text-amber-400 text-sm">Spirit Week / Game Day</h5>
+            <p class="text-[11px] text-slate-400">Varsity blue & school gold banners, stadium fanfare, and mascot cheer.</p>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <span class="w-3.5 h-3.5 rounded-full bg-blue-600 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-400 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-indigo-950 border border-white/20"></span>
+          </div>
+        </div>
+
+        <!-- Valentine's Day -->
+        <div onclick="selectTheme('valentines')" id="quick-theme-card-valentines" class="theme-card cursor-pointer p-3.5 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-rose-400 transition relative space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">💖 💌</span>
+            <span class="theme-active-badge hidden text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-400 text-slate-950">Active</span>
+          </div>
+          <div>
+            <h5 class="font-bold text-rose-400 text-sm">Valentine's Sweet Heart</h5>
+            <p class="text-[11px] text-slate-400">Floating sweetheart hearts, candy pink & rose red glow, and sweet chimes.</p>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <span class="w-3.5 h-3.5 rounded-full bg-rose-500 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-pink-400 border border-white/20"></span>
+            <span class="w-3.5 h-3.5 rounded-full bg-rose-950 border border-white/20"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="closeModal('modal-theme-selector')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seasonal Particle Overlay Canvas -->
+  <canvas id="theme-particles-canvas"></canvas>
 
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 

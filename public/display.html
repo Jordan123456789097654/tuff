@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 
   <style>
     body {
@@ -1569,6 +1570,11 @@
       // 15. Happy Hour Bar
       checkHappyHourStatus();
 
+      // 16. Seasonal Theme Engine
+      if (settings.current_theme) {
+        setTheme(settings.current_theme);
+      }
+
       lucide.createIcons();
     }
 
@@ -2849,6 +2855,8 @@
       if (!data) return;
       if (data.type === 'settings_update') {
         applyDisplaySettings(data.settings);
+      } else if (data.type === 'theme_change') {
+        setTheme(data.theme);
       } else if (data.type === 'shift_status') {
         isShiftActive = !!data.active;
         updateDisplayShiftUI();
@@ -2861,6 +2869,106 @@
       } else if (data.state) {
         renderState(data);
       }
+    }
+
+    // ==========================================
+    // 🍂 SEASONAL & HOLIDAY THEME ENGINE
+    // ==========================================
+    let activeTheme = 'default';
+    let particleAnimationId = null;
+    let themeParticles = [];
+
+    const THEME_PARTICLE_PRESETS = {
+      halloween: ['🦇', '🎃', '👻', '🕸️', '🍬'],
+      winter: ['❄️', '⛄', '✨', '❄️', '☕'],
+      st_patricks: ['🍀', '🪙', '✨', '🌈', '🍀'],
+      spirit_week: ['🏆', '⭐', '🐯', '💙', '📣'],
+      valentines: ['💖', '💌', '💕', '✨', '🌹']
+    };
+
+    function setTheme(theme) {
+      activeTheme = theme || 'default';
+      document.body.setAttribute('data-theme', activeTheme);
+      initThemeParticles(activeTheme);
+    }
+
+    function initThemeParticles(theme) {
+      const canvas = document.getElementById('theme-particles-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      if (particleAnimationId) {
+        cancelAnimationFrame(particleAnimationId);
+        particleAnimationId = null;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!theme || theme === 'default' || !THEME_PARTICLE_PRESETS[theme]) {
+        return;
+      }
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resizeCanvas();
+      window.removeEventListener('resize', resizeCanvas);
+      window.addEventListener('resize', resizeCanvas);
+
+      const emojis = THEME_PARTICLE_PRESETS[theme];
+      const count = 22;
+      themeParticles = [];
+
+      for (let i = 0; i < count; i++) {
+        themeParticles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          size: Math.random() * 16 + 18,
+          vx: (Math.random() - 0.5) * 1.2 + (theme === 'halloween' ? -0.8 : 0),
+          vy: theme === 'valentines' ? -(Math.random() * 1.2 + 0.6) : (Math.random() * 1.2 + 0.6),
+          swaySpeed: Math.random() * 0.03 + 0.01,
+          swayOffset: Math.random() * Math.PI * 2,
+          rotation: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.03,
+          opacity: Math.random() * 0.6 + 0.4
+        });
+      }
+
+      function renderLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (const p of themeParticles) {
+          p.swayOffset += p.swaySpeed;
+          p.x += p.vx + Math.sin(p.swayOffset) * 0.8;
+          p.y += p.vy;
+          p.rotation += p.vRot;
+
+          // Wrap boundaries
+          if (p.y > canvas.height + 40) {
+            p.y = -30;
+            p.x = Math.random() * canvas.width;
+          } else if (p.y < -40) {
+            p.y = canvas.height + 30;
+            p.x = Math.random() * canvas.width;
+          }
+          if (p.x > canvas.width + 40) p.x = -30;
+          if (p.x < -40) p.x = canvas.width + 30;
+
+          ctx.save();
+          ctx.globalAlpha = p.opacity;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.font = `${p.size}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(p.emoji, 0, 0);
+          ctx.restore();
+        }
+
+        particleAnimationId = requestAnimationFrame(renderLoop);
+      }
+      renderLoop();
     }
 
     // Call init scratch card whenever celebrate view is shown
@@ -2903,5 +3011,8 @@
     setInterval(loadAnnouncements, 60000);
     setInterval(loadTrending, 30000);
   </script>
+
+  <!-- Theme Particles Overlay Canvas -->
+  <canvas id="theme-particles-canvas"></canvas>
 </body>
 </html>
