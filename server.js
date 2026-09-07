@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 const db = require('./db');
 require('dotenv').config();
 
@@ -1945,6 +1946,98 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// 2ND CUSTOMER DISPLAY SSE & MULTI-DEVICE SYNC
+// ----------------------------------------------------
+let latestDisplayState = { state: 'idle' };
+
+function broadcastToDisplayClients(data) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
+  displaySseClients.forEach(client => {
+    try {
+      client.res.write(payload);
+    } catch (e) {
+      // client disconnected
+    }
+  });
+}
+
+app.get('/api/display/events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  res.write('\n');
+
+  const clientId = Date.now() + Math.random();
+  const newClient = { id: clientId, res };
+  displaySseClients.push(newClient);
+
+  // Send current state immediately upon connecting
+  if (latestDisplayState) {
+    res.write(`data: ${JSON.stringify(latestDisplayState)}\n\n`);
+  }
+
+  req.on('close', () => {
+    displaySseClients = displaySseClients.filter(c => c.id !== clientId);
+  });
+});
+
+app.get('/api/display/state', (req, res) => {
+  res.json(latestDisplayState || { state: 'idle' });
+});
+
+app.post('/api/display/update', (req, res) => {
+  latestDisplayState = req.body;
+  broadcastToDisplayClients(req.body);
+  res.json({ success: true });
+});
+
+app.post('/api/display/celebrate', (req, res) => {
+  const payload = { state: 'celebrate', ...req.body };
+  latestDisplayState = payload;
+  broadcastToDisplayClients(payload);
+  res.json({ success: true });
+});
+
+app.post('/api/display/stealth', (req, res) => {
+  const { active } = req.body;
+  broadcastToDisplayClients({ type: 'stealth_mode', active: !!active });
+  res.json({ success: true, active: !!active });
+});
+
+app.post('/api/display/broadcast', (req, res) => {
+  broadcastToDisplayClients({ type: 'speaker_broadcast', ...req.body });
+  res.json({ success: true });
+});
+
+app.post('/api/display/face_match', (req, res) => {
+  broadcastToDisplayClients({ type: 'student_face_identified', student: req.body.student });
+  res.json({ success: true });
+});
+
+app.get('/api/network-info', (req, res) => {
+  const nets = os.networkInterfaces();
+  const ips = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        ips.push(net.address);
+      }
+    }
+  }
+  const primaryIp = ips[0] || 'localhost';
+  res.json({
+    primaryIp,
+    ips,
+    port: PORT,
+    displayUrl: `http://${primaryIp}:${PORT}/display`,
+    orderUrl: `http://${primaryIp}:${PORT}/order`,
+    portalUrl: `http://${primaryIp}:${PORT}/portal`
+  });
+});
+
 // Routing
 app.get(['/display', '/customer-display', '/screen'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'display.html'));
@@ -1956,6 +2049,10 @@ app.get(['/portal', '/balance', '/student'], (req, res) => {
 
 app.get(['/order', '/preorder'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'preorder.html'));
+});
+
+app.get(['/sop', '/manual', '/guide'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sop.html'));
 });
 
 app.get('*', (req, res) => {

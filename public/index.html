@@ -108,10 +108,10 @@
       </button>
 
       <!-- Customer Facing 2nd Screen -->
-      <a href="/display" target="_blank" class="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Open Customer Second Screen in new window or iPad">
+      <button onclick="openPairDisplayModal()" class="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="Connect 2nd Screen (Same PC or External iPad / Phone)">
         <i data-lucide="tv" class="w-3.5 h-3.5 text-amber-400"></i>
         <span class="hidden sm:inline">2nd Screen</span>
-      </a>
+      </button>
 
       <!-- External Links Dropdown / Buttons -->
       <a href="/order" target="_blank" class="hidden lg:flex items-center gap-1 text-xs text-slate-300 hover:text-white bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl transition">
@@ -122,6 +122,11 @@
       <a href="/portal" target="_blank" class="hidden lg:flex items-center gap-1 text-xs text-blue-300 hover:text-white bg-blue-500/10 border border-blue-500/30 px-2.5 py-1.5 rounded-xl transition">
         <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
         <span>Portal</span>
+      </a>
+
+      <a href="/sop" target="_blank" class="hidden xl:flex items-center gap-1 text-xs text-emerald-300 hover:text-white bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl transition font-semibold" title="View & Print Simplified Standard Operating Procedures (SOP)">
+        <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>SOP Manual</span>
       </a>
 
       <!-- Instant Speaker Broadcasts -->
@@ -1587,6 +1592,97 @@
   </div>
 
   <!-- ==================================================== -->
+  <!-- MODAL: PAIR 2ND CUSTOMER DISPLAY (CROSS-DEVICE) -->
+  <!-- ==================================================== -->
+  <div id="modal-pair-display" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-pair-display')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold">
+          📺
+        </div>
+        <div>
+          <h3 class="font-heading font-bold text-lg text-white">2nd Customer Display Setup</h3>
+          <p class="text-xs text-slate-400">Pair this POS with any iPad, tablet, phone, or second screen</p>
+        </div>
+      </div>
+
+      <!-- Option 1: Dual Monitor / Same Device -->
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 text-white font-bold text-sm">
+            <i data-lucide="monitor" class="w-4 h-4 text-blue-400"></i>
+            <span>Option 1: Same PC / Dual Monitor</span>
+          </div>
+          <span class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-semibold">0ms Sync</span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Open the customer display in a new window and drag it onto your second monitor.
+        </p>
+        <button onclick="window.open('/display', '_blank', 'width=1280,height=800'); closeModal('modal-pair-display');" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md">
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+          <span>Launch 2nd Window Now</span>
+        </button>
+      </div>
+
+      <!-- Option 2: iPad / Phone / Separate Device -->
+      <div class="bg-slate-950 border border-amber-500/30 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 text-white font-bold text-sm">
+            <i data-lucide="tablet" class="w-4 h-4 text-amber-400"></i>
+            <span>Option 2: iPad / Phone / 2nd Device</span>
+          </div>
+          <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-semibold">Wi-Fi / Hotspot</span>
+        </div>
+        
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Point the iPad or phone camera at the QR code below, or open this web address on the other device (must be on the same Wi-Fi or phone hotspot):
+        </p>
+
+        <!-- QR Code & Link Display -->
+        <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <div class="w-32 h-32 bg-white rounded-xl p-2 flex items-center justify-center shrink-0 shadow-inner">
+            <img id="pair-qr-image" src="" alt="Pairing QR Code" class="w-full h-full object-contain" />
+          </div>
+          <div class="flex-1 space-y-2 w-full">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Direct Browser URL:</label>
+            <div class="flex items-center gap-1.5">
+              <input
+                type="text"
+                id="pair-display-url-input"
+                readonly
+                value="http://localhost:3000/display"
+                class="flex-1 bg-slate-950 border border-slate-700 text-amber-300 font-mono text-xs px-2.5 py-2 rounded-lg focus:outline-none select-all"
+              />
+              <button onclick="copyPairUrl()" id="btn-copy-pair-url" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Copy URL">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Copy</span>
+              </button>
+            </div>
+            <div class="text-[11px] text-emerald-400 flex items-center gap-1.5 font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Live Server IP Detected</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 text-[11px] text-amber-300 space-y-1">
+          <div class="font-bold flex items-center gap-1">
+            <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+            <span>Quick Tip for School / Cafeteria Wi-Fi:</span>
+          </div>
+          <p class="text-slate-400 text-[10px] leading-relaxed">
+            If school Wi-Fi blocks device-to-device traffic, turn on your iPhone or Android <strong>Personal Hotspot</strong> and connect both your laptop and the iPad/customer device to it.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
   <!-- MODAL: RECHARGE STUDENT BALANCE -->
   <!-- ==================================================== -->
   <div id="modal-recharge" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -2558,6 +2654,88 @@
       <div class="flex justify-end pt-2 border-t border-slate-800">
         <button onclick="closeModal('modal-feedback-dashboard')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
           Close Dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: PAIR 2ND CUSTOMER SCREEN (CROSS-DEVICE) -->
+  <!-- ==================================================== -->
+  <div id="modal-pair-display" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+      <button onclick="closeModal('modal-pair-display')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold">
+          📺
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white">2nd Customer Display Setup</h3>
+          <p class="text-xs text-slate-400">Run customer display on this laptop or connect a separate iPad / Phone wirelessly.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Option 1: This Laptop/PC -->
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-3">
+          <div class="space-y-1">
+            <span class="text-2xl block">💻</span>
+            <h4 class="font-bold text-white text-sm">Same Laptop / PC</h4>
+            <p class="text-[11px] text-slate-400">Opens in a new browser tab or second extended monitor on this computer.</p>
+          </div>
+          <a href="/display" target="_blank" onclick="closeModal('modal-pair-display')" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-bold py-2.5 rounded-xl text-xs text-center transition flex items-center justify-center gap-1.5 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>Open in New Tab</span>
+          </a>
+        </div>
+
+        <!-- Option 2: External iPad / Tablet / Phone -->
+        <div class="bg-slate-950 p-4 rounded-2xl border border-amber-500/40 flex flex-col justify-between space-y-3">
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">📱</span>
+              <span class="text-[9px] bg-emerald-500/20 text-emerald-300 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30 uppercase">Wireless Sync</span>
+            </div>
+            <h4 class="font-bold text-amber-400 text-sm">iPad / Phone / 2nd Device</h4>
+            <p class="text-[11px] text-slate-400">Point your iPad or phone camera at the QR code below to connect live!</p>
+          </div>
+          <button onclick="copyPairUrl()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold py-2.5 rounded-xl text-xs text-center transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copy Link for iPad</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Network Pairing Box -->
+      <div id="pair-details-box" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-bold flex items-center gap-1.5">
+            <i data-lucide="wifi" class="w-4 h-4 text-emerald-400"></i>
+            <span>Wi-Fi Pairing Link for iPad:</span>
+          </span>
+          <span class="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Live Sync Active</span>
+        </div>
+
+        <div class="flex gap-2">
+          <input type="text" id="pair-display-url-input" readonly value="http://localhost:3000/display" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-mono text-xs focus:outline-none" />
+          <button onclick="copyPairUrl()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copy</span>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-center p-3 bg-white rounded-xl mx-auto w-40 h-40 shadow-inner">
+          <img id="pair-qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http%3A%2F%2Flocalhost%3A3000%2Fdisplay" alt="Scan on iPad / Phone" class="w-full h-full object-contain" />
+        </div>
+        <p class="text-[11px] text-slate-400 text-center">Make sure both this laptop and your iPad are on the same Wi-Fi network or mobile hotspot.</p>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="closeModal('modal-pair-display')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Close
         </button>
       </div>
     </div>

@@ -4403,6 +4403,49 @@ window.addEventListener('keydown', (e) => {
 });
 
 // ==========================================
+// 2ND DISPLAY PAIRING & CROSS-DEVICE SYNC
+// ==========================================
+async function openPairDisplayModal() {
+  openModal('modal-pair-display');
+  try {
+    const res = await fetch('/api/network-info');
+    const data = await res.json();
+    const urlInput = document.getElementById('pair-display-url-input');
+    const qrImg = document.getElementById('pair-qr-image');
+    
+    const displayUrl = data.displayUrl || `http://${window.location.hostname || 'localhost'}:${window.location.port || 3000}/display`;
+    if (urlInput) urlInput.value = displayUrl;
+    if (qrImg) {
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(displayUrl)}`;
+    }
+  } catch (err) {
+    console.warn('Network info fetch fallback:', err);
+    const fallbackUrl = `${window.location.origin}/display`;
+    const urlInput = document.getElementById('pair-display-url-input');
+    const qrImg = document.getElementById('pair-qr-image');
+    if (urlInput) urlInput.value = fallbackUrl;
+    if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(fallbackUrl)}`;
+  }
+}
+
+function copyPairUrl() {
+  const urlInput = document.getElementById('pair-display-url-input');
+  if (!urlInput) return;
+  urlInput.select();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(urlInput.value).then(() => {
+      showToast('📋 Display URL copied to clipboard!', 'success');
+    }).catch(() => {
+      document.execCommand('copy');
+      showToast('📋 Display URL copied!', 'success');
+    });
+  } else {
+    document.execCommand('copy');
+    showToast('📋 Display URL copied!', 'success');
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {

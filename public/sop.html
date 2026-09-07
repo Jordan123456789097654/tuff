@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jordan's Snack Shack - Store Operations Manual & SOP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+        color: #111827 !important;
+        font-size: 11pt;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .sop-card {
+        border: 1px solid #e5e7eb !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+      }
+      a {
+        text-decoration: none !important;
+        color: #111827 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+
+  <!-- Top Action Bar (Floating, Hidden when Printing) -->
+  <div class="no-print sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white px-6 py-3 shadow-lg flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🍿</span>
+      <div>
+        <h1 class="font-extrabold text-sm sm:text-base tracking-wide flex items-center gap-2">
+          JORDAN'S SNACK SHACK
+          <span class="text-[10px] uppercase font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">SOP Manual</span>
+        </h1>
+        <p class="text-xs text-slate-400">Standard Operating Procedures & Cashier Guide</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="window.print()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        <span>Print / Download PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Document Container -->
+  <main class="max-w-4xl mx-auto my-8 p-6 sm:p-12 bg-white rounded-3xl shadow-xl border border-slate-200 print:shadow-none print:border-none print:m-0 print:p-0">
+    
+    <!-- Title Page Header -->
+    <header class="border-b-2 border-slate-900 pb-6 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 text-amber-600 font-extrabold text-xs uppercase tracking-widest mb-1">
+          <span>Official Store Documentation</span>
+          <span>•</span>
+          <span>Forsyth County, GA</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          Standard Operating Procedures (SOP)
+        </h1>
+        <p class="text-base text-slate-600 font-medium mt-1">
+          Store Setup, Cashier Operations, Cross-Device Screen Pairing & Crisis Disguise Guide
+        </p>
+      </div>
+
+      <div class="text-left sm:text-right text-xs text-slate-500 shrink-0 font-mono space-y-0.5">
+        <div><strong>Version:</strong> 2.4 (Simplified)</div>
+        <div><strong>Window:</strong> 08:00 – 08:44 Daily</div>
+        <div><strong>Location:</strong> Cafeteria Station Table</div>
+      </div>
+    </header>
+
+    <!-- Quick Table of Contents -->
+    <section class="no-print bg-amber-50/70 border border-amber-200 rounded-2xl p-5 mb-8">
+      <h2 class="font-bold text-amber-900 text-sm mb-2 flex items-center gap-1.5">
+        <span>📑</span> Table of Contents
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-amber-800">
+        <a href="#section-1" class="hover:underline flex items-center gap-1"><span>1.</span> Daily Schedule & Operating Window</a>
+        <a href="#section-2" class="hover:underline flex items-center gap-1"><span>2.</span> Morning Setup & Locker Restock</a>
+        <a href="#section-3" class="hover:underline flex items-center gap-1"><span>3.</span> 2nd Screen Setup (iPad / Phone / Wi-Fi)</a>
+        <a href="#section-4" class="hover:underline flex items-center gap-1"><span>4.</span> POS Register & Checkout Workflows</a>
+        <a href="#section-5" class="hover:underline flex items-center gap-1"><span>5.</span> Student Face ID & Balance Lookup</a>
+        <a href="#section-6" class="hover:underline flex items-center gap-1"><span>6.</span> Instant Stealth Mode / School Disguise</a>
+        <a href="#section-7" class="hover:underline flex items-center gap-1"><span>7.</span> End of Shift Drawer Reconciliation</a>
+      </div>
+    </section>
+
+    <!-- Content Sections -->
+    <div class="space-y-10 text-slate-800 leading-relaxed text-sm">
+
+      <!-- SECTION 1 -->
+      <section id="section-1" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">1</span>
+          <h2 class="font-bold text-slate-900 text-lg">Daily Schedule & Operating Window</h2>
+        </div>
+        <p>
+          Jordan’s Snack Shack operates strictly during the designated morning window prior to first period in Forsyth County:
+        </p>
+        <ul class="list-disc list-inside space-y-1 text-slate-700 font-medium pl-2">
+          <li><strong>07:45 – 08:00 AM:</strong> Locker retrieval, table setup, and cash float count.</li>
+          <li><strong>08:00 – 08:44 AM (Live Sales):</strong> Main store operations, walk-in register sales, and pre-order queue pickups.</li>
+          <li><strong>08:45 AM:</strong> Complete drawer close, reconcile cash, and return secure lockbox to locker storage.</li>
+        </ul>
+        <div class="bg-white border-l-4 border-amber-500 p-3 rounded-r-xl text-xs text-slate-700">
+          <strong>Rule:</strong> All store operations must halt cleanly at 08:44 AM to ensure punctuality for first period classes.
+        </div>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section id="section-2" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">2</span>
+          <h2 class="font-bold text-slate-900 text-lg">Morning Setup & Locker Restock</h2>
+        </div>
+        <p>Follow these steps every morning before unlocking the cash register:</p>
+        <ol class="list-decimal list-inside space-y-2 text-slate-700 pl-2">
+          <li><strong>Locker Storage Retrieval:</strong> Fetch the insulated drink tote, snack bins, and cash lockbox from the locker.</li>
+          <li><strong>Table Layout:</strong> Set up table bins categorized by price point:
+            <ul class="list-disc list-inside pl-6 pt-1 space-y-0.5 text-xs text-slate-600">
+              <li><strong>$1.50 Tier:</strong> Standard chips (Doritos, Lay's, Cheetos, Funyuns).</li>
+              <li><strong>$2.00 Tier:</strong> Takis Blue Heat / Fuego, full-size candy bars.</li>
+              <li><strong>$2.45 Tier:</strong> Chilled Powerade and bottled beverages.</li>
+            </ul>
+          </li>
+          <li><strong>Power On & Cash Float:</strong> Boot the POS laptop. Open the cash lockbox and verify the starting float (typically $20.00 to $40.00 in small bills and quarters). Record the starting cash in the <strong>Drawer / Shifts</strong> tab.</li>
+        </ol>
+      </section>
+
+      <div class="page-break"></div>
+
+      <!-- SECTION 3 -->
+      <section id="section-3" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">3</span>
+          <h2 class="font-bold text-slate-900 text-lg">2nd Customer Screen Setup (Dual Monitor or iPad/Phone)</h2>
+        </div>
+        <p>
+          The system supports real-time synchronization between the cashier POS and a customer-facing display. You can run the customer display in two ways:
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <!-- Setup A -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5 text-blue-600">
+              <span>🖥️</span> Option A: Same Laptop / 2nd Monitor
+            </h3>
+            <p class="text-xs text-slate-600">
+              Click the <strong>2nd Screen</strong> button at the top of the POS header and select <em>"Launch 2nd Window"</em>. Drag the new window to your external monitor. Updates sync instantly (0ms latency).
+            </p>
+          </div>
+
+          <!-- Setup B -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5 text-amber-600">
+              <span>📱</span> Option B: iPad / Phone / 2nd Device
+            </h3>
+            <p class="text-xs text-slate-600">
+              Click <strong>2nd Screen</strong> in the POS header. Scan the dynamic QR code with the iPad or iPhone camera, or open the displayed URL (e.g. <code>http://192.168.1.X:3000/display</code>). Both devices must be on the same Wi-Fi or phone hotspot.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900 space-y-1">
+          <strong>Wi-Fi Troubleshooting Tip:</strong> If the school guest Wi-Fi blocks communication between devices, turn on your iPhone or Android <strong>Personal Hotspot</strong> and connect both the laptop and iPad to it.
+        </div>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section id="section-4" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">4</span>
+          <h2 class="font-bold text-slate-900 text-lg">POS Register & Checkout Workflows</h2>
+        </div>
+        <p>The cashier dashboard is designed for high-speed transactions:</p>
+        
+        <div class="space-y-2 text-xs">
+          <div class="bg-white p-3 rounded-xl border border-slate-200">
+            <strong class="text-slate-900 text-sm block mb-1">Adding Items to Cart:</strong>
+            <p class="text-slate-600">Click any snack tile on the screen, or click <strong>Scan Barcode</strong> (or press external USB scanner) to scan product UPC codes. Items and combo discounts appear immediately on the customer screen.</p>
+          </div>
+
+          <div class="bg-white p-3 rounded-xl border border-slate-200">
+            <strong class="text-slate-900 text-sm block mb-1">Accepting Payment:</strong>
+            <p class="text-slate-600 mb-1.5">Select the customer's preferred payment method:</p>
+            <ul class="list-disc list-inside pl-2 space-y-0.5 text-slate-600">
+              <li><strong>💵 Cash:</strong> Click exact amount or use quick dollar buttons (+$1, +$5, +$10). The POS calculates exact change due.</li>
+              <li><strong>📱 Venmo / CashApp:</strong> Click <em>"Pay QR"</em> in the header to display your payment QR code on screen.</li>
+              <li><strong>💳 Student Prepaid Pass:</strong> Select student from list or scan their barcode to deduct from their account balance.</li>
+            </ul>
+          </div>
+
+          <div class="bg-white p-3 rounded-xl border border-slate-200">
+            <strong class="text-slate-900 text-sm block mb-1">Punch Card & Free Snacks:</strong>
+            <p class="text-slate-600">Every purchase gives the student 1 punch. Upon reaching 10 punches, a golden banner automatically appears awarding 1 Free Snack item.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section id="section-5" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">5</span>
+          <h2 class="font-bold text-slate-900 text-lg">Student Face ID & Pass Lookup</h2>
+        </div>
+        <p>
+          Students can check their balance or checkout without physical ID cards using the optical Face ID feature:
+        </p>
+        <ul class="list-disc list-inside space-y-1.5 text-slate-700 pl-2 text-xs">
+          <li><strong>Cashier Lookup:</strong> Click <em>"Face ID"</em> on the cashier dashboard or click the camera scan button.</li>
+          <li><strong>2nd Monitor Customer Lookup:</strong> Customers can tap the <strong>"Face ID"</strong> button directly on the 2nd display tablet/screen. When recognized, it alerts the cashier and loads their student pass instantly.</li>
+          <li><strong>Adding New Faces:</strong> In the <em>Students & Badges</em> tab, click on any student profile and use the webcam to capture 1 clear reference photo.</li>
+        </ul>
+      </section>
+
+      <div class="page-break"></div>
+
+      <!-- SECTION 6 -->
+      <section id="section-6" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">6</span>
+          <h2 class="font-bold text-slate-900 text-lg">Instant Stealth Mode / School Assignment Disguise</h2>
+        </div>
+        <p>
+          If a teacher or school administrator approaches and you need to immediately mask the store interfaces, activate Stealth Mode. This instantly freezes transactions and swaps <strong>BOTH</strong> screens to look like standard school assignments:
+        </p>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-2.5 bg-slate-100 rounded-lg">
+              <strong class="text-slate-900 block font-bold mb-1">POS Cashier Screen Disguise:</strong>
+              <span class="text-slate-600">Transforms into a Google Docs <em>"AP Environmental Science Study Guide"</em> with essay prompts and soil horizon tables.</span>
+            </div>
+            <div class="p-2.5 bg-slate-100 rounded-lg">
+              <strong class="text-slate-900 block font-bold mb-1">Customer 2nd Screen Disguise:</strong>
+              <span class="text-slate-600">Transforms into the <em>"Oakridge High School LMS Student Digital Reader"</em> displaying Unit 4 Biology reading notes.</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-200 pt-3">
+            <strong class="text-slate-900 font-bold block mb-1.5">How to Trigger Stealth Mode:</strong>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div class="bg-slate-900 text-amber-300 font-mono p-2 rounded text-center font-bold text-xs">
+                Alt + S
+              </div>
+              <div class="bg-slate-900 text-amber-300 font-mono p-2 rounded text-center font-bold text-xs">
+                F2 Key
+              </div>
+              <div class="bg-slate-900 text-amber-300 font-mono p-2 rounded text-center font-bold text-xs">
+                3x Escape Tap
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">
+              <strong>Hidden Click Trigger:</strong> Clicking the extreme top-left pixel/corner of either screen will also quietly trigger or dismiss the disguise.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section id="section-7" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">7</span>
+          <h2 class="font-bold text-slate-900 text-lg">End of Shift Drawer Reconciliation (08:45 AM)</h2>
+        </div>
+        <p>
+          At the conclusion of the operating window, reconcile cash before packing up:
+        </p>
+        <ol class="list-decimal list-inside space-y-2 text-slate-700 pl-2 text-xs">
+          <li>Click <strong>Close Register</strong> in the top header or navigate to the <em>Drawer / Shifts</em> tab.</li>
+          <li>Count the actual cash bills and coins in the physical lockbox.</li>
+          <li>Enter the counted total into the <strong>Ending Cash ($)</strong> field.</li>
+          <li>The system calculates the expected total (Starting Float + Cash Sales) and indicates whether the drawer is <em>Exact, Over, or Short</em>.</li>
+          <li>Click <strong>Reconcile & Close Shift</strong>. This archives the shift report and saves daily profits to the analytics log.</li>
+          <li>Pack the lockbox and snack bins and return them securely to the locker storage.</li>
+        </ol>
+      </section>
+
+    </div>
+
+    <!-- Document Footer -->
+    <footer class="mt-12 pt-6 border-t-2 border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <div>
+        <strong>Jordan's Snack Shack</strong> • Standard Operating Procedures Manual
+      </div>
+      <div>
+        Generated for Store Management & Crew • Forsyth County, GA
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // Auto-focus print if opened with ?print=true
+    if (window.location.search.includes('print=true')) {
+      setTimeout(() => window.print(), 500);
+    }
+  </script>
+</body>
+</html>
