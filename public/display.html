@@ -1576,6 +1576,12 @@
         setTheme(settings.current_theme);
       }
 
+      // 17. Fundraiser Campaign Hero Card
+      const fHero = document.getElementById('display-fundraiser-hero');
+      if (fHero) {
+        fHero.classList.toggle('hidden', settings.cfg_display_fundraiser === 'false');
+      }
+
       lucide.createIcons();
     }
 

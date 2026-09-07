@@ -3882,6 +3882,7 @@ const FEATURE_KEYS = [
   'cfg_display_balance_check',
   'cfg_display_scratch_card',
   'cfg_display_tip_jar',
+  'cfg_display_fundraiser',
   'current_theme'
 ];
 

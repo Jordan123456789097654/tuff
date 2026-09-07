@@ -1876,6 +1876,7 @@ const DEFAULT_SETTINGS = {
   cfg_display_menu_board: 'true',
   cfg_display_feedback_kiosk: 'true',
   cfg_display_charity_roundup: 'true',
+  cfg_display_fundraiser: 'true',
   cfg_event_countdown_enabled: 'true',
   cfg_event_countdown_title: 'Homecoming Game',
   cfg_event_countdown_date: '2026-09-12T16:00',
