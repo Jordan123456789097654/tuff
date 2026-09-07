@@ -131,6 +131,51 @@
   <main class="flex-1 flex overflow-y-auto p-4 sm:p-6 items-center justify-center">
 
     <!-- ==================================================== -->
+    <!-- VIEW 0: REGISTER CLOSED MODE -->
+    <!-- ==================================================== -->
+    <div id="view-closed" class="hidden w-full flex-1 flex flex-col justify-center items-center text-center max-w-2xl mx-auto space-y-6 animate-in fade-in zoom-in duration-300 py-8">
+      <div class="relative">
+        <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-rose-500/20 via-slate-900 to-rose-900/30 border-2 border-rose-500/50 flex items-center justify-center text-5xl sm:text-6xl shadow-2xl mx-auto float-anim">
+          🔒
+        </div>
+        <span class="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+          CLOSED
+        </span>
+      </div>
+
+      <div class="space-y-2">
+        <span class="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3.5 py-1 rounded-full inline-block font-mono">
+          REGISTER CURRENTLY CLOSED
+        </span>
+        <h2 class="font-heading font-extrabold text-3xl sm:text-5xl text-white tracking-tight leading-tight">
+          Jordan's Snack Shack <br>
+          <span class="text-rose-400">Is Closed Right Now</span>
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-sm max-w-md mx-auto">
+          Our volunteer cashiers are counting the drawer or preparing the snack counter. We will reopen the register shortly!
+        </p>
+      </div>
+
+      <!-- Closed Info & Schedule Card -->
+      <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl w-full max-w-md space-y-3 text-left shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+          <span class="text-xs text-slate-400 font-semibold">Store Status:</span>
+          <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+            Register Locked
+          </span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400">Need immediate help?</span>
+          <span class="text-amber-400 font-semibold">See Store Lead / Advisor</span>
+        </div>
+        <div class="text-[11px] text-slate-500 text-center pt-1">
+          Thank you for supporting our school snack shop & fundraiser! 🍿
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
     <!-- VIEW 1: IDLE / WELCOME MODE (When Cart is Empty) -->
     <!-- ==================================================== -->
     <div id="view-idle" class="w-full flex-1 flex flex-col justify-center items-center text-center max-w-5xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in zoom-in duration-300 py-4">
@@ -1240,11 +1285,65 @@
         if (fDesc && data.fundraiser.description) fDesc.textContent = data.fundraiser.description;
       }
 
-      // Default: Idle View
+      // Default: Idle or Register Closed View
       currentState = 'idle';
       viewActive.classList.add('hidden');
       viewCelebrate.classList.add('hidden');
-      viewIdle.classList.remove('hidden');
+      const viewClosed = document.getElementById('view-closed');
+
+      if (!isShiftActive) {
+        if (viewIdle) viewIdle.classList.add('hidden');
+        if (viewClosed) viewClosed.classList.remove('hidden');
+      } else {
+        if (viewClosed) viewClosed.classList.add('hidden');
+        if (viewIdle) viewIdle.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // REGISTER SHIFT STATUS TRACKING
+    // ==========================================
+    let isShiftActive = true;
+
+    async function loadDisplayShiftStatus() {
+      try {
+        const res = await fetch('/api/shifts/current');
+        const data = await res.json();
+        isShiftActive = !!data.active;
+        updateDisplayShiftUI();
+      } catch (err) {
+        console.warn('Shift status load notice:', err);
+      }
+    }
+
+    function updateDisplayShiftUI() {
+      const syncBadge = document.getElementById('sync-status-badge');
+      const viewClosed = document.getElementById('view-closed');
+      const viewIdle = document.getElementById('view-idle');
+
+      if (!isShiftActive) {
+        if (syncBadge) {
+          syncBadge.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold shadow-sm';
+          syncBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span><span class="hidden xl:inline">Register Closed</span>';
+        }
+
+        if (currentState !== 'active' && currentState !== 'celebrate') {
+          if (viewIdle) viewIdle.classList.add('hidden');
+          if (viewClosed) viewClosed.classList.remove('hidden');
+        }
+      } else {
+        if (syncBadge) {
+          syncBadge.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm';
+          syncBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span class="hidden xl:inline">Live Register Sync</span>';
+        }
+
+        if (viewClosed) viewClosed.classList.add('hidden');
+        if (currentState === 'idle' && viewIdle) {
+          viewIdle.classList.remove('hidden');
+        }
+      }
+
       lucide.createIcons();
     }
 
@@ -1350,6 +1449,9 @@
           const data = JSON.parse(event.data);
           if (data.type === 'settings_update') {
             applyDisplaySettings(data.settings);
+          } else if (data.type === 'shift_status') {
+            isShiftActive = !!data.active;
+            updateDisplayShiftUI();
           } else {
             renderState(data);
           }
@@ -1369,6 +1471,9 @@
         if (event.data) {
           if (event.data.type === 'settings_update') {
             applyDisplaySettings(event.data.settings);
+          } else if (event.data.type === 'shift_status') {
+            isShiftActive = !!event.data.active;
+            updateDisplayShiftUI();
           } else {
             renderState(event.data);
           }
@@ -2221,6 +2326,7 @@
 
     // Initial Load Calls
     loadStoreSettings();
+    loadDisplayShiftStatus();
     loadAnnouncements();
     loadTrending();
     loadWeatherForecast();

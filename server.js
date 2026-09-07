@@ -1034,6 +1034,12 @@ app.post('/api/shifts/open', async (req, res) => {
       [cashier_name || 'Cashier', parseFloat(start_cash) || 50.00]
     );
 
+    // Broadcast shift status to display clients
+    const shiftOpenPayload = `data: ${JSON.stringify({ type: 'shift_status', active: true })}\n\n`;
+    displaySseClients.forEach(client => {
+      try { client.write(shiftOpenPayload); } catch(e){}
+    });
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error opening shift:', err);
@@ -1079,6 +1085,12 @@ app.post('/api/shifts/close', async (req, res) => {
        WHERE id = $5 RETURNING *`,
       [expected, actual, diff, notes || '', shift.id]
     );
+
+    // Broadcast shift status to display clients
+    const shiftClosePayload = `data: ${JSON.stringify({ type: 'shift_status', active: false })}\n\n`;
+    displaySseClients.forEach(client => {
+      try { client.write(shiftClosePayload); } catch(e){}
+    });
 
     res.json({
       success: true,

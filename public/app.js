@@ -472,6 +472,17 @@ async function loadShiftStatus() {
     if (text) {
       text.textContent = activeShift ? 'Shift Open' : 'Shift Closed';
     }
+
+    const closedBanner = document.getElementById('pos-closed-banner');
+    if (closedBanner) {
+      closedBanner.classList.toggle('hidden', !!activeShift);
+    }
+
+    if (displayChannel) {
+      try {
+        displayChannel.postMessage({ type: 'shift_status', active: !!activeShift });
+      } catch (e) {}
+    }
   } catch (err) {
     console.error('Failed to load shift status', err);
   }

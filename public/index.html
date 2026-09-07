@@ -195,7 +195,22 @@
         </div>
 
         <!-- Product Cards Grid -->
-        <div class="flex-1 overflow-y-auto p-4">
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <!-- Register Closed Alert Banner -->
+          <div id="pos-closed-banner" class="hidden bg-rose-950/70 border border-rose-800/80 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg">
+            <div class="flex items-center gap-2.5 text-rose-300 font-bold">
+              <span class="text-xl">🔒</span>
+              <div>
+                <span class="text-white block font-extrabold">Register Shift is Currently Closed</span>
+                <span class="text-rose-400 font-normal">Cash drawer is locked. Open shift to track cash float and start ring-up.</span>
+              </div>
+            </div>
+            <button onclick="openCloseRegisterModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-md">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              <span>Open Register Shift</span>
+            </button>
+          </div>
+
           <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3">
             <!-- Dynamic Product Cards inserted by JS -->
           </div>
