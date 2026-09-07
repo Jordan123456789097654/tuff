@@ -265,3 +265,38 @@ body[data-theme="valentines"] .product-card:hover {
   border-color: rgba(244, 63, 94, 0.6) !important;
   box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.25) !important;
 }
+
+/* ==================================================== */
+/* 📚 STEALTH MODE / SCHOOL ASSIGNMENT DISGUISE OVERLAY */
+/* ==================================================== */
+.stealth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: #f8f9fa;
+  color: #202124;
+  overflow-y: auto;
+  font-family: Arial, Helvetica, sans-serif;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.stealth-doc-paper {
+  background: #ffffff;
+  box-shadow: 0 1px 3px 1px rgba(60,64,67,.15), 0 1px 2px 0 rgba(60,64,67,.3);
+  min-height: 1100px;
+  font-family: 'Times New Roman', Times, serif;
+  color: #111827;
+  line-height: 1.6;
+}
+
+.stealth-toolbar-btn {
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: #444746;
+  transition: background-color 0.1s;
+}
+
+.stealth-toolbar-btn:hover {
+  background-color: #e8eaed;
+}

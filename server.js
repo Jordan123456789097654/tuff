@@ -1729,7 +1729,16 @@ app.post('/api/display/celebrate', (req, res) => {
 });
 
 app.post('/api/display/broadcast', (req, res) => {
-  const { text, emoji } = req.body;
+  const { text, emoji, type, active } = req.body;
+
+  if (type === 'stealth_mode') {
+    const payload = `data: ${JSON.stringify({ type: 'stealth_mode', active: !!active })}\n\n`;
+    displaySseClients.forEach(client => {
+      try { client.write(payload); } catch(e) {}
+    });
+    return res.json({ success: true, message: 'Stealth state broadcasted' });
+  }
+
   if (!text) return res.status(400).json({ error: 'Announcement text is required' });
 
   const payload = `data: ${JSON.stringify({ type: 'speaker_broadcast', text, emoji: emoji || '📢' })}\n\n`;
@@ -1738,6 +1747,15 @@ app.post('/api/display/broadcast', (req, res) => {
   });
 
   res.json({ success: true, message: 'Broadcast sent to all display screens' });
+});
+
+app.post('/api/display/stealth', (req, res) => {
+  const { active } = req.body;
+  const payload = `data: ${JSON.stringify({ type: 'stealth_mode', active: !!active })}\n\n`;
+  displaySseClients.forEach(client => {
+    try { client.write(payload); } catch(e) {}
+  });
+  res.json({ success: true, active: !!active });
 });
 
 app.post('/api/display/birthday', (req, res) => {

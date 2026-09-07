@@ -2862,6 +2862,8 @@
       if (!data) return;
       if (data.type === 'settings_update') {
         applyDisplaySettings(data.settings);
+      } else if (data.type === 'stealth_mode') {
+        setDisplayStealthMode(!!data.active);
       } else if (data.type === 'theme_change') {
         setTheme(data.theme);
       } else if (data.type === 'shift_status') {
@@ -3017,7 +3019,109 @@
     loadSecretDailyPassword();
     setInterval(loadAnnouncements, 60000);
     setInterval(loadTrending, 30000);
+
+    // ==========================================
+    // 📚 STEALTH MODE / SCHOOL DISGUISE (DISPLAY)
+    // ==========================================
+    let isDisplayStealthActive = false;
+    function setDisplayStealthMode(active) {
+      isDisplayStealthActive = !!active;
+      const overlay = document.getElementById('display-stealth-mode-overlay');
+      const particleCanvas = document.getElementById('theme-particles-canvas');
+
+      if (overlay) {
+        overlay.classList.toggle('hidden', !isDisplayStealthActive);
+      }
+      if (particleCanvas) {
+        particleCanvas.style.display = isDisplayStealthActive ? 'none' : 'block';
+      }
+
+      // Update current time on disguise header
+      const clockEl = document.getElementById('display-stealth-clock');
+      if (clockEl) {
+        clockEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+
+    // Double tap/click or shortcut on 2nd screen also toggles stealth
+    window.addEventListener('keydown', (e) => {
+      if ((e.altKey && e.key.toLowerCase() === 's') || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') || e.key === 'F2') {
+        e.preventDefault();
+        const nextState = !isDisplayStealthActive;
+        setDisplayStealthMode(nextState);
+        if (typeof BroadcastChannel !== 'undefined') {
+          try {
+            const bc = new BroadcastChannel('snack_display_sync');
+            bc.postMessage({ type: 'stealth_mode', active: nextState });
+          } catch(err){}
+        }
+      }
+    });
   </script>
+
+  <!-- ==================================================== -->
+  <!-- 📚 ASSIGNMENT DISGUISE / STEALTH MODE OVERLAY (DISPLAY) -->
+  <!-- ==================================================== -->
+  <div id="display-stealth-mode-overlay" class="stealth-overlay hidden flex flex-col">
+    <!-- School LMS Header -->
+    <div class="bg-slate-800 text-white px-6 py-3 flex items-center justify-between shadow-md shrink-0 border-b border-slate-700">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="setDisplayStealthMode(false)" title="Oakridge High School">
+        <span class="text-2xl">🏫</span>
+        <div>
+          <h2 class="font-bold text-sm tracking-wide">Oakridge High School • Student Digital Learning Portal</h2>
+          <p class="text-[11px] text-slate-300">Period 4 Science Department • Document & Classroom Reader</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-semibold">Active Session</span>
+        <span class="text-xs text-slate-300 font-mono" id="display-stealth-clock">10:45 AM</span>
+      </div>
+    </div>
+
+    <!-- Reader Paper Canvas Area -->
+    <div class="flex-1 overflow-y-auto p-6 sm:p-10 flex justify-center bg-slate-100">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-8 sm:p-12 text-slate-900 space-y-6 font-serif leading-relaxed border border-slate-200">
+        
+        <div class="border-b border-slate-300 pb-4 text-xs font-sans text-slate-600 flex justify-between items-center">
+          <span><strong>Unit 4 Reading Assignment:</strong> Ecosystems & Environmental Biomes</span>
+          <span><strong>Module:</strong> 4.3 Terrestrial Nutrient Cycling</span>
+        </div>
+
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">
+          Chapter 4: Energetics of Primary Productivity & Energy Transfer in Trophic Pyramids
+        </h1>
+
+        <p class="text-xs sm:text-sm text-slate-700">
+          In any terrestrial ecosystem, energy begins with solar radiation captured by autotrophs through photosynthesis. Gross Primary Productivity (GPP) represents the total rate at which solar energy is converted into organic matter by primary producers over a given time interval. However, a significant fraction of this assimilated energy is immediately consumed by the producers themselves to fuel cellular respiration (\(R\)).
+        </p>
+
+        <p class="text-xs sm:text-sm text-slate-700">
+          The remaining organic biomass available to heterotrophs in subsequent trophic levels is designated as Net Primary Productivity (NPP), governed by the fundamental ecological equation:
+        </p>
+
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center font-mono font-bold text-sm text-slate-800">
+          $$\text{NPP} = \text{GPP} - R_{\text{autotroph}}$$
+        </div>
+
+        <p class="text-xs sm:text-sm text-slate-700">
+          Because energy transfer between successive trophic levels (from primary producers to primary consumers, secondary consumers, and apex predators) operates at an average ecological efficiency of approximately 10% (governed by Lindeman's Efficiency), substantial metabolic heat loss occurs at each juncture in accordance with the Second Law of Thermodynamics.
+        </p>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl text-xs text-blue-950 font-sans space-y-1">
+          <strong class="block text-blue-900">📚 Key Reading Concept:</strong>
+          <span>High NPP ecosystems include tropical rainforests, coral reefs, and estuaries, while arid deserts and open oceans exhibit lower biomass accumulation per square meter.</span>
+        </div>
+
+        <div class="border-t border-slate-200 pt-4 flex justify-between text-[11px] font-sans text-slate-400">
+          <span>Document Reader Mode • Oakridge Academic Cloud</span>
+          <span onclick="setDisplayStealthMode(false)" class="cursor-pointer hover:text-slate-600">Reading Progress: 72% Complete • Press Alt+S or Esc to return</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Corner Hotspot Trigger on Display -->
+  <div id="stealth-hotspot-display" onclick="setDisplayStealthMode(false)" class="fixed top-0 left-0 w-8 h-8 z-50 opacity-0 cursor-default" title="Secret Trigger"></div>
 
   <!-- Theme Particles Overlay Canvas -->
   <canvas id="theme-particles-canvas"></canvas>

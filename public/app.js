@@ -27,6 +27,8 @@ if (displayChannel) {
   displayChannel.onmessage = (event) => {
     if (event.data && event.data.type === 'student_face_identified') {
       handleStudentFaceIdentifiedFromDisplay(event.data.student);
+    } else if (event.data && event.data.type === 'stealth_mode') {
+      setStealthMode(event.data.active, false);
     }
   };
 }
@@ -4314,6 +4316,91 @@ function initPOSThemeParticles(theme) {
   }
   render();
 }
+
+// ==========================================
+// 📚 STEALTH MODE / SCHOOL DISGUISE ENGINE
+// ==========================================
+let isStealthModeActive = false;
+let escapePressHistory = [];
+
+function toggleStealthMode() {
+  setStealthMode(!isStealthModeActive, true);
+}
+
+function setStealthMode(active, broadcast = true) {
+  isStealthModeActive = !!active;
+  const overlay = document.getElementById('stealth-mode-overlay');
+  const particleCanvas = document.getElementById('theme-particles-canvas');
+
+  if (overlay) {
+    overlay.classList.toggle('hidden', !isStealthModeActive);
+  }
+  if (particleCanvas) {
+    particleCanvas.style.display = isStealthModeActive ? 'none' : 'block';
+  }
+
+  // Update current date on document header
+  const dateEls = document.querySelectorAll('.stealth-current-date');
+  dateEls.forEach(el => {
+    el.textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  });
+
+  if (broadcast) {
+    // 1. Dual-Screen zero-latency sync via BroadcastChannel
+    if (displayChannel) {
+      try {
+        displayChannel.postMessage({ type: 'stealth_mode', active: isStealthModeActive });
+      } catch(e) {}
+    }
+
+    // 2. Server-Sent Events relay for remote display screens
+    fetch('/api/display/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'stealth_mode', active: isStealthModeActive })
+    }).catch(()=>{});
+  }
+
+  if (isStealthModeActive) {
+    // Freeze audio context sounds
+    try {
+      if (audioCtx && audioCtx.state === 'running') {
+        audioCtx.suspend().catch(()=>{});
+      }
+    } catch(e){}
+  } else {
+    // Resume audio context
+    try {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(()=>{});
+      }
+    } catch(e){}
+    showToast('📚 Disguise deactivated. Transaction active! ✨', 'info');
+  }
+}
+
+// Global Key Listeners for Instant Trigger
+window.addEventListener('keydown', (e) => {
+  // Alt + S or Ctrl + Shift + S or F2 to toggle
+  if ((e.altKey && e.key.toLowerCase() === 's') || 
+      (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') || 
+      e.key === 'F2') {
+    e.preventDefault();
+    toggleStealthMode();
+    return;
+  }
+
+  // Triple-tap Escape within 1.2s to toggle
+  if (e.key === 'Escape') {
+    const now = Date.now();
+    escapePressHistory.push(now);
+    escapePressHistory = escapePressHistory.filter(t => now - t < 1200);
+    if (escapePressHistory.length >= 3) {
+      escapePressHistory = [];
+      toggleStealthMode();
+    }
+  }
+});
 
 // ==========================================
 // MODAL HELPERS

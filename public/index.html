@@ -34,8 +34,8 @@
 
   <!-- Top App Navigation Bar -->
   <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3 md:px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-    <!-- Brand Logo -->
-    <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('register')">
+    <!-- Brand Logo (Double click triggers Stealth Assignment Disguise) -->
+    <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('register')" ondblclick="toggleStealthMode()" title="Double-click to toggle Stealth Assignment Disguise">
       <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-md shadow-orange-500/20">
         🍿
       </div>
@@ -2693,6 +2693,186 @@
       </div>
     </div>
   </div>
+
+  <!-- ==================================================== -->
+  <!-- 📚 ASSIGNMENT DISGUISE / STEALTH MODE OVERLAY (POS) -->
+  <!-- ==================================================== -->
+  <div id="stealth-mode-overlay" class="stealth-overlay hidden flex flex-col">
+    <!-- Google Docs Style App Header -->
+    <div class="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between shadow-sm shrink-0">
+      <div class="flex items-center gap-3">
+        <!-- Blue Doc Icon (Secret Unfreeze Button on Double Click) -->
+        <div onclick="toggleStealthMode()" class="cursor-pointer hover:opacity-80 transition" title="Document">
+          <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L18.5 7H15zM8 12h8v1.5H8V12zm0 3h8v1.5H8V15zm0 3h5v1.5H8V18z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-gray-800 text-sm">AP_Environmental_Science_Unit4_Ecosystem_Study_Guide.docx</span>
+            <span class="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Saved to Drive</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-600 mt-0.5">
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">File</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">Edit</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">View</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">Insert</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">Format</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">Tools</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">Extensions</span>
+            <span class="hover:bg-gray-100 px-1.5 py-0.5 rounded cursor-default">Help</span>
+            <span onclick="toggleStealthMode()" class="text-gray-400 hover:text-gray-600 cursor-pointer underline text-[11px] ml-2" title="Click to resume register">Last edit was seconds ago</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button class="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+          <span>Comments</span>
+        </button>
+        <button class="flex items-center gap-1.5 text-xs text-blue-800 bg-blue-100 hover:bg-blue-200 px-3.5 py-1.5 rounded-full font-medium">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"></path></svg>
+          <span>Share</span>
+        </button>
+        <div onclick="toggleStealthMode()" class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center cursor-pointer shadow-sm ml-1" title="Click to return to register">
+          A
+        </div>
+      </div>
+    </div>
+
+    <!-- Realistic Formatting Toolbar -->
+    <div class="bg-[#edf2fa] border-b border-gray-300 px-4 py-1.5 flex items-center gap-1 text-xs text-gray-700 overflow-x-auto shadow-inner shrink-0">
+      <button class="stealth-toolbar-btn">↶</button>
+      <button class="stealth-toolbar-btn">↷</button>
+      <button class="stealth-toolbar-btn">🖨️</button>
+      <div class="w-px h-4 bg-gray-300 mx-1"></div>
+      <span class="bg-white px-2 py-0.5 rounded border border-gray-300 text-xs">100% ▾</span>
+      <div class="w-px h-4 bg-gray-300 mx-1"></div>
+      <span class="bg-white px-2 py-0.5 rounded border border-gray-300 text-xs font-serif">Times New Roman ▾</span>
+      <span class="bg-white px-2 py-0.5 rounded border border-gray-300 text-xs">11 ▾</span>
+      <div class="w-px h-4 bg-gray-300 mx-1"></div>
+      <button class="stealth-toolbar-btn font-bold">B</button>
+      <button class="stealth-toolbar-btn italic">I</button>
+      <button class="stealth-toolbar-btn underline">U</button>
+      <button class="stealth-toolbar-btn font-bold text-red-600">A</button>
+      <button class="stealth-toolbar-btn bg-yellow-200 px-1.5">✎</button>
+      <div class="w-px h-4 bg-gray-300 mx-1"></div>
+      <button class="stealth-toolbar-btn">≡</button>
+      <button class="stealth-toolbar-btn">≢</button>
+      <button class="stealth-toolbar-btn">≣</button>
+      <div class="w-px h-4 bg-gray-300 mx-1"></div>
+      <button class="stealth-toolbar-btn">• List</button>
+      <button class="stealth-toolbar-btn">1. List</button>
+    </div>
+
+    <!-- Paper Canvas Area -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-[#f8f9fa]">
+      <div class="stealth-doc-paper w-full max-w-3xl p-8 sm:p-12 text-sm space-y-6 text-gray-900 border border-gray-200">
+        
+        <!-- Assignment Header -->
+        <div class="border-b border-gray-300 pb-4 text-xs space-y-1 text-gray-700">
+          <div class="flex justify-between">
+            <span><strong>Student:</strong> Alex Morgan</span>
+            <span><strong>Date:</strong> <span class="stealth-current-date">September 7, 2026</span></span>
+          </div>
+          <div class="flex justify-between">
+            <span><strong>Course:</strong> AP Environmental Science (Period 4)</span>
+            <span><strong>Instructor:</strong> Mr. Henderson</span>
+          </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="text-center space-y-1 pt-2">
+          <h2 class="text-lg font-bold font-serif text-gray-900 uppercase tracking-wide">
+            Unit 4 Comprehensive Study Guide: Ecosystem Equilibrium & Soil Chemistry
+          </h2>
+          <p class="text-xs text-gray-600 italic">Instructions: Answer all questions in complete sentences. Cite relevant biome data and chemical cycles.</p>
+        </div>
+
+        <!-- Section 1 -->
+        <div class="space-y-3 pt-2">
+          <h3 class="font-bold text-gray-900 text-sm border-b border-gray-200 pb-1">
+            Section 1: Biogeochemical Cycles & Nitrogen Fixation
+          </h3>
+          <p class="text-xs leading-relaxed text-gray-800">
+            <strong>1.1 Analysis Prompt:</strong> Nitrogen is an essential limiting nutrient in terrestrial ecosystems. Atmospheric nitrogen (N2) is chemically unreactive due to its strong triple covalent bond. Describe the biological pathway by which <em>Rhizobium</em> bacteria in legume root nodules convert atmospheric nitrogen into bioavailable ammonium (NH4+), and explain how subsequent nitrification by <em>Nitrosomonas</em> produces nitrates (NO3-) accessible by primary producers.
+          </p>
+          <div class="bg-gray-50 border border-gray-200 p-3 rounded text-xs text-gray-700 italic space-y-1">
+            <span class="font-semibold text-gray-900 not-italic block">Student Response Notes:</span>
+            <p>Biological fixation occurs via the nitrogenase enzyme complex, reducing N2 to NH3 in anaerobic root microenvironments. Nitrification proceeds through two distinct obligate aerobic oxidation steps: (1) 2NH4+ + 3O2 → 2NO2- + 4H+ + 2H2O, followed by (2) 2NO2- + O2 → 2NO3-.</p>
+          </div>
+        </div>
+
+        <!-- Section 2: Table -->
+        <div class="space-y-3 pt-2">
+          <h3 class="font-bold text-gray-900 text-sm border-b border-gray-200 pb-1">
+            Section 2: Soil Horizon Profile & Percolation Matrix
+          </h3>
+          <table class="w-full text-xs border border-gray-300 border-collapse">
+            <thead>
+              <tr class="bg-gray-100 text-left">
+                <th class="border border-gray-300 p-2">Horizon</th>
+                <th class="border border-gray-300 p-2">Primary Composition</th>
+                <th class="border border-gray-300 p-2">Organic Content (%)</th>
+                <th class="border border-gray-300 p-2">Permeability Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-gray-300 p-2 font-bold">O Horizon</td>
+                <td class="border border-gray-300 p-2">Leaf litter, decomposing organic detritus</td>
+                <td class="border border-gray-300 p-2">78% - 94%</td>
+                <td class="border border-gray-300 p-2">High (3.4 cm/min)</td>
+              </tr>
+              <tr class="bg-gray-50">
+                <td class="border border-gray-300 p-2 font-bold">A Horizon (Topsoil)</td>
+                <td class="border border-gray-300 p-2">Mineral matter mixed with dark humus</td>
+                <td class="border border-gray-300 p-2">12% - 24%</td>
+                <td class="border border-gray-300 p-2">Moderate (1.8 cm/min)</td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 p-2 font-bold">B Horizon (Subsoil)</td>
+                <td class="border border-gray-300 p-2">Accumulated clay minerals, iron, aluminum</td>
+                <td class="border border-gray-300 p-2">&lt; 3%</td>
+                <td class="border border-gray-300 p-2">Low (0.3 cm/min)</td>
+              </tr>
+              <tr class="bg-gray-50">
+                <td class="border border-gray-300 p-2 font-bold">C Horizon</td>
+                <td class="border border-gray-300 p-2">Partially weathered parent bedrock material</td>
+                <td class="border border-gray-300 p-2">&lt; 0.5%</td>
+                <td class="border border-gray-300 p-2">Variable</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="space-y-3 pt-2">
+          <h3 class="font-bold text-gray-900 text-sm border-b border-gray-200 pb-1">
+            Section 3: Anthropogenic Impact & Watershed Conservation
+          </h3>
+          <p class="text-xs leading-relaxed text-gray-800">
+            <strong>3.1 Case Evaluation:</strong> Eutrophication in coastal estuaries is frequently exacerbated by excessive synthetic fertilizer runoff. Propose two agricultural mitigation strategies (e.g., riparian buffer zones, conservation tillage) and evaluate their comparative effectiveness in reducing dissolved phosphate concentrations.
+          </p>
+          <div class="bg-gray-50 border border-gray-200 p-3 rounded text-xs text-gray-700 italic space-y-1">
+            <span class="font-semibold text-gray-900 not-italic block">Student Response Notes:</span>
+            <p>1. Riparian buffer strips consisting of native perennial vegetation filter surface runoff and uptake dissolved phosphates through root mass filtration before reaching surface waterways.</p>
+            <p>2. No-till agriculture preserves soil macro-pore structure, preventing fine particulate soil detachment and curbing phosphate-adsorbed sediment erosion.</p>
+          </div>
+        </div>
+
+        <!-- Footer Note with secret hint -->
+        <div class="pt-6 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-400">
+          <span>Page 1 of 3 • AP Environmental Science Semester 1</span>
+          <span onclick="toggleStealthMode()" class="cursor-pointer hover:text-gray-600">Word count: 742 words • Press Alt+S or Esc to return</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Corner Hotspot Trigger for Stealth Mode -->
+  <div id="stealth-hotspot-pos" onclick="toggleStealthMode()" class="fixed top-0 left-0 w-8 h-8 z-50 opacity-0 cursor-default" title="Secret Trigger"></div>
 
   <!-- Seasonal Particle Overlay Canvas -->
   <canvas id="theme-particles-canvas"></canvas>
