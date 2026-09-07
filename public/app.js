@@ -2140,6 +2140,217 @@ async function closeActiveShift() {
   }
 }
 
+async function openCloseRegisterModal() {
+  await loadShiftStatus();
+  const content = document.getElementById('close-register-modal-content');
+  if (!content) return;
+
+  if (!activeShift) {
+    content.innerHTML = `
+      <div class="text-center py-5 space-y-4">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-3xl mx-auto">
+          🔓
+        </div>
+        <div>
+          <h4 class="font-heading font-extrabold text-base text-white">No Register Shift Open</h4>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Start a new cashier shift with your initial cash drawer float for making change.</p>
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left space-y-3 max-w-sm mx-auto">
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Cashier Name:</label>
+            <input type="text" id="quick-open-cashier" value="Student Volunteer" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Starting Cash Float ($):</label>
+            <input type="number" step="5.00" id="quick-open-start-cash" value="50.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400 focus:outline-none focus:border-emerald-500" />
+          </div>
+          <button onclick="quickOpenShiftFromModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Open Register Shift</span>
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    const openedTime = new Date(activeShift.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const expected = parseFloat(activeShift.expected_cash || 0).toFixed(2);
+    const startCash = parseFloat(activeShift.start_cash || 0).toFixed(2);
+    const cashSales = parseFloat(activeShift.cash_sales || 0).toFixed(2);
+    const ordersCount = activeShift.orders_count || 0;
+
+    content.innerHTML = `
+      <div class="space-y-4">
+        <!-- Cashier & Time Info -->
+        <div class="flex items-center justify-between bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+          <div>
+            <span class="text-[11px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Active Shift
+            </span>
+            <div class="font-heading font-extrabold text-base text-white mt-0.5">${activeShift.cashier_name}</div>
+            <div class="text-[11px] text-slate-400">Shift Started: ${openedTime}</div>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] text-slate-400 block">Starting Float</span>
+            <span class="font-mono font-bold text-slate-200 text-sm">$${startCash}</span>
+          </div>
+        </div>
+
+        <!-- Shift Totals Grid -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Cash Sales</span>
+            <span class="font-mono font-bold text-emerald-400 text-sm block mt-0.5">+$${cashSales}</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Cash Orders</span>
+            <span class="font-mono font-bold text-white text-sm block mt-0.5">${ordersCount}</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+            <span class="text-[10px] text-amber-400 uppercase font-semibold block">Expected Cash</span>
+            <span class="font-mono font-extrabold text-amber-300 text-sm block mt-0.5">$${expected}</span>
+          </div>
+        </div>
+
+        <!-- Physical Count Input -->
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-white text-xs block">Physical Cash Count in Drawer ($):</label>
+            <button onclick="document.getElementById('modal-close-actual-cash').value='${expected}'; updateCloseRegisterMath();" class="text-[11px] text-amber-400 hover:text-amber-300 underline">
+              Match Expected ($${expected})
+            </button>
+          </div>
+          
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base">$</span>
+            <input
+              type="number"
+              step="0.01"
+              id="modal-close-actual-cash"
+              placeholder="${expected}"
+              oninput="updateCloseRegisterMath()"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-lg font-mono font-bold text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          <!-- Live Difference Indicator -->
+          <div id="modal-close-diff-badge" class="p-2.5 rounded-xl text-center text-xs font-bold border border-slate-800 bg-slate-900 text-slate-400">
+            Enter counted drawer total to calculate discrepancy
+          </div>
+
+          <!-- Shift Notes -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Closing Audit Notes (Optional):</label>
+            <input
+              type="text"
+              id="modal-close-notes"
+              placeholder="e.g. Count verified by advisor / register balanced"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex gap-2">
+          <button onclick="confirmCloseRegisterShift()" class="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold py-3 rounded-2xl text-sm shadow-xl shadow-rose-900/30 flex items-center justify-center gap-2 transition">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            <span>Confirm & Close Register Shift</span>
+          </button>
+          <button onclick="closeModal('modal-close-register')" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-2xl text-xs transition">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  openModal('modal-close-register');
+  lucide.createIcons();
+}
+
+function updateCloseRegisterMath() {
+  if (!activeShift) return;
+  const input = document.getElementById('modal-close-actual-cash');
+  const badge = document.getElementById('modal-close-diff-badge');
+  if (!input || !badge) return;
+
+  const val = parseFloat(input.value);
+  if (isNaN(val)) {
+    badge.className = 'p-2.5 rounded-xl text-center text-xs font-bold border border-slate-800 bg-slate-900 text-slate-400';
+    badge.textContent = 'Enter counted drawer total to calculate discrepancy';
+    return;
+  }
+
+  const expected = parseFloat(activeShift.expected_cash || 0);
+  const diff = val - expected;
+
+  if (Math.abs(diff) < 0.009) {
+    badge.className = 'p-2.5 rounded-xl text-center text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400';
+    badge.textContent = '🟢 Cash Drawer Perfectly Balanced ($0.00 discrepancy)';
+  } else if (diff > 0) {
+    badge.className = 'p-2.5 rounded-xl text-center text-xs font-bold border border-blue-500/30 bg-blue-500/10 text-blue-400';
+    badge.textContent = `🟢 Drawer is OVER by +$${diff.toFixed(2)} (Excess Cash)`;
+  } else {
+    badge.className = 'p-2.5 rounded-xl text-center text-xs font-bold border border-rose-500/30 bg-rose-500/10 text-rose-400';
+    badge.textContent = `🔴 Drawer is SHORT by -$${Math.abs(diff).toFixed(2)} (Missing Cash)`;
+  }
+}
+
+async function quickOpenShiftFromModal() {
+  const cashier_name = document.getElementById('quick-open-cashier').value.trim() || 'Volunteer';
+  const start_cash = parseFloat(document.getElementById('quick-open-start-cash').value) || 50.0;
+
+  try {
+    const res = await fetch('/api/shifts/open', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cashier_name, start_cash })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to open shift');
+
+    playSound('chaching');
+    await loadShiftStatus();
+    closeModal('modal-close-register');
+    showToast(`Register opened for ${cashier_name} with $${start_cash.toFixed(2)} float! 🟢`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function confirmCloseRegisterShift() {
+  const actual_cash = parseFloat(document.getElementById('modal-close-actual-cash').value);
+  const notes = document.getElementById('modal-close-notes').value;
+
+  if (isNaN(actual_cash)) {
+    showToast('Please enter the physical cash counted in drawer', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/shifts/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actual_cash, notes })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to close register shift');
+
+    playSound('chaching');
+    closeModal('modal-close-register');
+    await loadShiftStatus();
+    if (document.getElementById('tab-shifts') && !document.getElementById('tab-shifts').classList.contains('hidden')) {
+      loadShiftData();
+    }
+    showToast(`Register closed! Result: ${data.summary.status} (Cash in drawer: $${actual_cash.toFixed(2)}) 🔒`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
 // ==========================================
 // ANALYTICS & REPORTS
 // ==========================================
