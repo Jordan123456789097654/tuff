@@ -928,14 +928,75 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Fetch Store Settings (Payment QR & Handle)
+    // Fetch Store Settings (Payment QR, Handle & Feature Toggles)
     async function loadStoreSettings() {
       try {
         const res = await fetch('/api/settings');
         storeSettings = await res.json();
         updateQRDisplay();
+        applyDisplaySettings(storeSettings);
       } catch (err) {
         console.warn('Failed to load settings:', err);
+      }
+    }
+
+    function applyDisplaySettings(settings) {
+      if (!settings) return;
+
+      // News Ticker
+      const ticker = document.getElementById('display-ticker-bar');
+      if (ticker) {
+        if (settings.cfg_display_news_ticker === 'false') ticker.classList.add('hidden');
+        else ticker.classList.remove('hidden');
+      }
+
+      // Header Buttons
+      const nutriBtn = document.querySelector('[onclick="openNutritionModal()"]');
+      if (nutriBtn) {
+        if (settings.cfg_display_nutrition === 'false') nutriBtn.classList.add('hidden');
+        else nutriBtn.classList.remove('hidden');
+      }
+
+      const wishBtn = document.querySelector('[onclick="openWishlistModal()"]');
+      if (wishBtn) {
+        if (settings.cfg_display_wishlist === 'false') wishBtn.classList.add('hidden');
+        else wishBtn.classList.remove('hidden');
+      }
+
+      const spinBtn = document.querySelector('[onclick="openSpinWheel()"]');
+      if (spinBtn) {
+        if (settings.cfg_display_spin_wheel === 'false') spinBtn.classList.add('hidden');
+        else spinBtn.classList.remove('hidden');
+      }
+
+      const balanceBtn = document.querySelector('[onclick="openBalanceChecker()"]');
+      if (balanceBtn) {
+        if (settings.cfg_display_balance_check === 'false') balanceBtn.classList.add('hidden');
+        else balanceBtn.classList.remove('hidden');
+      }
+
+      // Trending Best Sellers Bar
+      const trendingContainer = document.getElementById('trending-snacks-container');
+      if (trendingContainer && trendingContainer.parentElement) {
+        if (settings.cfg_display_trending === 'false') trendingContainer.parentElement.classList.add('hidden');
+        else trendingContainer.parentElement.classList.remove('hidden');
+      }
+
+      // Digital Scratch Card
+      const scratchCard = document.getElementById('celebrate-scratch-container');
+      if (scratchCard) {
+        if (settings.cfg_display_scratch_card === 'false') scratchCard.classList.add('hidden');
+        else scratchCard.classList.remove('hidden');
+      }
+
+      // Secret Menu
+      const secretTrigger = document.getElementById('logo-easter-egg-zone');
+      if (secretTrigger) {
+        if (settings.cfg_display_secret_menu === 'false') {
+          secretTrigger.onclick = null;
+        } else {
+          secretTrigger.onclick = handleLogoTap;
+        }
       }
     }
 
@@ -1200,6 +1261,7 @@
         try {
           const data = JSON.parse(event.data);
           renderState(data);
+          loadStoreSettings();
         } catch(e) {
           console.error('SSE parse error:', e);
         }
@@ -1215,6 +1277,7 @@
       channel.onmessage = function(event) {
         if (event.data) {
           renderState(event.data);
+          loadStoreSettings();
         }
       };
     }

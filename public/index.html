@@ -124,6 +124,12 @@
         <span>Portal</span>
       </a>
 
+      <!-- Screen & Feature Config Toggle Button -->
+      <button onclick="openConfigModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 text-xs px-2.5 py-1.5 rounded-xl transition font-semibold" title="Configure POS & Customer Display Feature Toggles">
+        <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
+        <span class="hidden md:inline">Feature Config</span>
+      </button>
+
       <!-- Sound FX Toggle -->
       <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition" title="Toggle Sound FX">
         <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>
@@ -1798,10 +1804,255 @@
         </div>
       </div>
 
-      <button onclick="submitNewFundraiser()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition">
-        <i data-lucide="check" class="w-4 h-4"></i>
-        <span>Create Campaign</span>
+  <!-- ==================================================== -->
+  <!-- MODAL: SCREEN LAYOUT & FEATURE CONFIGURATION -->
+  <!-- ==================================================== -->
+  <div id="modal-feature-config" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-150 max-h-[92vh] flex flex-col">
+      <button onclick="closeModal('modal-feature-config')" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
       </button>
+
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold">
+            ⚙️
+          </div>
+          <div>
+            <h3 class="font-heading font-extrabold text-xl text-white">Screen Layout & Feature Configuration</h3>
+            <p class="text-xs text-slate-400">Toggle active modules, customize customer screen widgets, and manage live announcements.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Config Navigation Tabs -->
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold">
+        <button onclick="switchConfigTab('pos')" id="cfg-tab-btn-pos" class="cfg-tab-btn bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl transition">
+          🖥️ POS Register Layout
+        </button>
+        <button onclick="switchConfigTab('display')" id="cfg-tab-btn-display" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition">
+          📺 Customer Display (`/display`)
+        </button>
+        <button onclick="switchConfigTab('announcements')" id="cfg-tab-btn-announcements" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition">
+          📢 News Ticker Manager
+        </button>
+        <button onclick="switchConfigTab('wishlist')" id="cfg-tab-btn-wishlist" class="cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition">
+          💡 Wishlist Requests
+        </button>
+      </div>
+
+      <!-- TAB 1: POS REGISTER TOGGLES -->
+      <div id="cfg-panel-pos" class="cfg-panel flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 mb-2">
+          <span class="text-amber-400 font-bold block mb-0.5">Cashier Experience Customization</span>
+          <p class="text-[11px] text-slate-400">Enable or disable buttons, popups, and helpers on the main register.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">💵 Quick Cash Tender Buttons</span>
+              <span class="text-[11px] text-slate-400">1-tap Exact, $1, $5, $10, $20 shortcuts</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-quick-cash" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">👤 Face Scanning Camera</span>
+              <span class="text-[11px] text-slate-400">Instant facial lookup for student passes</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-face-scan" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">📷 Barcode / Camera Scan</span>
+              <span class="text-[11px] text-slate-400">Camera scanning for badges and barcodes</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-camera-scan" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🔊 Cash Register Sound FX</span>
+              <span class="text-[11px] text-slate-400">Audio chimes, beeps, and register rings</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-sound-effects" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🏷️ Discounts & Promo Codes</span>
+              <span class="text-[11px] text-slate-400">Staff discounts, honor roll, and coupons</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-discounts" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🗑️ Loss / Spoilage Logger</span>
+              <span class="text-[11px] text-slate-400">Write off expired or damaged snacks</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-shrinkage" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🎯 Fundraiser Goal Allocator</span>
+              <span class="text-[11px] text-slate-400">Select active school cause at checkout</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-fundraiser" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🎉 Auto Combo Savings (50¢)</span>
+              <span class="text-[11px] text-slate-400">Auto discount when pairing snack + drink</span>
+            </div>
+            <input type="checkbox" id="cfg-pos-auto-combo" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+        </div>
+      </div>
+
+      <!-- TAB 2: CUSTOMER DISPLAY SCREEN TOGGLES -->
+      <div id="cfg-panel-display" class="cfg-panel hidden flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 mb-2">
+          <span class="text-amber-400 font-bold block mb-0.5">Customer Display (`/display`) Widget Toggles</span>
+          <p class="text-[11px] text-slate-400">Control which interactive elements appear on the second screen for customers.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">📢 News & Announcements Ticker</span>
+              <span class="text-[11px] text-slate-400">Live scrolling marquee banner</span>
+            </div>
+            <input type="checkbox" id="cfg-display-news-ticker" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🔥 "Trending Right Now" Bar</span>
+              <span class="text-[11px] text-slate-400">Live top-selling snacks feed</span>
+            </div>
+            <input type="checkbox" id="cfg-display-trending" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🌤️ Weather & Snack Forecast</span>
+              <span class="text-[11px] text-slate-400">Dynamic temperature & snack pairings</span>
+            </div>
+            <input type="checkbox" id="cfg-display-weather" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🔑 Secret Daily Password Card</span>
+              <span class="text-[11px] text-slate-400">Daily 10% discount code word</span>
+            </div>
+            <input type="checkbox" id="cfg-display-secret-code" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">💌 Daily Affirmations Boost</span>
+              <span class="text-[11px] text-slate-400">Tap-to-draw uplifting compliments</span>
+            </div>
+            <input type="checkbox" id="cfg-display-compliment" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🗳️ Live Flavor Battle / Polls</span>
+              <span class="text-[11px] text-slate-400">Interactive voting for next week's menu</span>
+            </div>
+            <input type="checkbox" id="cfg-display-polls" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🍎 Nutrition & Allergen Filter</span>
+              <span class="text-[11px] text-slate-400">Touch-to-inspect calorie & allergen guide</span>
+            </div>
+            <input type="checkbox" id="cfg-display-nutrition" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">💡 "Suggest a Snack" Wishlist</span>
+              <span class="text-[11px] text-slate-400">Customer requests & upvoting board</span>
+            </div>
+            <input type="checkbox" id="cfg-display-wishlist" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🎟️ Lucky Prize Spin Wheel</span>
+              <span class="text-[11px] text-slate-400">Weekly prize wheel game for customers</span>
+            </div>
+            <input type="checkbox" id="cfg-display-spin-wheel" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">💳 Pass Balance Checker</span>
+              <span class="text-[11px] text-slate-400">Self-service balance lookup</span>
+            </div>
+            <input type="checkbox" id="cfg-display-balance-check" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🪙 Digital Scratch-Off Card</span>
+              <span class="text-[11px] text-slate-400">Post-payment interactive reward game</span>
+            </div>
+            <input type="checkbox" id="cfg-display-scratch-card" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+
+          <label class="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer">
+            <div>
+              <span class="font-bold text-white block">🍯 Interactive Tip Jar Selector</span>
+              <span class="text-[11px] text-slate-400">Roundup, custom tip, and donation buttons</span>
+            </div>
+            <input type="checkbox" id="cfg-display-tip-jar" checked class="w-5 h-5 text-amber-500 rounded bg-slate-900 border-slate-700 focus:ring-amber-500" />
+          </label>
+        </div>
+      </div>
+
+      <!-- TAB 3: LIVE NEWS TICKER ANNOUNCEMENTS MANAGER -->
+      <div id="cfg-panel-announcements" class="cfg-panel hidden flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <span class="font-bold text-white block">Post New Live Announcement to Ticker:</span>
+          <div class="flex gap-2">
+            <input type="text" id="new-announcement-emoji" value="📢" class="w-12 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-center text-base text-white" />
+            <input type="text" id="new-announcement-text" placeholder="e.g. 🏀 Basketball game tonight @ 4 PM! Come support!" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+            <button onclick="submitNewAnnouncement()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+              + Post
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1.5" id="announcements-manage-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- TAB 4: CUSTOMER WISHLIST SUBMISSIONS -->
+      <div id="cfg-panel-wishlist" class="cfg-panel hidden flex-1 overflow-y-auto space-y-2 pr-1 text-xs" id="wishlist-manage-container">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Footer Action Buttons -->
+      <div class="flex gap-2 pt-2 border-t border-slate-800">
+        <button onclick="saveFeatureConfig()" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold py-3 rounded-2xl text-sm shadow-xl shadow-amber-500/20 transition">
+          💾 Save & Apply Toggles
+        </button>
+        <button onclick="closeModal('modal-feature-config')" class="px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-2xl text-xs transition">
+          Close
+        </button>
+      </div>
     </div>
   </div>
 

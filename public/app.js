@@ -3170,6 +3170,242 @@ function selectActiveStaff(staffId) {
 }
 
 // ==========================================
+// SCREEN & FEATURE CONFIGURATION
+// ==========================================
+let featureSettings = {};
+
+const FEATURE_KEYS = [
+  'cfg_pos_quick_cash',
+  'cfg_pos_face_scan',
+  'cfg_pos_camera_scan',
+  'cfg_pos_sound_effects',
+  'cfg_pos_discounts',
+  'cfg_pos_shrinkage',
+  'cfg_pos_fundraiser',
+  'cfg_pos_auto_combo',
+  'cfg_display_news_ticker',
+  'cfg_display_trending',
+  'cfg_display_weather',
+  'cfg_display_secret_code',
+  'cfg_display_compliment',
+  'cfg_display_polls',
+  'cfg_display_nutrition',
+  'cfg_display_wishlist',
+  'cfg_display_spin_wheel',
+  'cfg_display_balance_check',
+  'cfg_display_scratch_card',
+  'cfg_display_tip_jar'
+];
+
+async function loadFeatureConfig() {
+  try {
+    const res = await fetch('/api/settings');
+    featureSettings = await res.json();
+    applyPOSFeatureConfig(featureSettings);
+  } catch (err) {
+    console.warn('Feature config load notice:', err);
+  }
+}
+
+function openConfigModal() {
+  loadFeatureConfig().then(() => {
+    FEATURE_KEYS.forEach(key => {
+      const input = document.getElementById(key.replace(/_/g, '-'));
+      if (input) {
+        // Defaults to true if not explicitly set to 'false'
+        input.checked = featureSettings[key] !== 'false';
+      }
+    });
+  });
+  switchConfigTab('pos');
+  openModal('modal-feature-config');
+}
+
+function switchConfigTab(tabName) {
+  document.querySelectorAll('.cfg-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.cfg-tab-btn').forEach(b => {
+    b.className = 'cfg-tab-btn bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-1.5 rounded-xl transition';
+  });
+
+  const activeBtn = document.getElementById(`cfg-tab-btn-${tabName}`);
+  const activePanel = document.getElementById(`cfg-panel-${tabName}`);
+  if (activeBtn) activeBtn.className = 'cfg-tab-btn bg-amber-500 text-slate-950 px-3.5 py-1.5 rounded-xl font-bold transition';
+  if (activePanel) activePanel.classList.remove('hidden');
+
+  if (tabName === 'announcements') loadAnnouncementsManager();
+  if (tabName === 'wishlist') loadWishlistManager();
+  lucide.createIcons();
+}
+
+async function saveFeatureConfig() {
+  const payload = {};
+  FEATURE_KEYS.forEach(key => {
+    const input = document.getElementById(key.replace(/_/g, '-'));
+    if (input) {
+      payload[key] = input.checked ? 'true' : 'false';
+      featureSettings[key] = payload[key];
+    }
+  });
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save config');
+
+    applyPOSFeatureConfig(featureSettings);
+    syncCartToDisplay();
+
+    playSound('chaching');
+    closeModal('modal-feature-config');
+    showToast('Screen layout & feature toggles saved! ✨', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function applyPOSFeatureConfig(settings) {
+  if (!settings) return;
+
+  // Sound FX toggle
+  if (settings.cfg_pos_sound_effects === 'false') {
+    soundEnabled = false;
+    const audioIcon = document.getElementById('audio-icon');
+    if (audioIcon) audioIcon.setAttribute('data-lucide', 'volume-x');
+  } else {
+    soundEnabled = true;
+    const audioIcon = document.getElementById('audio-icon');
+    if (audioIcon) audioIcon.setAttribute('data-lucide', 'volume-2');
+  }
+
+  // Barcode / Camera Scan buttons in search bar
+  const cameraBtns = document.querySelectorAll('[onclick="openCameraScanner()"]');
+  cameraBtns.forEach(btn => {
+    if (settings.cfg_pos_camera_scan === 'false') {
+      btn.classList.add('hidden');
+    } else {
+      btn.classList.remove('hidden');
+    }
+  });
+
+  lucide.createIcons();
+}
+
+// Announcements Manager
+async function loadAnnouncementsManager() {
+  const container = document.getElementById('announcements-manage-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/announcements');
+    const items = await res.json();
+
+    if (!items || items.length === 0) {
+      container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No active ticker announcements. Post one above!</p>`;
+      return;
+    }
+
+    container.innerHTML = items.map(a => `
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between gap-2 shadow-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-lg">${a.emoji || '📢'}</span>
+          <span class="text-xs text-slate-200 truncate">${a.message || a.content}</span>
+        </div>
+        <button onclick="deleteAnnouncement(${a.id})" class="text-rose-400 hover:text-rose-300 p-1 rounded hover:bg-rose-500/20 text-xs transition" title="Delete Announcement">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = `<div class="text-rose-400 text-xs py-2">Error loading announcements: ${err.message}</div>`;
+  }
+}
+
+async function submitNewAnnouncement() {
+  const emoji = document.getElementById('new-announcement-emoji').value.trim() || '📢';
+  const textInput = document.getElementById('new-announcement-text');
+  const message = textInput.value.trim();
+
+  if (!message) {
+    showToast('Please type announcement text', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/announcements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji, message })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to post announcement');
+
+    textInput.value = '';
+    loadAnnouncementsManager();
+    showToast('Live announcement posted to news ticker! 📢', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function deleteAnnouncement(id) {
+  try {
+    await fetch(`/api/announcements/${id}`, { method: 'DELETE' });
+    loadAnnouncementsManager();
+    showToast('Announcement removed from news ticker.', 'info');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// Wishlist Manager
+async function loadWishlistManager() {
+  const container = document.getElementById('cfg-panel-wishlist');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/wishlist');
+    const items = await res.json();
+
+    if (!items || items.length === 0) {
+      container.innerHTML = `<div class="text-center text-slate-500 py-6 text-xs">No customer snack requests yet.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 mb-2">
+        <span class="text-purple-400 font-bold block mb-0.5">Top-Voted Customer Snack Requests</span>
+        <p class="text-[11px] text-slate-400">See what snacks and drinks students are asking you to stock next.</p>
+      </div>
+      <div class="space-y-2">
+        ${items.map((item, idx) => `
+          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="font-heading font-extrabold text-sm text-purple-400">#${idx + 1}</span>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-white truncate">${item.snack_name}</h4>
+                <div class="text-[10px] text-slate-400 font-medium">Requested by ${item.requested_by || 'Student'}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-xl text-xs font-mono font-bold">
+              <span>👍</span>
+              <span>${item.votes || 0} votes</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="text-rose-400 text-xs py-4">Error loading wishlist: ${err.message}</div>`;
+  }
+}
+
+// ==========================================
 // MODAL HELPERS
 // ==========================================
 function openModal(id) {
@@ -3191,4 +3427,5 @@ window.addEventListener('click', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
+  loadFeatureConfig();
 });
