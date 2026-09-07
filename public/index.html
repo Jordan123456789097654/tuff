@@ -1224,6 +1224,14 @@
         <!-- Populated by JS -->
       </div>
 
+      <div id="student-watchlist-alert" class="hidden bg-amber-500/15 border-2 border-amber-500/60 p-3 rounded-2xl text-xs text-amber-200 flex items-start gap-2.5 shadow-lg">
+        <span class="text-lg shrink-0 mt-0.5">🚨</span>
+        <div class="space-y-0.5 flex-1">
+          <strong class="font-bold text-amber-400 block text-xs uppercase tracking-wide">Security Watchlist / Disputed Account Alert:</strong>
+          <p id="student-watchlist-reason" class="text-[11px] text-amber-100 font-mono">This account has an active security flag or unpaid balance.</p>
+        </div>
+      </div>
+
       <div id="student-allergy-alert" class="hidden bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-xs text-rose-300 flex items-start gap-2">
         <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
         <div>
@@ -1541,6 +1549,28 @@
             </div>
           </div>
           <input type="hidden" id="new-stu-photo-data" />
+        </div>
+
+        <!-- Security & Watchlist Flagging -->
+        <div class="bg-amber-950/40 border border-amber-500/40 p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="new-stu-is-flagged" class="w-4 h-4 accent-amber-500 rounded cursor-pointer" onchange="document.getElementById('new-stu-watchlist-container').classList.toggle('hidden', !this.checked)" />
+              <span>🚨 Flag for Watchlist / Disputed Balance</span>
+            </label>
+            <span class="text-[10px] font-mono text-amber-400 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full">SECURITY</span>
+          </div>
+          
+          <div id="new-stu-watchlist-container" class="hidden space-y-2 pt-1 border-t border-amber-500/20">
+            <div>
+              <label class="text-slate-300 font-semibold mb-1 block">Watchlist / Dispute Reason:</label>
+              <input type="text" id="new-stu-watchlist-reason" placeholder="e.g. Unpaid $4.50 from yesterday, disputed energy drink" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400" />
+            </div>
+            <div>
+              <label class="text-slate-300 font-semibold mb-1 block">Unpaid / Owed Balance ($):</label>
+              <input type="number" step="0.25" id="new-stu-unpaid" value="0.00" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-rose-300 font-mono font-bold focus:outline-none focus:border-amber-400" />
+            </div>
+          </div>
         </div>
 
         <div>
@@ -2982,6 +3012,9 @@
               <span id="cashier-cctv-tag-badge" class="bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shadow hidden">
                 🟢 Subject Detected
               </span>
+              <span id="cctv-crowd-badge" class="bg-amber-950/90 border border-amber-500/60 text-amber-300 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shadow hidden animate-pulse">
+                ⚠️ Multi-Person Crowd
+              </span>
             </div>
 
             <!-- Top Right Audio VU Decibel Meter -->
@@ -3090,8 +3123,12 @@
                 </select>
               </div>
 
-              <!-- Right: Export & Snapshot Tools -->
+              <!-- Right: Export, Snapshot & 🚨 SILENT DURESS TAG -->
               <div class="flex items-center gap-1.5">
+                <button onclick="triggerSilentDuressIncident()" class="bg-rose-700 hover:bg-rose-600 text-white text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 border border-rose-500 shadow-md shadow-rose-950/60" title="1-Click Silent Duress & Shoplifting Tag (Ctrl+Shift+L)">
+                  <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+                  <span>🚨 Tag Incident</span>
+                </button>
                 <button onclick="recordCctvClip()" class="bg-rose-600/90 hover:bg-rose-500 text-white text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
                   <i data-lucide="video" class="w-3.5 h-3.5"></i>
                   <span>Save 5s Clip</span>
@@ -3106,24 +3143,48 @@
           </div>
         </div>
 
-        <!-- Right: Incident Detection Tags Log & History (4.5 Cols) -->
+        <!-- Right: Incident Detection Tags Log & Evidence Vault (4.5 Cols) -->
         <div class="lg:col-span-4 flex flex-col space-y-2 bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex-1 min-h-[300px]">
+          
+          <!-- Tab selector -->
           <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span class="font-bold text-xs text-white flex items-center gap-1.5">
-              <span>🏷️</span> Detection History (Last 1h)
-            </span>
+            <div class="flex items-center gap-2">
+              <button onclick="switchCctvRightTab('feed')" id="tab-btn-cctv-feed" class="text-xs font-bold text-white px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700">
+                🏷️ Detection Feed
+              </button>
+              <button onclick="switchCctvRightTab('vault')" id="tab-btn-cctv-vault" class="text-xs font-bold text-slate-400 hover:text-white px-2 py-0.5 rounded-lg transition">
+                🛡️ Evidence Vault
+              </button>
+            </div>
             <button onclick="clearCctvDetectionLog()" class="text-[10px] text-slate-400 hover:text-rose-400">Clear</button>
           </div>
 
-          <p class="text-[10px] text-slate-400 leading-tight">
-            Click any detection event to jump the DVR scrubber directly to that exact moment!
-          </p>
+          <!-- TAB 1: Real-time Presence Detection Feed -->
+          <div id="cctv-tab-panel-feed" class="flex-1 flex flex-col space-y-2">
+            <p class="text-[10px] text-slate-400 leading-tight">
+              Click any detection event to jump the DVR scrubber directly to that exact moment!
+            </p>
 
-          <!-- Log List -->
-          <div id="cctv-detection-feed" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs max-h-[340px]">
-            <div class="text-center text-slate-500 text-xs py-8">
-              Awaiting presence detection...<br>
-              <span class="text-[10px]">Subjects approaching Table 4B will be tagged here.</span>
+            <div id="cctv-detection-feed" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs max-h-[340px]">
+              <div class="text-center text-slate-500 text-xs py-8">
+                Awaiting presence detection...<br>
+                <span class="text-[10px]">Subjects approaching Table 4B will be tagged here.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: 🛡️ Incident Evidence Vault -->
+          <div id="cctv-tab-panel-vault" class="hidden flex-1 flex flex-col space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Saved Duress &amp; Shoplifting Incidents:</span>
+              <button onclick="loadSecurityIncidentsVault()" class="text-[10px] text-slate-400 hover:text-slate-200">Refresh</button>
+            </div>
+
+            <div id="cctv-incidents-vault-list" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs max-h-[340px]">
+              <div class="text-center text-slate-500 text-xs py-8">
+                No incidents flagged yet.<br>
+                <span class="text-[10px]">Press <strong>Ctrl+Shift+L</strong> or <strong>Tag Incident</strong> to bookmark theft.</span>
+              </div>
             </div>
           </div>
 

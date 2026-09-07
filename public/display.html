@@ -64,6 +64,12 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased selection:bg-amber-500 selection:text-slate-950">
 
+  <!-- ⚠️ MULTI-PERSON PROXIMITY / SINGLE-FILE QUEUE BANNER -->
+  <div id="display-crowd-alert" class="hidden fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-slate-950 font-black text-xs px-4 py-1.5 rounded-full shadow-2xl border-2 border-white flex items-center gap-2 animate-bounce">
+    <span class="text-base">👥</span>
+    <span>Single-File Queue Please! (1 Student at Register Counter)</span>
+  </div>
+
   <!-- LIVE SCHOOL EVENT COUNTDOWN BANNER -->
   <div id="display-event-countdown-bar" class="hidden bg-gradient-to-r from-blue-950 via-indigo-950 to-purple-950 text-white font-bold text-xs py-2 px-4 overflow-hidden shadow-lg flex items-center justify-between gap-3 shrink-0 border-b border-indigo-500/40">
     <div class="flex items-center gap-2">
@@ -4156,7 +4162,9 @@
             student: stu,
             isHumanDetected: tagText && !tagText.includes('SCANNING'),
             hasAudio: !!(cctvStream && cctvStream.getAudioTracks().length > 0),
-            audioLevel: currentDisplayAudioLevel || 0
+            audioLevel: currentDisplayAudioLevel || 0,
+            isCrowded: !!isDisplayCrowded,
+            crowdCount: isDisplayCrowded ? 2 : 1
           };
 
           // 1. Local BroadcastChannel for 0ms latency on same machine
@@ -4183,7 +4191,8 @@
         type: 'display_heartbeat', 
         timestamp: Date.now(),
         hasAudio: !!(cctvStream && cctvStream.getAudioTracks().length > 0),
-        audioLevel: currentDisplayAudioLevel || 0
+        audioLevel: currentDisplayAudioLevel || 0,
+        isCrowded: !!isDisplayCrowded
       };
       if (typeof BroadcastChannel !== 'undefined') {
         try {
@@ -4203,11 +4212,13 @@
     displayAiSampleCanvas.width = 120;
     displayAiSampleCanvas.height = 90;
     const displayAiSampleCtx = displayAiSampleCanvas.getContext('2d', { willReadFrequently: true });
+    let isDisplayCrowded = false;
 
     function startDisplayCctvAiLoop() {
       const video = document.getElementById('cctv-live-video');
       const canvas = document.getElementById('display-cctv-canvas');
       const tagEl = document.getElementById('display-cctv-tag');
+      const crowdBanner = document.getElementById('display-crowd-alert');
       if (!video || !canvas) return;
       const ctx = canvas.getContext('2d');
       let frame = 0;
@@ -4264,6 +4275,13 @@
             const totalSampled = (120 / 2) * (90 / 2);
             const skinRatio = skinCount / totalSampled;
             isHumanDetected = skinRatio >= 0.032;
+
+            // Optical queue crowd detection (multiple people or wide crowd spread)
+            const spreadX = maxX - minX;
+            isDisplayCrowded = isHumanDetected && ((spreadX > 75 && skinRatio > 0.10) || skinCount > 380);
+            if (crowdBanner) {
+              crowdBanner.classList.toggle('hidden', !isDisplayCrowded);
+            }
           }
 
           if (isHumanDetected) {
@@ -4290,8 +4308,8 @@
             const boxW = smoothedBox.w;
             const boxH = smoothedBox.h;
 
-            ctx.strokeStyle = '#10b981';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = isDisplayCrowded ? '#f59e0b' : '#10b981';
+            ctx.lineWidth = 2.5;
             const len = 12;
             ctx.beginPath();
             ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
@@ -4302,11 +4320,15 @@
 
             const stuName = (typeof kioskCustomer !== 'undefined' && kioskCustomer) ? kioskCustomer.name : 'VERIFIED PASS';
             if (tagEl) {
-              tagEl.textContent = `🟢 ${stuName}`;
-              tagEl.className = 'absolute top-1 right-1.5 bg-emerald-950/90 border border-emerald-500/50 px-1 py-0.2 rounded text-[7px] font-mono text-emerald-300 font-bold';
+              tagEl.textContent = isDisplayCrowded ? `⚠️ CROWD DETECTED` : `🟢 ${stuName}`;
+              tagEl.className = isDisplayCrowded
+                ? 'absolute top-1 right-1.5 bg-amber-950/90 border border-amber-500/50 px-1 py-0.2 rounded text-[7px] font-mono text-amber-300 font-bold'
+                : 'absolute top-1 right-1.5 bg-emerald-950/90 border border-emerald-500/50 px-1 py-0.2 rounded text-[7px] font-mono text-emerald-300 font-bold';
             }
           } else {
             smoothedBox.active = false;
+            isDisplayCrowded = false;
+            if (crowdBanner) crowdBanner.classList.add('hidden');
             if (tagEl) {
               tagEl.textContent = `⚪ SCANNING...`;
               tagEl.className = 'absolute top-1 right-1.5 bg-slate-950/90 border border-slate-700 px-1 py-0.2 rounded text-[7px] font-mono text-slate-400 font-bold';

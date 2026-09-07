@@ -66,6 +66,23 @@ async function initDB() {
 
       ALTER TABLE students ADD COLUMN IF NOT EXISTS punch_card INT NOT NULL DEFAULT 0;
       ALTER TABLE students ADD COLUMN IF NOT EXISTS free_rewards INT NOT NULL DEFAULT 0;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS watchlist_reason TEXT DEFAULT '';
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS unpaid_balance NUMERIC(10, 2) DEFAULT 0.00;
+
+      CREATE TABLE IF NOT EXISTS security_incidents (
+        id SERIAL PRIMARY KEY,
+        incident_tag VARCHAR(50) NOT NULL,
+        label VARCHAR(150) NOT NULL,
+        student_id VARCHAR(50),
+        student_name VARCHAR(150),
+        zone VARCHAR(100) DEFAULT 'Table 4B',
+        severity VARCHAR(50) DEFAULT 'high',
+        clip_url TEXT,
+        clip_name VARCHAR(150),
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
 
       CREATE TABLE IF NOT EXISTS preorders (
         id SERIAL PRIMARY KEY,

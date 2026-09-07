@@ -1428,6 +1428,24 @@ function selectStudentForCheckout(studentId) {
     alertBox.classList.add('hidden');
   }
 
+  // Security Watchlist & Disputed Balance Check
+  const watchlistAlert = document.getElementById('student-watchlist-alert');
+  const watchlistReason = document.getElementById('student-watchlist-reason');
+  if (watchlistAlert) {
+    if (student.is_flagged || parseFloat(student.unpaid_balance || 0) > 0) {
+      watchlistAlert.classList.remove('hidden');
+      const unpaid = parseFloat(student.unpaid_balance || 0);
+      const reasonText = student.watchlist_reason ? `Reason: ${student.watchlist_reason}` : 'Active Security Watchlist Flag';
+      const unpaidText = unpaid > 0 ? ` • Unpaid Owed Balance: $${unpaid.toFixed(2)}` : '';
+      if (watchlistReason) {
+        watchlistReason.textContent = `🚨 ${student.name} (${student.student_id}): ${reasonText}${unpaidText}`;
+      }
+      playSound('warning');
+    } else {
+      watchlistAlert.classList.add('hidden');
+    }
+  }
+
   actionsContainer.classList.remove('hidden');
   balancePreview.textContent = `$${balance.toFixed(2)} available`;
 
@@ -1720,6 +1738,13 @@ function openNewStudentModal() {
   document.getElementById('new-stu-photo-data').value = '';
   document.getElementById('new-stu-photo-preview').innerHTML = `👤`;
 
+  const flagChk = document.getElementById('new-stu-is-flagged');
+  const reasonInp = document.getElementById('new-stu-watchlist-reason');
+  const unpaidInp = document.getElementById('new-stu-unpaid');
+  if (flagChk) flagChk.checked = false;
+  if (reasonInp) reasonInp.value = '';
+  if (unpaidInp) unpaidInp.value = '0.00';
+
   openModal('modal-student-new');
 }
 
@@ -1750,6 +1775,13 @@ function openEditStudentModal(studentId) {
   } else {
     document.getElementById('new-stu-photo-preview').innerHTML = `👤`;
   }
+
+  const flagChk = document.getElementById('new-stu-is-flagged');
+  const reasonInp = document.getElementById('new-stu-watchlist-reason');
+  const unpaidInp = document.getElementById('new-stu-unpaid');
+  if (flagChk) flagChk.checked = Boolean(student.is_flagged);
+  if (reasonInp) reasonInp.value = student.watchlist_reason || '';
+  if (unpaidInp) unpaidInp.value = parseFloat(student.unpaid_balance || 0).toFixed(2);
 
   openModal('modal-student-new');
 }
@@ -1808,6 +1840,13 @@ async function submitStudentForm() {
   const streak_count = parseInt(document.getElementById('new-stu-streak').value, 10) || 0;
   const photo_data = document.getElementById('new-stu-photo-data').value || '';
 
+  const flagChk = document.getElementById('new-stu-is-flagged');
+  const reasonInp = document.getElementById('new-stu-watchlist-reason');
+  const unpaidInp = document.getElementById('new-stu-unpaid');
+  const is_flagged = flagChk ? flagChk.checked : false;
+  const watchlist_reason = reasonInp ? reasonInp.value.trim() : '';
+  const unpaid_balance = unpaidInp ? parseFloat(unpaidInp.value) || 0 : 0;
+
   if (!name || !student_id) {
     showToast('Name and Student ID are required', 'error');
     return;
@@ -1825,7 +1864,10 @@ async function submitStudentForm() {
     notes,
     birthday,
     streak_count,
-    photo_data
+    photo_data,
+    is_flagged,
+    watchlist_reason,
+    unpaid_balance
   };
 
   try {
@@ -4674,6 +4716,16 @@ function handleIncomingCustomerCctvPacket(packet) {
   updateCustomerDisplayConnectionBadge(true);
   updateCustomerCctvAudioHud(packet.audioLevel, packet.hasAudio);
 
+  // Toggle Multi-Person Crowd Badge on Cashier CCTV HUD
+  const crowdBadge = document.getElementById('cctv-crowd-badge');
+  if (crowdBadge) {
+    if (packet.isCrowded) {
+      crowdBadge.classList.remove('hidden');
+    } else {
+      crowdBadge.classList.add('hidden');
+    }
+  }
+
   const now = packet.timestamp || Date.now();
 
   // Create image object for rendering
@@ -5077,10 +5129,15 @@ function updateTimelineEventMarkers() {
     const diffSec = (now - itemTime) / 1000;
     if (diffSec > DVR_MAX_DURATION_SEC) return '';
     const pct = ((DVR_MAX_DURATION_SEC - diffSec) / DVR_MAX_DURATION_SEC) * 100;
+    const isHighSeverity = item.severity === 'HIGH' || (item.tag && (item.tag.includes('INC') || item.tag.includes('DURESS')));
+    const pinClass = isHighSeverity 
+      ? 'absolute -top-0.5 w-2 h-3.5 bg-rose-500 hover:bg-rose-400 rounded-full cursor-pointer hover:scale-150 transition shadow-md shadow-rose-500/50 z-10' 
+      : 'absolute top-0 w-1.5 h-2.5 bg-amber-400 hover:bg-amber-300 rounded-full cursor-pointer hover:scale-150 transition';
+    
     return `
       <div 
         onclick="jumpToIncidentTimestamp(${itemTime})" 
-        class="absolute top-0 w-1.5 h-2.5 bg-amber-400 hover:bg-amber-300 rounded-full cursor-pointer hover:scale-150 transition" 
+        class="${pinClass}" 
         style="left: ${pct}%;" 
         title="${item.tag || 'Tag'} - ${item.label} (${item.timestamp})">
       </div>
@@ -5589,6 +5646,160 @@ function clearCctvDetectionLog() {
   renderCctvDetectionLogUI();
   updateTimelineEventMarkers();
   showToast('Detection feed cleared', 'info');
+}
+
+// ==========================================
+// 🚨 SILENT DURESS / SHOPLIFTING INCIDENT TAGGER & EVIDENCE VAULT
+// ==========================================
+let securityVaultIncidents = [];
+
+async function triggerSilentDuressIncident() {
+  const canvas = document.getElementById('cashier-cctv-canvas');
+  let snapshotDataUrl = null;
+  if (canvas) {
+    try {
+      snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    } catch(e){}
+  }
+
+  const now = Date.now();
+  const incidentTag = `INC-${now.toString().slice(-4)}`;
+  const timeStr = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const payload = {
+    incident_type: 'silent_duress',
+    severity: 'HIGH',
+    timestamp_ms: now,
+    snapshot_url: snapshotDataUrl,
+    notes: `🚨 Silent Duress / Shoplifting Tagged at Table 4B (${timeStr})`,
+    cashier_name: (typeof activeShift !== 'undefined' && activeShift && activeShift.cashier_name) ? activeShift.cashier_name : 'Cashier Station'
+  };
+
+  try {
+    const res = await fetch('/api/security/incidents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    // Also record in live detection feed & timeline markers
+    recordCctvDetectionIncident({
+      tag: incidentTag,
+      label: `🚨 DURESS INCIDENT BOOKMARK (${timeStr})`,
+      zone: 'Table 4B',
+      confidence: '100% VERIFIED',
+      created_at: now,
+      timestamp: timeStr,
+      snapshot: snapshotDataUrl,
+      severity: 'HIGH'
+    });
+
+    playSound('warning');
+    showToast('🚨 Silent Duress Bookmark saved to Evidence Vault & DVR Timeline!', 'warning');
+
+    // If Vault tab is open, reload it
+    const vaultTabContent = document.getElementById('cctv-tab-vault-content');
+    if (vaultTabContent && !vaultTabContent.classList.contains('hidden')) {
+      loadSecurityIncidentsVault();
+    }
+  } catch (err) {
+    console.error('Failed to log security incident:', err);
+    showToast('⚠️ Incident recorded locally', 'info');
+  }
+}
+
+// Keyboard shortcut: Ctrl + Shift + L triggers silent duress tag
+window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
+    e.preventDefault();
+    triggerSilentDuressIncident();
+  }
+});
+
+function switchCctvRightTab(tab) {
+  const btnLive = document.getElementById('btn-cctv-tab-live');
+  const btnVault = document.getElementById('btn-cctv-tab-vault');
+  const contentLive = document.getElementById('cctv-tab-live-content');
+  const contentVault = document.getElementById('cctv-tab-vault-content');
+
+  if (tab === 'vault') {
+    if (btnVault) btnVault.className = 'flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-slate-800 text-rose-400 shadow flex items-center justify-center gap-1.5 transition';
+    if (btnLive) btnLive.className = 'flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition';
+    if (contentLive) contentLive.classList.add('hidden');
+    if (contentVault) contentVault.classList.remove('hidden');
+    loadSecurityIncidentsVault();
+  } else {
+    if (btnLive) btnLive.className = 'flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-slate-800 text-amber-400 shadow flex items-center justify-center gap-1.5 transition';
+    if (btnVault) btnVault.className = 'flex-1 py-2 px-3 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition';
+    if (contentLive) contentLive.classList.remove('hidden');
+    if (contentVault) contentVault.classList.add('hidden');
+  }
+  lucide.createIcons();
+}
+
+async function loadSecurityIncidentsVault() {
+  const container = document.getElementById('cctv-security-vault-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/security/incidents');
+    const data = await res.json();
+    securityVaultIncidents = Array.isArray(data) ? data : [];
+
+    if (securityVaultIncidents.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-slate-500 text-xs py-8">
+          🔒 No tagged incidents in Evidence Vault.<br>
+          <span class="text-[10px]">Use "🚨 Tag Incident" or Ctrl+Shift+L to bookmark events.</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = securityVaultIncidents.map(inc => {
+      const timeStr = new Date(parseInt(inc.timestamp_ms || Date.now(), 10)).toLocaleString();
+      return `
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-rose-500/40 space-y-2 hover:border-rose-400 transition">
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="font-mono font-bold text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1.5 py-0.5 rounded">
+              🚨 ${(inc.incident_type || 'INCIDENT').toUpperCase()}
+            </span>
+            <span class="text-slate-400 font-mono text-[10px]">${timeStr}</span>
+          </div>
+          <div class="text-xs text-slate-200 font-semibold">${inc.notes || 'Duress bookmark'}</div>
+          ${inc.snapshot_url ? `
+            <div class="relative rounded-lg overflow-hidden border border-slate-800 bg-slate-950 max-h-28">
+              <img src="${inc.snapshot_url}" alt="Incident Snapshot" class="w-full h-full object-cover" />
+            </div>
+          ` : ''}
+          <div class="flex items-center justify-between pt-1 text-[10px]">
+            <button onclick="jumpToIncidentTimestamp(${inc.timestamp_ms})" class="text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1">
+              <span>⏪ Scrub DVR to Time</span>
+            </button>
+            <button onclick="deleteSecurityIncident(${inc.id})" class="text-slate-500 hover:text-rose-400 transition" title="Delete Incident Record">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    lucide.createIcons();
+  } catch (err) {
+    console.error('Failed to load security vault:', err);
+  }
+}
+
+async function deleteSecurityIncident(id) {
+  if (!confirm('Delete this incident record from Evidence Vault?')) return;
+  try {
+    const res = await fetch(`/api/security/incidents/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Incident removed from Evidence Vault', 'info');
+      loadSecurityIncidentsVault();
+    }
+  } catch (err) {
+    showToast('Failed to delete incident', 'error');
+  }
 }
 
 // ==========================================

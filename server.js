@@ -396,7 +396,7 @@ app.get('/api/students/:id', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   try {
-    let { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data, birthday } = req.body;
+    let { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data, birthday, is_flagged, watchlist_reason, unpaid_balance } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Student name is required.' });
     }
@@ -406,8 +406,8 @@ app.post('/api/students', async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards, photo_data, birthday)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 0, $8, $9) RETURNING *`,
+      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards, photo_data, birthday, is_flagged, watchlist_reason, unpaid_balance)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 0, $8, $9, $10, $11, $12) RETURNING *`,
       [
         student_id.trim().toUpperCase(),
         name.trim(),
@@ -417,7 +417,10 @@ app.post('/api/students', async (req, res) => {
         allergies || '',
         notes || '',
         photo_data || '',
-        birthday || ''
+        birthday || '',
+        Boolean(is_flagged),
+        watchlist_reason || '',
+        parseFloat(unpaid_balance) || 0.00
       ]
     );
 
@@ -445,36 +448,37 @@ app.post('/api/students/:id/photo', async (req, res) => {
   try {
     const { id } = req.params;
     const { photo_data } = req.body;
+    if (!photo_data) {
+      return res.status(400).json({ error: 'photo_data required' });
+    }
+
     const result = await db.query(
-      'UPDATE students SET photo_data = $1 WHERE id::text = $2::text OR student_id = $2::text RETURNING *',
-      [photo_data || '', id]
+      `UPDATE students SET photo_data = $1 WHERE id::text = $2::text OR student_id = $2::text RETURNING *`,
+      [photo_data, id]
     );
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Student not found.' });
     }
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating student photo:', err);
-    res.status(500).json({ error: 'Failed to update student photo' });
+    res.status(500).json({ error: 'Failed to save photo' });
   }
 });
 
 app.post('/api/students/:id/recharge', async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, notes } = req.body;
-    const addAmt = parseFloat(amount);
-
-    if (isNaN(addAmt) || addAmt <= 0) {
-      return res.status(400).json({ error: 'Invalid recharge amount.' });
+    const { amount } = req.body;
+    const rechargeAmt = parseFloat(amount);
+    if (isNaN(rechargeAmt) || rechargeAmt <= 0) {
+      return res.status(400).json({ error: 'Valid positive amount required.' });
     }
 
     const result = await db.query(
-      `UPDATE students
-       SET balance = balance + $1,
-           notes = CASE WHEN $2 != '' THEN CONCAT(notes, ' | Reloaded $', $1, ' (', $2, ')') ELSE notes END
-       WHERE id = $3 RETURNING *`,
-      [addAmt, notes || 'Cash Deposit', id]
+      `UPDATE students SET balance = balance + $1 WHERE id::text = $2::text OR student_id = $2::text RETURNING *`,
+      [rechargeAmt, id]
     );
 
     if (result.rows.length === 0) {
@@ -490,7 +494,7 @@ app.post('/api/students/:id/recharge', async (req, res) => {
 app.put('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data, punch_card, free_rewards } = req.body;
+    const { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data, punch_card, free_rewards, is_flagged, watchlist_reason, unpaid_balance } = req.body;
 
     const result = await db.query(
       `UPDATE students
@@ -503,8 +507,11 @@ app.put('/api/students/:id', async (req, res) => {
            notes = COALESCE($7, notes),
            photo_data = COALESCE($8, photo_data),
            punch_card = COALESCE($9, punch_card),
-           free_rewards = COALESCE($10, free_rewards)
-       WHERE id::text = $11::text OR student_id = $11::text RETURNING *`,
+           free_rewards = COALESCE($10, free_rewards),
+           is_flagged = COALESCE($11, is_flagged),
+           watchlist_reason = COALESCE($12, watchlist_reason),
+           unpaid_balance = COALESCE($13, unpaid_balance)
+       WHERE id::text = $14::text OR student_id = $14::text RETURNING *`,
       [
         student_id ? student_id.trim().toUpperCase() : null,
         name ? name.trim() : null,
@@ -516,6 +523,9 @@ app.put('/api/students/:id', async (req, res) => {
         photo_data !== undefined ? photo_data : null,
         punch_card !== undefined ? parseInt(punch_card, 10) : null,
         free_rewards !== undefined ? parseInt(free_rewards, 10) : null,
+        is_flagged !== undefined ? Boolean(is_flagged) : null,
+        watchlist_reason !== undefined ? watchlist_reason : null,
+        unpaid_balance !== undefined ? parseFloat(unpaid_balance) : null,
         id
       ]
     );
@@ -527,6 +537,69 @@ app.put('/api/students/:id', async (req, res) => {
   } catch (err) {
     console.error('Error updating student:', err);
     res.status(500).json({ error: 'Failed to update student profile' });
+  }
+});
+
+// ----------------------------------------------------
+// 🚨 SECURITY INCIDENT EVIDENCE & DURESS LOGS
+// ----------------------------------------------------
+
+app.get('/api/security/incidents', async (req, res) => {
+  try {
+    const result = await db.query(`SELECT * FROM security_incidents ORDER BY created_at DESC LIMIT 50`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching security incidents:', err);
+    res.status(500).json({ error: 'Failed to fetch security incidents' });
+  }
+});
+
+app.post('/api/security/incidents', async (req, res) => {
+  try {
+    const { incident_tag, label, student_id, student_name, zone, severity, clip_url, clip_name, notes } = req.body;
+    const tag = incident_tag || `INC-${Date.now().toString().slice(-4)}`;
+
+    const result = await db.query(
+      `INSERT INTO security_incidents (incident_tag, label, student_id, student_name, zone, severity, clip_url, clip_name, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [
+        tag,
+        label || 'Silent Duress / Suspicious Activity',
+        student_id || null,
+        student_name || null,
+        zone || 'Table 4B',
+        severity || 'high',
+        clip_url || '',
+        clip_name || '',
+        notes || ''
+      ]
+    );
+
+    const incident = result.rows[0];
+
+    // Broadcast incident to all connected cashier stations
+    try {
+      broadcastToDisplayClients({
+        type: 'security_incident_logged',
+        incident
+      });
+    } catch(e){}
+
+    res.status(201).json(incident);
+  } catch (err) {
+    console.error('Error recording security incident:', err);
+    res.status(500).json({ error: 'Failed to log security incident' });
+  }
+});
+
+app.delete('/api/security/incidents/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query(`DELETE FROM security_incidents WHERE id = $1`, [id]);
+    res.json({ success: true, message: 'Incident removed from vault' });
+  } catch (err) {
+    console.error('Error deleting incident:', err);
+    res.status(500).json({ error: 'Failed to delete incident' });
   }
 });
 
