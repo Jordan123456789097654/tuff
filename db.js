@@ -183,6 +183,15 @@ async function initDB() {
         fundraiser_id INT REFERENCES fundraiser_campaigns(id) ON DELETE SET NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS photo_data TEXT DEFAULT '';
+
+      CREATE TABLE IF NOT EXISTS spin_wheel_logs (
+        id SERIAL PRIMARY KEY,
+        customer_identifier VARCHAR(150) NOT NULL,
+        prize_won VARCHAR(150) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Ensure default fundraiser campaigns exist

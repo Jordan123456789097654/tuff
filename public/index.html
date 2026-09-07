@@ -668,25 +668,54 @@
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold">
-          📷
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl font-bold">
+            📷
+          </div>
+          <div>
+            <h3 class="font-heading font-bold text-lg text-white" id="scanner-modal-title">Live Camera & Face Scanner</h3>
+            <p class="text-xs text-slate-400">Scan snack barcodes, student passes, or student faces</p>
+          </div>
         </div>
-        <div>
-          <h3 class="font-heading font-bold text-lg text-white">Live Camera Scanner</h3>
-          <p class="text-xs text-slate-400">Scan snack barcodes (UPC) or Student ID cards</p>
-        </div>
+      </div>
+
+      <!-- Scanner Mode Switch (Barcode vs Face Scan) -->
+      <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+        <button onclick="setScannerMode('barcode')" id="btn-mode-barcode" class="py-1.5 px-3 rounded-lg bg-amber-500 text-slate-950 font-bold transition flex items-center justify-center gap-1.5">
+          <i data-lucide="barcode" class="w-3.5 h-3.5"></i>
+          <span>Barcode / Pass</span>
+        </button>
+        <button onclick="setScannerMode('face')" id="btn-mode-face" class="py-1.5 px-3 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+          <i data-lucide="smile" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span>👤 Face Lookup</span>
+        </button>
       </div>
 
       <!-- Camera Viewport -->
       <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-700 min-h-[260px] flex items-center justify-center">
         <div id="camera-reader-viewport" class="w-full"></div>
-        <div class="absolute inset-0 border-2 border-amber-400/50 rounded-2xl pointer-events-none animate-pulse"></div>
+        <video id="face-video-stream" autoplay playsinline muted class="hidden w-full max-h-[260px] object-cover"></video>
+        <canvas id="face-capture-canvas" class="hidden"></canvas>
+        
+        <div id="scanner-overlay-box" class="absolute inset-0 border-2 border-amber-400/50 rounded-2xl pointer-events-none animate-pulse"></div>
+        
+        <!-- Face Frame Target -->
+        <div id="face-frame-target" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-48 h-48 rounded-full border-2 border-dashed border-blue-400/80 animate-spin-slow"></div>
+        </div>
+      </div>
+
+      <div id="face-actions-bar" class="hidden flex gap-2">
+        <button onclick="captureAndMatchFace()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/30 transition">
+          <i data-lucide="scan-face" class="w-4 h-4"></i>
+          <span>Match Student Face</span>
+        </button>
       </div>
 
       <!-- Last Scanned Info Display -->
       <div id="scan-feedback-box" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 text-center">
-        Point camera at any snack barcode or student pass...
+        Point camera at any snack barcode, student pass, or face...
       </div>
     </div>
   </div>
@@ -1305,6 +1334,22 @@
         <div>
           <label class="text-slate-400 font-semibold mb-1 block">Allergies / Special Dietary Needs:</label>
           <input type="text" id="new-stu-allergies" placeholder="e.g. Peanuts, Tree nuts, Dairy, Gluten" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <div>
+          <label class="text-slate-400 font-semibold mb-1 block">Student Face Photo (For Face Scanning):</label>
+          <div class="flex items-center gap-2">
+            <div id="new-stu-photo-preview" class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-xl overflow-hidden shrink-0">
+              👤
+            </div>
+            <div class="flex-1 space-y-1">
+              <input type="file" id="new-stu-photo-file" accept="image/*" onchange="handleStudentPhotoSelected(event)" class="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-300 hover:file:bg-slate-700" />
+              <button type="button" onclick="snapPhotoFromWebcam()" class="text-[11px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i> Snap Photo with Camera
+              </button>
+            </div>
+          </div>
+          <input type="hidden" id="new-stu-photo-data" />
         </div>
 
         <div>

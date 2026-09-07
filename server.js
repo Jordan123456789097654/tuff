@@ -365,14 +365,14 @@ app.get('/api/students/:id', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   try {
-    const { student_id, name, grade, balance, daily_limit, allergies, notes } = req.body;
+    const { student_id, name, grade, balance, daily_limit, allergies, notes, photo_data } = req.body;
     if (!student_id || !name) {
       return res.status(400).json({ error: 'Student ID and name are required.' });
     }
 
     const result = await db.query(
-      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0) RETURNING *`,
+      `INSERT INTO students (student_id, name, grade, balance, daily_limit, allergies, notes, punch_card, free_rewards, photo_data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, $8) RETURNING *`,
       [
         student_id.trim().toUpperCase(),
         name.trim(),
@@ -380,7 +380,8 @@ app.post('/api/students', async (req, res) => {
         parseFloat(balance) || 0.00,
         parseFloat(daily_limit) || 10.00,
         allergies || '',
-        notes || ''
+        notes || '',
+        photo_data || ''
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -390,6 +391,24 @@ app.post('/api/students', async (req, res) => {
     }
     console.error('Error creating student:', err);
     res.status(500).json({ error: 'Failed to create student' });
+  }
+});
+
+app.post('/api/students/:id/photo', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { photo_data } = req.body;
+    const result = await db.query(
+      'UPDATE students SET photo_data = $1 WHERE id::text = $2::text OR student_id = $2::text RETURNING *',
+      [photo_data || '', id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found.' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating student photo:', err);
+    res.status(500).json({ error: 'Failed to update student photo' });
   }
 });
 
@@ -1216,8 +1235,75 @@ app.get('/api/reports/advisor-statement', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// CUSTOMER FEEDBACK & SATISFACTION REVIEWS
+// SPIN WHEEL 1-SPIN-PER-WEEK LIMIT ENFORCEMENT
 // ----------------------------------------------------
+
+app.get('/api/spin-wheel/status', async (req, res) => {
+  try {
+    const customerId = (req.query.customer || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'guest').toString().trim();
+    
+    // Check if spun in last 7 days (1 week)
+    const recent = await db.query(
+      `SELECT * FROM spin_wheel_logs 
+       WHERE customer_identifier = $1 
+         AND created_at >= NOW() - INTERVAL '7 days'
+       ORDER BY created_at DESC LIMIT 1`,
+      [customerId]
+    );
+
+    if (recent.rows.length > 0) {
+      const lastSpin = recent.rows[0];
+      const nextAvailable = new Date(new Date(lastSpin.created_at).getTime() + 7 * 24 * 60 * 60 * 1000);
+      return res.json({
+        allowed: false,
+        last_spin: lastSpin.created_at,
+        prize_won: lastSpin.prize_won,
+        next_available: nextAvailable.toISOString(),
+        message: 'You have already spun this week! Come back next week for another lucky spin.'
+      });
+    }
+
+    res.json({ allowed: true });
+  } catch (err) {
+    console.error('Spin wheel status check error:', err);
+    res.status(500).json({ error: 'Failed to verify spin wheel status' });
+  }
+});
+
+app.post('/api/spin-wheel/claim', async (req, res) => {
+  try {
+    const customerId = (req.body.customer || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'guest').toString().trim();
+    const { prize } = req.body;
+
+    if (!prize) {
+      return res.status(400).json({ error: 'Prize name required.' });
+    }
+
+    // Double check last 7 days limit
+    const check = await db.query(
+      `SELECT * FROM spin_wheel_logs 
+       WHERE customer_identifier = $1 
+         AND created_at >= NOW() - INTERVAL '7 days'
+       LIMIT 1`,
+      [customerId]
+    );
+
+    if (check.rows.length > 0) {
+      return res.status(429).json({ error: 'Already spun within the past 7 days.' });
+    }
+
+    const result = await db.query(
+      `INSERT INTO spin_wheel_logs (customer_identifier, prize_won)
+       VALUES ($1, $2) RETURNING *`,
+      [customerId, prize]
+    );
+
+    res.status(201).json({ success: true, log: result.rows[0] });
+  } catch (err) {
+    console.error('Error claiming spin wheel prize:', err);
+    res.status(500).json({ error: 'Failed to claim prize' });
+  }
+});
 
 app.post('/api/feedback', async (req, res) => {
   try {

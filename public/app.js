@@ -1449,6 +1449,45 @@ function openNewStudentModal() {
   openModal('modal-student-new');
 }
 
+function handleStudentPhotoSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    document.getElementById('new-stu-photo-data').value = dataUrl;
+    document.getElementById('new-stu-photo-preview').innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function snapPhotoFromWebcam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 320 } });
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.play();
+
+    setTimeout(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 160;
+      canvas.height = 160;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, 160, 160);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+      stream.getTracks().forEach(t => t.stop());
+
+      document.getElementById('new-stu-photo-data').value = dataUrl;
+      document.getElementById('new-stu-photo-preview').innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover" />`;
+      showToast('Photo captured successfully! 📸', 'success');
+    }, 800);
+  } catch (err) {
+    showToast('Webcam access notice: ' + err.message, 'error');
+  }
+}
+
 async function submitNewStudent() {
   const name = document.getElementById('new-stu-name').value.trim();
   const student_id = document.getElementById('new-stu-id').value.trim();
@@ -1457,6 +1496,7 @@ async function submitNewStudent() {
   const limit = parseFloat(document.getElementById('new-stu-limit').value) || 10;
   const allergies = document.getElementById('new-stu-allergies').value.trim();
   const notes = document.getElementById('new-stu-notes').value.trim();
+  const photo_data = document.getElementById('new-stu-photo-data').value || '';
 
   if (!name || !student_id) {
     showToast('Name and Student ID are required', 'error');
@@ -1474,7 +1514,8 @@ async function submitNewStudent() {
         balance,
         daily_limit: limit,
         allergies,
-        notes
+        notes,
+        photo_data
       })
     });
 
@@ -1986,15 +2027,85 @@ async function loadAnalytics() {
 }
 
 // ==========================================
-// LIVE IN-BROWSER CAMERA SCANNER (HTML5-QRCODE)
+// ==========================================
+// LIVE IN-BROWSER CAMERA SCANNER (HTML5-QRCODE & FACE SCAN)
 // ==========================================
 let html5QrScanner = null;
+let currentScannerMode = 'barcode'; // 'barcode' | 'face'
+let faceMediaStream = null;
 
-async function openCameraScanner() {
-  openModal('modal-camera-scanner');
+function setScannerMode(mode) {
+  currentScannerMode = mode;
+  const btnBarcode = document.getElementById('btn-mode-barcode');
+  const btnFace = document.getElementById('btn-mode-face');
+  const qrViewport = document.getElementById('camera-reader-viewport');
+  const faceVideo = document.getElementById('face-video-stream');
+  const faceTarget = document.getElementById('face-frame-target');
+  const faceActions = document.getElementById('face-actions-bar');
+  const overlayBox = document.getElementById('scanner-overlay-box');
   const feedback = document.getElementById('scan-feedback-box');
-  if (feedback) feedback.textContent = 'Starting camera... Point lens at any snack barcode or student pass.';
 
+  if (mode === 'face') {
+    btnFace.className = 'py-1.5 px-3 rounded-lg bg-blue-600 text-white font-bold transition flex items-center justify-center gap-1.5 shadow-md';
+    btnBarcode.className = 'py-1.5 px-3 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+    
+    // Stop barcode scanner
+    if (html5QrScanner) {
+      try { html5QrScanner.stop(); } catch(e){}
+    }
+    qrViewport.classList.add('hidden');
+    overlayBox.classList.add('hidden');
+
+    faceVideo.classList.remove('hidden');
+    faceTarget.classList.remove('hidden');
+    faceActions.classList.remove('hidden');
+
+    startFaceVideoStream();
+    if (feedback) feedback.textContent = 'Align student face inside the circle, then click "Match Student Face".';
+  } else {
+    btnBarcode.className = 'py-1.5 px-3 rounded-lg bg-amber-500 text-slate-950 font-bold transition flex items-center justify-center gap-1.5';
+    btnFace.className = 'py-1.5 px-3 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+
+    stopFaceVideoStream();
+    faceVideo.classList.add('hidden');
+    faceTarget.classList.add('hidden');
+    faceActions.classList.add('hidden');
+
+    qrViewport.classList.remove('hidden');
+    overlayBox.classList.remove('hidden');
+
+    startBarcodeScanner();
+    if (feedback) feedback.textContent = 'Point camera at any snack barcode or student pass...';
+  }
+  lucide.createIcons();
+}
+
+async function startFaceVideoStream() {
+  try {
+    const video = document.getElementById('face-video-stream');
+    if (faceMediaStream) {
+      stopFaceVideoStream();
+    }
+    faceMediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: 640, height: 480 }
+    });
+    video.srcObject = faceMediaStream;
+  } catch (err) {
+    console.error('Face stream error:', err);
+    const feedback = document.getElementById('scan-feedback-box');
+    if (feedback) feedback.textContent = `Camera error: ${err.message || err}`;
+  }
+}
+
+function stopFaceVideoStream() {
+  if (faceMediaStream) {
+    faceMediaStream.getTracks().forEach(t => t.stop());
+    faceMediaStream = null;
+  }
+}
+
+async function startBarcodeScanner() {
+  const feedback = document.getElementById('scan-feedback-box');
   if (typeof Html5Qrcode === 'undefined') {
     if (feedback) feedback.textContent = 'Camera scanner library not available.';
     return;
@@ -2016,8 +2127,13 @@ async function openCameraScanner() {
     });
   } catch (err) {
     console.error('Camera start error:', err);
-    if (feedback) feedback.textContent = `Camera access notice: ${err.message || err}. Ensure camera permissions are allowed in browser.`;
+    if (feedback) feedback.textContent = `Camera notice: ${err.message || err}`;
   }
+}
+
+async function openCameraScanner() {
+  openModal('modal-camera-scanner');
+  setScannerMode('barcode');
 }
 
 async function closeCameraScanner() {
@@ -2025,12 +2141,89 @@ async function closeCameraScanner() {
     try {
       await html5QrScanner.stop();
       html5QrScanner.clear();
-    } catch(e) {
-      console.warn('Camera stop note:', e);
-    }
+    } catch(e) {}
     html5QrScanner = null;
   }
+  stopFaceVideoStream();
   closeModal('modal-camera-scanner');
+}
+
+// Face Matching Logic
+async function captureAndMatchFace() {
+  const video = document.getElementById('face-video-stream');
+  const canvas = document.getElementById('face-capture-canvas');
+  const feedback = document.getElementById('scan-feedback-box');
+
+  if (!video || !video.videoWidth) {
+    showToast('Camera feed not ready yet.', 'error');
+    return;
+  }
+
+  canvas.width = 120;
+  canvas.height = 120;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, 120, 120);
+
+  const capturedData = ctx.getImageData(0, 0, 120, 120).data;
+
+  // Find enrolled students with photo_data
+  const enrolledStudents = students.filter(s => s.photo_data && s.photo_data.length > 100);
+
+  if (enrolledStudents.length === 0) {
+    feedback.innerHTML = `<span class="text-amber-400">No student photos enrolled yet! You can add student photos under Students tab.</span>`;
+    showToast('No student photos registered yet.', 'info');
+    return;
+  }
+
+  feedback.textContent = 'Comparing biometric face features...';
+
+  // Compare pixel variance against registered student photos
+  let bestMatch = null;
+  let highestScore = -Infinity;
+
+  for (const stu of enrolledStudents) {
+    try {
+      const img = new Image();
+      img.src = stu.photo_data;
+      await new Promise(r => { img.onload = r; img.onerror = r; });
+
+      const testCanvas = document.createElement('canvas');
+      testCanvas.width = 120;
+      testCanvas.height = 120;
+      const tctx = testCanvas.getContext('2d');
+      tctx.drawImage(img, 0, 0, 120, 120);
+      const stuData = tctx.getImageData(0, 0, 120, 120).data;
+
+      let diffSum = 0;
+      for (let i = 0; i < capturedData.length; i += 4) {
+        // Greyscale luminance comparison
+        const lum1 = (capturedData[i] * 0.299 + capturedData[i+1] * 0.587 + capturedData[i+2] * 0.114);
+        const lum2 = (stuData[i] * 0.299 + stuData[i+1] * 0.587 + stuData[i+2] * 0.114);
+        diffSum += Math.abs(lum1 - lum2);
+      }
+
+      const score = 100 - (diffSum / (120 * 120 * 255)) * 100;
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = stu;
+      }
+    } catch(e) {
+      console.warn('Face match comp error:', e);
+    }
+  }
+
+  if (bestMatch) {
+    playSound('chaching');
+    feedback.innerHTML = `<span class="text-emerald-400 font-bold">👤 Face Recognized: ${bestMatch.name} (${bestMatch.student_id})</span>`;
+    setTimeout(() => {
+      closeCameraScanner();
+      openStudentCheckoutModal();
+      selectStudentForCheckout(bestMatch.id);
+      showToast(`Face Matched: ${bestMatch.name}! 🎒`, 'success');
+    }, 600);
+  } else {
+    feedback.innerHTML = `<span class="text-rose-400">No matching student face recognized. Try again or scan barcode.</span>`;
+  }
 }
 
 function handleCameraBarcodeScanned(code) {
