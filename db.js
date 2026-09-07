@@ -108,7 +108,7 @@ async function initDB() {
         shift_period VARCHAR(50) DEFAULT 'Morning Operational Window',
         cashier_name VARCHAR(100) NOT NULL,
         manager_name VARCHAR(100) DEFAULT 'Manager Lead',
-        opening_cash NUMERIC(10, 2) DEFAULT 50.00,
+        opening_cash NUMERIC(10, 2) DEFAULT 0.00,
         closing_cash NUMERIC(10, 2) DEFAULT 0.00,
         cash_discrepancy NUMERIC(10, 2) DEFAULT 0.00,
         weather_summary VARCHAR(100) DEFAULT 'Clear, 72°F',
@@ -219,7 +219,7 @@ async function initDB() {
         cashier_name VARCHAR(100) NOT NULL,
         opened_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         closed_at TIMESTAMP WITH TIME ZONE,
-        start_cash NUMERIC(10, 2) NOT NULL DEFAULT 50.00,
+        start_cash NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
         expected_cash NUMERIC(10, 2),
         actual_cash NUMERIC(10, 2),
         difference NUMERIC(10, 2),
@@ -577,7 +577,7 @@ async function initDB() {
         INSERT INTO daily_logs (
           cashier_name, manager_name, opening_cash, closing_cash, cash_discrepancy, weather_summary, incidents_count, operational_notes, manager_signoff
         ) VALUES (
-          'Jordan Daniels', 'Store Lead & Manager', 50.00, 114.50, 0.00, 'Sunny & Mild, 74°F', 1,
+          'Jordan Daniels', 'Store Lead & Manager', 0.00, 114.50, 0.00, 'Sunny & Mild, 74°F', 1,
           'Morning operational session completed with balanced register drawer. High snack demand for Flamin Hot chips and ice cold sparkling drinks.',
           TRUE
         )

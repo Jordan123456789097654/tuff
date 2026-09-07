@@ -2296,7 +2296,7 @@ async function loadShiftData() {
         </div>
         <div>
           <h3 class="font-heading font-extrabold text-lg text-white">No Register Shift Currently Open</h3>
-          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Start a new cashier shift with your initial cash drawer float (e.g. $50.00 for making change).</p>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Start a new cashier shift with your initial cash drawer float (Zero-Float Policy: $0.00).</p>
         </div>
 
         <div class="max-w-xs mx-auto space-y-3 pt-2">
@@ -2306,7 +2306,7 @@ async function loadShiftData() {
           </div>
           <div>
             <label class="text-xs text-slate-400 block text-left font-semibold mb-1">Starting Cash Float ($):</label>
-            <input type="number" step="5.00" id="open-start-cash" value="50.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
+            <input type="number" step="1.00" id="open-start-cash" value="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
           </div>
           <button onclick="startNewShift()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
             <i data-lucide="play" class="w-4 h-4"></i>
@@ -2391,8 +2391,9 @@ async function loadShiftData() {
 }
 
 async function startNewShift() {
-  const cashier_name = document.getElementById('open-cashier-name').value.trim() || 'Volunteer';
-  const start_cash = parseFloat(document.getElementById('open-start-cash').value) || 50.0;
+  const cashier_name = document.getElementById('open-cashier-name')?.value.trim() || 'Volunteer';
+  const rawCash = document.getElementById('open-start-cash')?.value;
+  const start_cash = isNaN(parseFloat(rawCash)) ? 0.00 : parseFloat(rawCash);
 
   try {
     const res = await fetch('/api/shifts/open', {
@@ -2452,7 +2453,7 @@ async function openCloseRegisterModal() {
         </div>
         <div>
           <h4 class="font-heading font-extrabold text-base text-white">No Register Shift Open</h4>
-          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Start a new cashier shift with your initial cash drawer float for making change.</p>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Start a new cashier shift with your initial cash drawer float (Zero-Float: $0.00).</p>
         </div>
 
         <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left space-y-3 max-w-sm mx-auto">
@@ -2462,7 +2463,7 @@ async function openCloseRegisterModal() {
           </div>
           <div>
             <label class="text-[11px] text-slate-400 font-semibold mb-1 block">Starting Cash Float ($):</label>
-            <input type="number" step="5.00" id="quick-open-start-cash" value="50.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400 focus:outline-none focus:border-emerald-500" />
+            <input type="number" step="1.00" id="quick-open-start-cash" value="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400 focus:outline-none focus:border-emerald-500" />
           </div>
           <button onclick="quickOpenShiftFromModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
             <i data-lucide="play" class="w-4 h-4"></i>
@@ -2597,8 +2598,9 @@ function updateCloseRegisterMath() {
 }
 
 async function quickOpenShiftFromModal() {
-  const cashier_name = document.getElementById('quick-open-cashier').value.trim() || 'Volunteer';
-  const start_cash = parseFloat(document.getElementById('quick-open-start-cash').value) || 50.0;
+  const cashier_name = document.getElementById('quick-open-cashier')?.value.trim() || 'Volunteer';
+  const rawCash = document.getElementById('quick-open-start-cash')?.value;
+  const start_cash = isNaN(parseFloat(rawCash)) ? 0.00 : parseFloat(rawCash);
 
   try {
     const res = await fetch('/api/shifts/open', {
@@ -6521,7 +6523,8 @@ async function submitDigitalIncidentReport() {
 async function submitDailyShiftLog() {
   const cashier = document.getElementById('form-log-cashier')?.value.trim() || 'Jordan Daniels';
   const manager = document.getElementById('form-log-manager')?.value.trim() || 'Store Lead & Manager';
-  const openCash = parseFloat(document.getElementById('form-log-open-cash')?.value) || 50.00;
+  const rawOpen = document.getElementById('form-log-open-cash')?.value;
+  const openCash = isNaN(parseFloat(rawOpen)) ? 0.00 : parseFloat(rawOpen);
   const closeCash = parseFloat(document.getElementById('form-log-close-cash')?.value) || 0.00;
   const discrepancy = parseFloat(document.getElementById('form-log-diff')?.value) || 0.00;
   const weather = document.getElementById('form-log-weather')?.value.trim();

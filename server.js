@@ -1124,7 +1124,7 @@ app.post('/api/shifts/open', async (req, res) => {
     const result = await db.query(
       `INSERT INTO shifts (cashier_name, start_cash, is_open)
        VALUES ($1, $2, TRUE) RETURNING *`,
-      [cashier_name || 'Cashier', parseFloat(start_cash) || 50.00]
+      [cashier_name || 'Cashier', isNaN(parseFloat(start_cash)) ? 0.00 : parseFloat(start_cash)]
     );
 
     // Broadcast shift status to display clients
@@ -2425,7 +2425,7 @@ app.post('/api/manager/daily_logs', async (req, res) => {
       RETURNING *`,
       [
         log_date || null, cashier_name || 'Cashier', manager_name || 'Manager',
-        parseFloat(opening_cash) || 50.00, parseFloat(closing_cash) || 0.00,
+        isNaN(parseFloat(opening_cash)) ? 0.00 : parseFloat(opening_cash), isNaN(parseFloat(closing_cash)) ? 0.00 : parseFloat(closing_cash),
         parseFloat(cash_discrepancy) || 0.00, weather_summary || 'Clear',
         parseInt(incidents_count, 10) || 0, operational_notes || '', !!manager_signoff
       ]
@@ -2908,7 +2908,7 @@ app.post('/api/ai/ask-sop', async (req, res) => {
         .replace(/<script[\s\S]*?<\/script>/gi, '')
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
-        .slice(0, 7000);
+        .slice(0, 16000);
     }
 
     const prompt = `You are the Official AI SOP Assistant for Jordan's Snack Shack (Station Table 4B).

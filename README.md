@@ -27,8 +27,8 @@ Backed by **PostgreSQL (Supabase)** with zero-configuration automatic schema mig
 - **Fundraiser Profit Margin Tracker:** Track wholesale item cost vs. retail price to compute fundraising profit margins.
 
 ### 4. 💵 Shift Drawer & Cash Reconciliation
-- **Opening Float:** Track starting drawer cash (e.g. $50.00).
-- **End-of-Shift Cash Audit:** Cashiers count register physical cash at the end of lunch to verify actual cash vs. system expected sales (Balanced / Over / Short).
+- **Opening Float:** Zero-Float policy ($0.00 starting cash; change accumulated organically).
+- **End-of-Shift Cash Audit:** Cashiers count register physical cash at the end of the break to verify actual cash vs. system expected sales (Balanced / Over / Short).
 
 ### 5. 📊 Fundraiser Performance Analytics
 - **Live Metrics:** Today's revenue, net profit, orders count, and all-time sales.
