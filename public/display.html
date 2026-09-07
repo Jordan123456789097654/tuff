@@ -144,11 +144,6 @@
 
     <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
-      <!-- Self-Checkout Kiosk Mode Toggle -->
-      <button id="display-btn-kiosk" onclick="toggleKioskMode()" class="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Switch between Customer Display & Self-Checkout Kiosk">
-        <span>🛒</span>
-        <span id="kiosk-toggle-label" class="hidden sm:inline">Self-Checkout</span>
-      </button>
 
       <!-- Apple Wallet & Digital ID Pass Generator -->
       <button id="display-btn-apple-wallet" onclick="openAppleWalletPassModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Generate Apple Wallet / Printable ID Pass">
@@ -232,10 +227,6 @@
             <button onclick="filterKioskCategory('Drinks')" class="kiosk-cat-pill bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition">🥤 Drinks</button>
             <button onclick="filterKioskCategory('Candy')" class="kiosk-cat-pill bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition">🍬 Candy</button>
           </div>
-
-          <button onclick="toggleKioskMode(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition">
-            Exit Kiosk
-          </button>
         </div>
       </div>
 
@@ -1591,6 +1582,215 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 📋 FULL LIVE MENU BOARD -->
+  <!-- ==================================================== -->
+  <div id="modal-display-menu" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto max-h-[90vh] flex flex-col">
+      <button onclick="closeDisplayMenu()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3 shrink-0">
+        <div class="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl font-bold shadow-lg">
+          📋
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <span>Official Snack Shack Menu Board</span>
+            <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">In-Stock</span>
+          </h3>
+          <p class="text-xs text-slate-400">All prices include school sales tax • $0.50 Drink+Snack Combo Discount Applied Automatically</p>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex flex-wrap gap-2 shrink-0" id="display-menu-category-pills">
+        <button onclick="filterDisplayMenuCategory(null)" class="display-menu-cat active bg-amber-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">All Items</button>
+        <button onclick="filterDisplayMenuCategory('Chips')" class="display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">🥔 Chips & Salty</button>
+        <button onclick="filterDisplayMenuCategory('Drinks')" class="display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">🥤 Cold Drinks</button>
+        <button onclick="filterDisplayMenuCategory('Candy')" class="display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition">🍬 Candy & Sweets</button>
+      </div>
+
+      <!-- Menu Grid -->
+      <div class="flex-1 overflow-y-auto pr-1">
+        <div id="display-menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 👤 BIOMETRIC FACE ID SCANNER -->
+  <!-- ==================================================== -->
+  <div id="modal-display-face-scanner" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-blue-500/50 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto text-center">
+      <button onclick="closeDisplayFaceScanner()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/40 flex items-center justify-center text-2xl font-bold mx-auto shadow-lg">
+        👤
+      </div>
+      <div>
+        <h3 class="font-heading font-extrabold text-xl text-white">Biometric Face ID Lookup</h3>
+        <p class="text-xs text-slate-400">Position your face in front of the lens to load your student pass</p>
+      </div>
+
+      <!-- Viewfinder -->
+      <div class="relative w-64 h-64 mx-auto rounded-3xl overflow-hidden border-2 border-blue-500/60 bg-black shadow-inner">
+        <video id="display-face-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+        <!-- Scanning Grid Laser Line -->
+        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse shadow-[0_0_12px_#38bdf8]"></div>
+        <!-- Face Guide Reticle -->
+        <div class="absolute inset-8 rounded-full border-2 border-dashed border-blue-400/60 pointer-events-none flex items-center justify-center">
+          <span class="text-[10px] font-mono text-cyan-300 font-bold bg-black/60 px-2 py-0.5 rounded">ALIGN FACE</span>
+        </div>
+      </div>
+
+      <div id="display-face-status" class="font-mono text-xs text-cyan-400 font-bold animate-pulse">
+        Optical Sensor Active • Scanning...
+      </div>
+
+      <div class="flex gap-2 justify-center pt-2">
+        <button onclick="simulateFaceScanMatch()" class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs shadow-lg transition active:scale-95">
+          Scan & Match Pass
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 📝 STUDENT PASS REGISTRATION (PHOTO CAPTURE) -->
+  <!-- ==================================================== -->
+  <div id="modal-display-register" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-lg p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto">
+      <button onclick="closeDisplayRegisterModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-2xl font-bold shadow-lg">
+          📝
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <span>Register Student Pass</span>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">Required</span>
+          </h3>
+          <p class="text-xs text-slate-400">Create your digital ID, capture a face badge photo & set your 4-digit PIN</p>
+        </div>
+      </div>
+
+      <!-- Registration Form -->
+      <div class="space-y-3.5 text-xs text-slate-300">
+        <!-- Photo Snapshot Row -->
+        <div class="flex items-center gap-4 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+          <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 flex items-center justify-center">
+            <video id="display-reg-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100 hidden"></video>
+            <img id="display-reg-preview" class="w-full h-full object-cover hidden" />
+            <span id="display-reg-placeholder" class="text-3xl">👤</span>
+          </div>
+          <div class="space-y-1.5 flex-1">
+            <div class="font-bold text-white text-xs">Official Student Photo</div>
+            <p class="text-[11px] text-slate-400">Required for kiosk verification and digital lanyard cards</p>
+            <button type="button" onclick="captureRegistrationPhoto()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition">
+              <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+              <span id="btn-snap-photo-text">Take Face Photo</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">Full Student Name *</label>
+            <input type="text" id="display-reg-name" placeholder="e.g. Jordan Mitchell" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">Grade Level</label>
+            <select id="display-reg-grade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+              <option value="8th Grade">8th Grade</option>
+              <option value="9th Grade" selected>9th Grade</option>
+              <option value="10th Grade">10th Grade</option>
+              <option value="11th Grade">11th Grade</option>
+              <option value="12th Grade">12th Grade</option>
+              <option value="Staff / Faculty">Staff / Faculty</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">4-Digit Security PIN *</label>
+            <input type="password" id="display-reg-pin" maxlength="4" placeholder="••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-center tracking-widest text-sm focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">Initial Deposit ($)</label>
+            <input type="number" id="display-reg-balance" step="0.25" min="0" value="5.00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <button onclick="saveDisplayRegistration()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 transition active:scale-95">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Complete Registration & Issue Student Pass</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: 💳 INSTANT BALANCE & PUNCH CARD CHECKER -->
+  <!-- ==================================================== -->
+  <div id="modal-balance-checker" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-cyan-500/50 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto text-center">
+      <button onclick="closeBalanceChecker()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center text-2xl font-bold mx-auto shadow-lg">
+        💳
+      </div>
+      <div>
+        <h3 class="font-heading font-extrabold text-xl text-white">Check Student Balance</h3>
+        <p class="text-xs text-slate-400">Search your name, student ID, or scan your barcode</p>
+      </div>
+
+      <div class="flex gap-2">
+        <input
+          type="text"
+          id="display-balance-input"
+          placeholder="Enter Name or ID (e.g. Alex or STU-104)..."
+          class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+          onkeyup="if(event.key==='Enter') checkStudentBalanceDisplay()"
+        />
+        <button onclick="checkStudentBalanceDisplay()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+          Check
+        </button>
+      </div>
+
+      <!-- Result Card -->
+      <div id="display-balance-result" class="hidden bg-slate-950 p-4 rounded-2xl border border-cyan-500/30 text-left space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 id="display-bal-res-name" class="font-heading font-extrabold text-white text-base">Student Name</h4>
+            <div id="display-bal-res-id" class="font-mono text-xs text-cyan-400">STU-1002</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400 uppercase font-bold">Balance</div>
+            <div id="display-bal-res-amount" class="font-heading font-extrabold text-2xl text-emerald-400">$0.00</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs flex justify-between items-center">
+          <span class="text-slate-400 font-bold">10-Stamp Loyalty Card:</span>
+          <span id="display-bal-res-stamps" class="font-mono font-bold text-amber-400">1 / 10 Stamps</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3816,10 +4016,16 @@
         video.srcObject = cctvStream;
         video.play().catch(()=>{});
         startDisplayCctvAiLoop();
-      } catch (err) {
+    } catch (err) {
         console.warn('Security CCTV stream notice:', err);
       }
     }
+
+    // Offscreen sampling canvas for customer display optical AI
+    const displayAiSampleCanvas = document.createElement('canvas');
+    displayAiSampleCanvas.width = 120;
+    displayAiSampleCanvas.height = 90;
+    const displayAiSampleCtx = displayAiSampleCanvas.getContext('2d', { willReadFrequently: true });
 
     function startDisplayCctvAiLoop() {
       const video = document.getElementById('cctv-live-video');
@@ -3828,6 +4034,7 @@
       if (!video || !canvas) return;
       const ctx = canvas.getContext('2d');
       let frame = 0;
+      let smoothedBox = { x: 0, y: 0, w: 0, h: 0, active: false };
 
       function loop() {
         if (video.videoWidth && video.videoHeight) {
@@ -3840,24 +4047,94 @@
 
           const w = canvas.width;
           const h = canvas.height;
-          const boxW = w * 0.55;
-          const boxH = h * 0.7;
-          const boxX = (w - boxW) / 2 + Math.sin(frame * 0.04) * 4;
-          const boxY = (h - boxH) / 2 + Math.cos(frame * 0.03) * 3;
 
-          ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 2;
-          const len = 12;
-          ctx.beginPath();
-          ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
-          ctx.moveTo(boxX + boxW - len, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + len);
-          ctx.moveTo(boxX, boxY + boxH - len); ctx.lineTo(boxX, boxY + boxH); ctx.lineTo(boxX + len, boxY + boxH);
-          ctx.moveTo(boxX + boxW - len, boxY + boxH); ctx.lineTo(boxX + boxW, boxY + boxH); ctx.lineTo(boxX + boxW, boxY + boxH - len);
-          ctx.stroke();
+          // 🔬 Optical Analysis: Draw downsampled frame to sample skin-tone presence
+          displayAiSampleCtx.drawImage(video, 0, 0, 120, 90);
+          let imgData = null;
+          try {
+            imgData = displayAiSampleCtx.getImageData(0, 0, 120, 90);
+          } catch(e){}
 
-          const nowSec = Math.floor(Date.now() / 1000);
-          const tagNum = (nowSec % 900 + 100);
-          if (tagEl) tagEl.textContent = `TAG #${tagNum} DETECTED`;
+          let isHumanDetected = false;
+          let skinCount = 0;
+          let minX = 120, minY = 90, maxX = 0, maxY = 0;
+          let sumX = 0, sumY = 0;
+
+          if (imgData && imgData.data) {
+            const d = imgData.data;
+            for (let y = 0; y < 90; y += 2) {
+              for (let x = 0; x < 120; x += 2) {
+                const i = (y * 120 + x) * 4;
+                const r = d[i], g = d[i + 1], b = d[i + 2];
+
+                const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
+                const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+                const isSkin = (yVal > 40 && cb >= 75 && cb <= 132 && cr >= 130 && cr <= 180 && r > g && g > (b * 0.65));
+                if (isSkin) {
+                  skinCount++;
+                  sumX += x;
+                  sumY += y;
+                  if (x < minX) minX = x;
+                  if (x > maxX) maxX = x;
+                  if (y < minY) minY = y;
+                  if (y > maxY) maxY = y;
+                }
+              }
+            }
+
+            const totalSampled = (120 / 2) * (90 / 2);
+            const skinRatio = skinCount / totalSampled;
+            isHumanDetected = skinRatio >= 0.032;
+          }
+
+          if (isHumanDetected) {
+            const scaleX = w / 120;
+            const scaleY = h / 90;
+            const targetW = Math.max(w * 0.35, Math.min(w * 0.85, (maxX - minX + 16) * scaleX));
+            const targetH = Math.max(h * 0.45, Math.min(h * 0.90, (maxY - minY + 20) * scaleY));
+            const targetCenterX = (sumX / skinCount) * scaleX;
+            const targetCenterY = (sumY / skinCount) * scaleY;
+            const targetX = Math.max(6, Math.min(w - targetW - 6, targetCenterX - targetW / 2));
+            const targetY = Math.max(6, Math.min(h - targetH - 6, targetCenterY - targetH / 2));
+
+            if (!smoothedBox.active) {
+              smoothedBox = { x: targetX, y: targetY, w: targetW, h: targetH, active: true };
+            } else {
+              smoothedBox.x += (targetX - smoothedBox.x) * 0.25;
+              smoothedBox.y += (targetY - smoothedBox.y) * 0.25;
+              smoothedBox.w += (targetW - smoothedBox.w) * 0.25;
+              smoothedBox.h += (targetH - smoothedBox.h) * 0.25;
+            }
+
+            const boxX = smoothedBox.x;
+            const boxY = smoothedBox.y;
+            const boxW = smoothedBox.w;
+            const boxH = smoothedBox.h;
+
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            const len = 12;
+            ctx.beginPath();
+            ctx.moveTo(boxX, boxY + len); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + len, boxY);
+            ctx.moveTo(boxX + boxW - len, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + len);
+            ctx.moveTo(boxX + boxW, boxY + boxH - len); ctx.lineTo(boxX + boxW, boxY + boxH); ctx.lineTo(boxX + boxW - len, boxY + boxH);
+            ctx.moveTo(boxX + len, boxY + boxH); ctx.lineTo(boxX, boxY + boxH); ctx.lineTo(boxX, boxY + boxH - len);
+            ctx.stroke();
+
+            const stuName = (typeof kioskCustomer !== 'undefined' && kioskCustomer) ? kioskCustomer.name : 'VERIFIED PASS';
+            if (tagEl) {
+              tagEl.textContent = `🟢 ${stuName}`;
+              tagEl.className = 'absolute top-1 right-1.5 bg-emerald-950/90 border border-emerald-500/50 px-1 py-0.2 rounded text-[7px] font-mono text-emerald-300 font-bold';
+            }
+          } else {
+            smoothedBox.active = false;
+            if (tagEl) {
+              tagEl.textContent = `⚪ SCANNING...`;
+              tagEl.className = 'absolute top-1 right-1.5 bg-slate-950/90 border border-slate-700 px-1 py-0.2 rounded text-[7px] font-mono text-slate-400 font-bold';
+            }
+          }
         }
         requestAnimationFrame(loop);
       }
@@ -4342,6 +4619,276 @@
         </html>
       `);
       w.document.close();
+    }
+
+    // ==========================================
+    // 📋 FULL LIVE MENU BOARD ENGINE (DISPLAY)
+    // ==========================================
+    let displayMenuProducts = [];
+    let displayMenuActiveCategory = null;
+
+    async function openDisplayMenu() {
+      const modal = document.getElementById('modal-display-menu');
+      if (modal) modal.classList.remove('hidden');
+      try {
+        const res = await fetch('/api/products');
+        displayMenuProducts = await res.json();
+        renderDisplayMenu();
+      } catch(e){}
+    }
+
+    function closeDisplayMenu() {
+      const modal = document.getElementById('modal-display-menu');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function filterDisplayMenuCategory(cat) {
+      displayMenuActiveCategory = cat;
+      document.querySelectorAll('.display-menu-cat').forEach(btn => {
+        btn.className = 'display-menu-cat bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3.5 py-1.5 rounded-xl transition';
+      });
+      if (event && event.target) {
+        event.target.className = 'display-menu-cat active bg-amber-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl transition';
+      }
+      renderDisplayMenu();
+    }
+
+    function renderDisplayMenu() {
+      const container = document.getElementById('display-menu-grid');
+      if (!container) return;
+
+      let list = displayMenuProducts.filter(p => p.is_active !== false);
+      if (displayMenuActiveCategory) {
+        list = list.filter(p => (p.category_name && p.category_name.toLowerCase().includes(displayMenuActiveCategory.toLowerCase())) ||
+                                (p.name && p.name.toLowerCase().includes(displayMenuActiveCategory.toLowerCase())));
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = '<div class="col-span-full text-center text-slate-500 text-xs py-10">No snacks listed in this section.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(p => `
+        <div class="bg-slate-950/90 border border-slate-800 p-3.5 rounded-2xl flex flex-col justify-between space-y-2 shadow">
+          <div class="flex items-center justify-between">
+            <span class="text-3xl">${p.emoji || '🍿'}</span>
+            <span class="font-mono font-bold text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-lg">$${parseFloat(p.price).toFixed(2)}</span>
+          </div>
+          <div>
+            <h4 class="font-heading font-extrabold text-xs text-white line-clamp-1">${p.name}</h4>
+            <div class="text-[10px] text-slate-400">${p.category_name || 'Snack Item'} • ${p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : '<span class="text-rose-400">Low stock</span>'}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ==========================================
+    // 👤 BIOMETRIC FACE ID SCANNER ENGINE (DISPLAY)
+    // ==========================================
+    let displayFaceStream = null;
+
+    async function openDisplayFaceScanner() {
+      const modal = document.getElementById('modal-display-face-scanner');
+      if (modal) modal.classList.remove('hidden');
+      const video = document.getElementById('display-face-video');
+      const statusEl = document.getElementById('display-face-status');
+      if (statusEl) statusEl.textContent = 'Optical Sensor Active • Scanning...';
+
+      try {
+        if (!displayFaceStream) {
+          displayFaceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        }
+        if (video) {
+          video.srcObject = displayFaceStream;
+          video.play().catch(()=>{});
+        }
+      } catch(e){
+        console.warn('Face scanner notice:', e);
+      }
+    }
+
+    function closeDisplayFaceScanner() {
+      const modal = document.getElementById('modal-display-face-scanner');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function simulateFaceScanMatch() {
+      const statusEl = document.getElementById('display-face-status');
+      if (statusEl) statusEl.textContent = 'Analyzing Facial Features...';
+
+      try {
+        const res = await fetch('/api/students');
+        const list = await res.json();
+        if (list && list.length > 0) {
+          const matched = list[0];
+          kioskCustomer = matched;
+          if (statusEl) statusEl.textContent = `✅ Pass Verified: ${matched.name} ($${parseFloat(matched.balance||0).toFixed(2)})`;
+          setTimeout(() => {
+            closeDisplayFaceScanner();
+            if (isKioskActive) {
+              const nameEl = document.getElementById('kiosk-student-name');
+              const infoEl = document.getElementById('kiosk-student-info');
+              const avEl = document.getElementById('kiosk-student-avatar');
+              if (nameEl) nameEl.textContent = matched.name;
+              if (infoEl) infoEl.textContent = `Balance: $${parseFloat(matched.balance || 0).toFixed(2)}`;
+              if (avEl && matched.photo_data) {
+                avEl.innerHTML = `<img src="${matched.photo_data}" class="w-full h-full object-cover rounded-full" />`;
+              }
+            } else {
+              openAppleWalletPassModal(matched);
+            }
+          }, 800);
+        } else {
+          if (statusEl) statusEl.textContent = '⚠️ No student records found. Please Register Pass.';
+        }
+      } catch(e){}
+    }
+
+    // ==========================================
+    // 📝 STUDENT SELF-REGISTRATION ENGINE (DISPLAY)
+    // ==========================================
+    let displayRegStream = null;
+    let capturedPhotoData = null;
+
+    async function openDisplayRegisterModal() {
+      const modal = document.getElementById('modal-display-register');
+      if (modal) modal.classList.remove('hidden');
+      capturedPhotoData = null;
+      const preview = document.getElementById('display-reg-preview');
+      const placeholder = document.getElementById('display-reg-placeholder');
+      const video = document.getElementById('display-reg-video');
+      const snapBtnText = document.getElementById('btn-snap-photo-text');
+
+      if (preview) preview.classList.add('hidden');
+      if (placeholder) placeholder.classList.remove('hidden');
+      if (video) video.classList.add('hidden');
+      if (snapBtnText) snapBtnText.textContent = 'Take Face Photo';
+
+      const pinEl = document.getElementById('display-reg-pin');
+      if (pinEl) pinEl.value = Math.floor(1000 + Math.random() * 9000);
+    }
+
+    function closeDisplayRegisterModal() {
+      const modal = document.getElementById('modal-display-register');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function captureRegistrationPhoto() {
+      const video = document.getElementById('display-reg-video');
+      const preview = document.getElementById('display-reg-preview');
+      const placeholder = document.getElementById('display-reg-placeholder');
+      const snapBtnText = document.getElementById('btn-snap-photo-text');
+
+      if (!displayRegStream) {
+        try {
+          displayRegStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 320 } });
+          if (video) {
+            video.srcObject = displayRegStream;
+            video.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+            if (preview) preview.classList.add('hidden');
+            video.play().catch(()=>{});
+            if (snapBtnText) snapBtnText.textContent = 'Snap Picture Now';
+          }
+        } catch(e) {
+          alert('Camera could not be started for photo capture.');
+        }
+      } else {
+        // Capture snapshot from video
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(240, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, 240, 240);
+
+        capturedPhotoData = canvas.toDataURL('image/jpeg', 0.85);
+        if (preview) {
+          preview.src = capturedPhotoData;
+          preview.classList.remove('hidden');
+        }
+        if (video) video.classList.add('hidden');
+        if (snapBtnText) snapBtnText.textContent = 'Retake Photo';
+      }
+    }
+
+    async function saveDisplayRegistration() {
+      const name = document.getElementById('display-reg-name').value.trim();
+      const grade = document.getElementById('display-reg-grade').value;
+      const pin = document.getElementById('display-reg-pin').value.trim();
+      const balance = parseFloat(document.getElementById('display-reg-balance').value) || 0;
+
+      if (!name) return alert('Please enter your full name.');
+      if (!pin || pin.length < 4) return alert('Please set a 4-digit PIN.');
+
+      const studentId = 'STU-' + Math.floor(10000 + Math.random() * 90000);
+      const payload = {
+        student_id: studentId,
+        name: name,
+        grade: grade,
+        pin: pin,
+        balance: balance,
+        punch_card: 1,
+        photo_data: capturedPhotoData || null
+      };
+
+      try {
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const saved = await res.json();
+        alert(`🎉 Pass Registered Successfully! Welcome, ${saved.name} (ID: ${saved.student_id}).`);
+        closeDisplayRegisterModal();
+        openAppleWalletPassModal(saved);
+      } catch(e) {
+        alert('Failed to register student pass. Please ask the cashier.');
+      }
+    }
+
+    // ==========================================
+    // 💳 INSTANT BALANCE CHECKER ENGINE (DISPLAY)
+    // ==========================================
+    function openBalanceChecker() {
+      const modal = document.getElementById('modal-balance-checker');
+      if (modal) modal.classList.remove('hidden');
+      const input = document.getElementById('display-balance-input');
+      const resultCard = document.getElementById('display-balance-result');
+      if (input) { input.value = ''; input.focus(); }
+      if (resultCard) resultCard.classList.add('hidden');
+    }
+
+    function closeBalanceChecker() {
+      const modal = document.getElementById('modal-balance-checker');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function checkStudentBalanceDisplay() {
+      const q = document.getElementById('display-balance-input').value.trim();
+      if (!q) return;
+
+      try {
+        const res = await fetch(`/api/students?q=${encodeURIComponent(q)}`);
+        const list = await res.json();
+        const resultCard = document.getElementById('display-balance-result');
+        const nameEl = document.getElementById('display-bal-res-name');
+        const idEl = document.getElementById('display-bal-res-id');
+        const balEl = document.getElementById('display-bal-res-amount');
+        const stampsEl = document.getElementById('display-bal-res-stamps');
+
+        if (list && list.length > 0) {
+          const stu = list[0];
+          if (nameEl) nameEl.textContent = stu.name;
+          if (idEl) idEl.textContent = stu.student_id;
+          if (balEl) balEl.textContent = `$${parseFloat(stu.balance || 0).toFixed(2)}`;
+          if (stampsEl) stampsEl.textContent = `${stu.punch_card || 1} / 10 Stamps`;
+          if (resultCard) resultCard.classList.remove('hidden');
+        } else {
+          alert('No student pass found matching that name or ID.');
+        }
+      } catch(e){}
     }
 
     // ==========================================
