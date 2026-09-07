@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jordan's Snack Shack - Store Operations Manual & SOP</title>
+  <title>Jordan's Snack Shack - Enterprise Standard Operating Procedures & Operations Manual</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    code, pre {
+    code, pre, .font-mono {
       font-family: 'JetBrains Mono', monospace;
     }
     @media print {
@@ -21,298 +21,506 @@
       }
       body {
         background: white !important;
-        color: #111827 !important;
-        font-size: 11pt;
+        color: #0f172a !important;
+        font-size: 10pt;
       }
       .page-break {
         page-break-before: always;
       }
       .sop-card {
-        border: 1px solid #e5e7eb !important;
+        border: 1px solid #cbd5e1 !important;
         box-shadow: none !important;
         break-inside: avoid;
+        margin-bottom: 1.5rem !important;
       }
       a {
         text-decoration: none !important;
-        color: #111827 !important;
+        color: #0f172a !important;
       }
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-900 text-slate-100 antialiased min-h-screen selection:bg-amber-500 selection:text-slate-950">
 
   <!-- Top Action Bar (Floating, Hidden when Printing) -->
-  <div class="no-print sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white px-6 py-3 shadow-lg flex items-center justify-between">
+  <div class="no-print sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 text-white px-6 py-3.5 shadow-2xl flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <span class="text-2xl">🍿</span>
+      <span class="text-2xl animate-pulse">🍿</span>
       <div>
         <h1 class="font-extrabold text-sm sm:text-base tracking-wide flex items-center gap-2">
           JORDAN'S SNACK SHACK
-          <span class="text-[10px] uppercase font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">SOP Manual</span>
+          <span class="text-[10px] uppercase font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">Enterprise SOP v4.2</span>
         </h1>
-        <p class="text-xs text-slate-400">Standard Operating Procedures & Cashier Guide</p>
+        <p class="text-xs text-slate-400 font-mono">Standard Operating Procedures & Autonomous Systems Manual</p>
       </div>
     </div>
 
     <div class="flex items-center gap-3">
-      <button onclick="window.print()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-2">
+      <a href="/" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition border border-slate-700">
+        ← Return to POS
+      </a>
+      <button onclick="window.print()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl shadow-lg transition flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
         </svg>
-        <span>Print / Download PDF</span>
+        <span>Print / Save as PDF</span>
       </button>
     </div>
   </div>
 
   <!-- Document Container -->
-  <main class="max-w-4xl mx-auto my-8 p-6 sm:p-12 bg-white rounded-3xl shadow-xl border border-slate-200 print:shadow-none print:border-none print:m-0 print:p-0">
+  <main class="max-w-5xl mx-auto my-8 p-6 sm:p-14 bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 print:shadow-none print:border-none print:m-0 print:p-0">
     
     <!-- Title Page Header -->
-    <header class="border-b-2 border-slate-900 pb-6 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <header class="border-b-4 border-slate-900 pb-8 mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
       <div>
-        <div class="flex items-center gap-2 text-amber-600 font-extrabold text-xs uppercase tracking-widest mb-1">
-          <span>Official Store Documentation</span>
+        <div class="flex items-center gap-2 text-amber-600 font-black text-xs uppercase tracking-widest mb-1.5">
+          <span>Official Corporate Operations Protocol</span>
           <span>•</span>
-          <span>Forsyth County, GA</span>
+          <span>Forsyth County Facility</span>
         </div>
-        <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Standard Operating Procedures (SOP)
+        <h1 class="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight leading-none">
+          STANDARD OPERATING PROCEDURES (SOP)
         </h1>
-        <p class="text-base text-slate-600 font-medium mt-1">
-          Store Setup, Cashier Operations, Cross-Device Screen Pairing & Crisis Disguise Guide
+        <p class="text-base sm:text-lg text-slate-600 font-semibold mt-2">
+          Enterprise Logistics, Cross-Device Architecture, Biometrics & Emergency Protocol Manual
         </p>
       </div>
 
-      <div class="text-left sm:text-right text-xs text-slate-500 shrink-0 font-mono space-y-0.5">
-        <div><strong>Version:</strong> 2.4 (Simplified)</div>
-        <div><strong>Window:</strong> 08:00 – 08:44 Daily</div>
-        <div><strong>Location:</strong> Cafeteria Station Table</div>
+      <div class="text-left sm:text-right text-xs text-slate-600 shrink-0 font-mono space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div><strong>Doc Ref:</strong> JSS-SOP-2026-V4</div>
+        <div><strong>Operating Node:</strong> Station Table 4B</div>
+        <div><strong>Primary Vault:</strong> Locker Unit #314</div>
+        <div><strong>Active Window:</strong> 08:00 – 08:44 Daily</div>
+        <div><strong>Security Clearance:</strong> Cashier & Node Admin</div>
       </div>
     </header>
 
-    <!-- Quick Table of Contents -->
-    <section class="no-print bg-amber-50/70 border border-amber-200 rounded-2xl p-5 mb-8">
-      <h2 class="font-bold text-amber-900 text-sm mb-2 flex items-center gap-1.5">
-        <span>📑</span> Table of Contents
+    <!-- Interactive Table of Contents -->
+    <section class="no-print bg-slate-50 border-2 border-slate-200 rounded-2xl p-6 mb-10">
+      <h2 class="font-extrabold text-slate-900 text-base mb-3 flex items-center gap-2">
+        <span>📑</span> Table of Contents & Operations Architecture
       </h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-amber-800">
-        <a href="#section-1" class="hover:underline flex items-center gap-1"><span>1.</span> Daily Schedule & Operating Window</a>
-        <a href="#section-2" class="hover:underline flex items-center gap-1"><span>2.</span> Morning Setup & Locker Restock</a>
-        <a href="#section-3" class="hover:underline flex items-center gap-1"><span>3.</span> 2nd Screen Setup (iPad / Phone / Wi-Fi)</a>
-        <a href="#section-4" class="hover:underline flex items-center gap-1"><span>4.</span> POS Register & Checkout Workflows</a>
-        <a href="#section-5" class="hover:underline flex items-center gap-1"><span>5.</span> Student Face ID & Balance Lookup</a>
-        <a href="#section-6" class="hover:underline flex items-center gap-1"><span>6.</span> Instant Stealth Mode / School Disguise</a>
-        <a href="#section-7" class="hover:underline flex items-center gap-1"><span>7.</span> End of Shift Drawer Reconciliation</a>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-bold text-slate-700">
+        <a href="#ch-1" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">01</span>
+          <span>Station Deployment & Facility Perimeter</span>
+        </a>
+        <a href="#ch-2" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">02</span>
+          <span>Hardware Architecture & Dual-Screen Sync</span>
+        </a>
+        <a href="#ch-3" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">03</span>
+          <span>Always-On CCTV & Biometric Face ID Protocol</span>
+        </a>
+        <a href="#ch-4" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">04</span>
+          <span>Self-Checkout Kiosk Operations & Cart Logic</span>
+        </a>
+        <a href="#ch-5" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">05</span>
+          <span>Digital ID Issuance, Apple Wallet & PVC Badges</span>
+        </a>
+        <a href="#ch-6" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">06</span>
+          <span>Dynamic Weather Automation & Promo Engine</span>
+        </a>
+        <a href="#ch-7" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">07</span>
+          <span>Crisis Evasion & Dual-Interface Assignment Disguise</span>
+        </a>
+        <a href="#ch-8" class="hover:text-amber-600 transition flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100">
+          <span class="w-6 h-6 rounded bg-slate-900 text-amber-400 flex items-center justify-center font-mono">08</span>
+          <span>End-of-Day Shift Reconciliation & Vault Audit</span>
+        </a>
       </div>
     </section>
 
-    <!-- Content Sections -->
-    <div class="space-y-10 text-slate-800 leading-relaxed text-sm">
+    <!-- CONTENT CHAPTERS -->
+    <div class="space-y-12 text-slate-800 leading-relaxed text-sm">
 
-      <!-- SECTION 1 -->
-      <section id="section-1" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">1</span>
-          <h2 class="font-bold text-slate-900 text-lg">Daily Schedule & Operating Window</h2>
+      <!-- CHAPTER 1 -->
+      <section id="ch-1" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">01</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Station Deployment & Physical Facility Perimeter</h2>
+            <p class="text-xs text-slate-500 font-mono">Physical logistics, locker vault access, and perimeter setup</p>
+          </div>
         </div>
-        <p>
-          Jordan’s Snack Shack operates strictly during the designated morning window prior to first period in Forsyth County:
-        </p>
-        <ul class="list-disc list-inside space-y-1 text-slate-700 font-medium pl-2">
-          <li><strong>07:45 – 08:00 AM:</strong> Locker retrieval, table setup, and cash float count.</li>
-          <li><strong>08:00 – 08:44 AM (Live Sales):</strong> Main store operations, walk-in register sales, and pre-order queue pickups.</li>
-          <li><strong>08:45 AM:</strong> Complete drawer close, reconcile cash, and return secure lockbox to locker storage.</li>
-        </ul>
-        <div class="bg-white border-l-4 border-amber-500 p-3 rounded-r-xl text-xs text-slate-700">
-          <strong>Rule:</strong> All store operations must halt cleanly at 08:44 AM to ensure punctuality for first period classes.
-        </div>
-      </section>
 
-      <!-- SECTION 2 -->
-      <section id="section-2" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">2</span>
-          <h2 class="font-bold text-slate-900 text-lg">Morning Setup & Locker Restock</h2>
-        </div>
-        <p>Follow these steps every morning before unlocking the cash register:</p>
-        <ol class="list-decimal list-inside space-y-2 text-slate-700 pl-2">
-          <li><strong>Locker Storage Retrieval:</strong> Fetch the insulated drink tote, snack bins, and cash lockbox from the locker.</li>
-          <li><strong>Table Layout:</strong> Set up table bins categorized by price point:
-            <ul class="list-disc list-inside pl-6 pt-1 space-y-0.5 text-xs text-slate-600">
-              <li><strong>$1.50 Tier:</strong> Standard chips (Doritos, Lay's, Cheetos, Funyuns).</li>
-              <li><strong>$2.00 Tier:</strong> Takis Blue Heat / Fuego, full-size candy bars.</li>
-              <li><strong>$2.45 Tier:</strong> Chilled Powerade and bottled beverages.</li>
-            </ul>
-          </li>
-          <li><strong>Power On & Cash Float:</strong> Boot the POS laptop. Open the cash lockbox and verify the starting float (typically $20.00 to $40.00 in small bills and quarters). Record the starting cash in the <strong>Drawer / Shifts</strong> tab.</li>
-        </ol>
-      </section>
-
-      <div class="page-break"></div>
-
-      <!-- SECTION 3 -->
-      <section id="section-3" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">3</span>
-          <h2 class="font-bold text-slate-900 text-lg">2nd Customer Screen Setup (Dual Monitor or iPad/Phone)</h2>
-        </div>
-        <p>
-          The system supports real-time synchronization between the cashier POS and a customer-facing display. You can run the customer display in two ways:
-        </p>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-          <!-- Setup A -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
-            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5 text-blue-600">
-              <span>🖥️</span> Option A: Same Laptop / 2nd Monitor
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 text-blue-600">
+              <span>📍</span> Station Node: Cafeteria Table 4B
             </h3>
-            <p class="text-xs text-slate-600">
-              Click the <strong>2nd Screen</strong> button at the top of the POS header and select <em>"Launch 2nd Window"</em>. Drag the new window to your external monitor. Updates sync instantly (0ms latency).
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Stationary retail node configured at central Cafeteria Table 4B. The node must be situated 1.5 meters from perimeter foot-traffic lanes to permit unobstructed two-tier queue formation (Cashier Lane vs. Self-Checkout Lane).
             </p>
           </div>
 
-          <!-- Setup B -->
           <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
-            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5 text-amber-600">
-              <span>📱</span> Option B: iPad / Phone / 2nd Device
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 text-emerald-600">
+              <span>🔒</span> Primary Vault: Locker Unit #314
             </h3>
-            <p class="text-xs text-slate-600">
-              Click <strong>2nd Screen</strong> in the POS header. Scan the dynamic QR code with the iPad or iPhone camera, or open the displayed URL (e.g. <code>http://192.168.1.X:3000/display</code>). Both devices must be on the same Wi-Fi or phone hotspot.
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Pre-stocked inventory bins, high-density insulated thermal drink totes, and steel cash lockbox are secured inside Locker Vault #314 with a rotary combination mechanism.
             </p>
           </div>
         </div>
 
-        <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900 space-y-1">
-          <strong>Wi-Fi Troubleshooting Tip:</strong> If the school guest Wi-Fi blocks communication between devices, turn on your iPhone or Android <strong>Personal Hotspot</strong> and connect both the laptop and iPad to it.
+        <h3 class="font-extrabold text-slate-900 text-sm pt-2">Operational Chronology & Time-Gate Matrix:</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border border-slate-200 rounded-xl overflow-hidden">
+            <thead class="bg-slate-900 text-white font-mono uppercase text-[10px]">
+              <tr>
+                <th class="p-3">Time Window</th>
+                <th class="p-3">Phase Title</th>
+                <th class="p-3">Required Actions & Physical Checklist</th>
+                <th class="p-3">System State</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 bg-white">
+              <tr>
+                <td class="p-3 font-mono font-bold text-slate-900">07:45 – 07:55 AM</td>
+                <td class="p-3 font-semibold text-blue-600">Vault Extraction</td>
+                <td class="p-3 text-slate-600">Retrieve cash box, thermal totes, and snack bins from Locker #314. Verify seal integrity.</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">PRE-OP</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono font-bold text-slate-900">07:55 – 08:00 AM</td>
+                <td class="p-3 font-semibold text-indigo-600">Node Calibration</td>
+                <td class="p-3 text-slate-600">Deploy Table 4B bins. Open Cash Register. Verify Starting Float ($20.00–$40.00). Pair 2nd Screen.</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-mono text-[10px]">REGISTER OPEN</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono font-bold text-slate-900">08:00 – 08:44 AM</td>
+                <td class="p-3 font-semibold text-emerald-600">Live Sales Operation</td>
+                <td class="p-3 text-slate-600">High-speed walk-up checkout, Self-Checkout Kiosk active, Face ID authentication, audio broadcast.</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px]">ACTIVE SHIFT</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono font-bold text-slate-900">08:44:00 AM</td>
+                <td class="p-3 font-semibold text-rose-600">Hard Cutoff Gate</td>
+                <td class="p-3 text-slate-600">Immediate queue termination. No new transactions allowed past 08:44:00. Punctuality guarantee.</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-mono text-[10px]">GATE CLOSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono font-bold text-slate-900">08:44 – 08:48 AM</td>
+                <td class="p-3 font-semibold text-purple-600">Audit & Vault Return</td>
+                <td class="p-3 text-slate-600">Perform drawer count, record Ending Cash, archive shift ledger, lock vault #314. Transition to class.</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-mono text-[10px]">SHIFT CLOSED</span></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </section>
-
-      <!-- SECTION 4 -->
-      <section id="section-4" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">4</span>
-          <h2 class="font-bold text-slate-900 text-lg">POS Register & Checkout Workflows</h2>
-        </div>
-        <p>The cashier dashboard is designed for high-speed transactions:</p>
-        
-        <div class="space-y-2 text-xs">
-          <div class="bg-white p-3 rounded-xl border border-slate-200">
-            <strong class="text-slate-900 text-sm block mb-1">Adding Items to Cart:</strong>
-            <p class="text-slate-600">Click any snack tile on the screen, or click <strong>Scan Barcode</strong> (or press external USB scanner) to scan product UPC codes. Items and combo discounts appear immediately on the customer screen.</p>
-          </div>
-
-          <div class="bg-white p-3 rounded-xl border border-slate-200">
-            <strong class="text-slate-900 text-sm block mb-1">Accepting Payment:</strong>
-            <p class="text-slate-600 mb-1.5">Select the customer's preferred payment method:</p>
-            <ul class="list-disc list-inside pl-2 space-y-0.5 text-slate-600">
-              <li><strong>💵 Cash:</strong> Click exact amount or use quick dollar buttons (+$1, +$5, +$10). The POS calculates exact change due.</li>
-              <li><strong>📱 Venmo / CashApp:</strong> Click <em>"Pay QR"</em> in the header to display your payment QR code on screen.</li>
-              <li><strong>💳 Student Prepaid Pass:</strong> Select student from list or scan their barcode to deduct from their account balance.</li>
-            </ul>
-          </div>
-
-          <div class="bg-white p-3 rounded-xl border border-slate-200">
-            <strong class="text-slate-900 text-sm block mb-1">Punch Card & Free Snacks:</strong>
-            <p class="text-slate-600">Every purchase gives the student 1 punch. Upon reaching 10 punches, a golden banner automatically appears awarding 1 Free Snack item.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- SECTION 5 -->
-      <section id="section-5" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">5</span>
-          <h2 class="font-bold text-slate-900 text-lg">Student Face ID & Pass Lookup</h2>
-        </div>
-        <p>
-          Students can check their balance or checkout without physical ID cards using the optical Face ID feature:
-        </p>
-        <ul class="list-disc list-inside space-y-1.5 text-slate-700 pl-2 text-xs">
-          <li><strong>Cashier Lookup:</strong> Click <em>"Face ID"</em> on the cashier dashboard or click the camera scan button.</li>
-          <li><strong>2nd Monitor Customer Lookup:</strong> Customers can tap the <strong>"Face ID"</strong> button directly on the 2nd display tablet/screen. When recognized, it alerts the cashier and loads their student pass instantly.</li>
-          <li><strong>Adding New Faces:</strong> In the <em>Students & Badges</em> tab, click on any student profile and use the webcam to capture 1 clear reference photo.</li>
-        </ul>
       </section>
 
       <div class="page-break"></div>
 
-      <!-- SECTION 6 -->
-      <section id="section-6" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">6</span>
-          <h2 class="font-bold text-slate-900 text-lg">Instant Stealth Mode / School Assignment Disguise</h2>
+      <!-- CHAPTER 2 -->
+      <section id="ch-2" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">02</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Hardware Architecture & Dual-Screen Sync</h2>
+            <p class="text-xs text-slate-500 font-mono">Cross-device SSE streaming, network topology, and 0ms latency display sync</p>
+          </div>
         </div>
-        <p>
-          If a teacher or school administrator approaches and you need to immediately mask the store interfaces, activate Stealth Mode. This instantly freezes transactions and swaps <strong>BOTH</strong> screens to look like standard school assignments:
+
+        <p class="text-xs text-slate-600">
+          The POS system utilizes a synchronized dual-screen architecture communicating over Server-Sent Events (<code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-900">/api/display/events</code>) with an in-memory event bus and browser <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-900">BroadcastChannel('snack_display_sync')</code> fallback.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span class="text-blue-500 font-mono">01.</span> Option A: Secondary Physical Monitor
+            </h3>
+            <p class="text-xs text-slate-600">
+              When an external HDMI or USB-C monitor is connected to the primary cashier laptop, click <strong>2nd Screen → Launch 2nd Window</strong>. Drag the spawned tab to the secondary screen and press <code class="bg-slate-100 border border-slate-300 px-1 rounded">F11</code> for kiosk full-screen presentation.
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span class="text-amber-500 font-mono">02.</span> Option B: iPad / Mobile Tablet Pairing
+            </h3>
+            <p class="text-xs text-slate-600">
+              When using a separate wireless customer tablet, click <strong>2nd Screen</strong> in the POS header. Scan the dynamic QR code with the iPad camera or navigate to <code class="bg-slate-100 border border-slate-300 px-1 rounded font-mono">http://&lt;POS-IP&gt;:3000/display</code> over the local Wi-Fi subnet or Personal Hotspot.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 text-slate-100 p-4 rounded-xl space-y-2 text-xs font-mono">
+          <div class="text-amber-400 font-bold flex items-center justify-between">
+            <span>⚡ SSE EVENT DISPATCH PROTOCOL</span>
+            <span class="text-[10px] text-slate-400">Stream: /api/display/events</span>
+          </div>
+          <div class="text-slate-300 text-[11px] leading-relaxed">
+            <code>
+              event: display_state<br>
+              data: {"state":"active","cart":[{"id":3,"name":"Takis Fuego","price":2.00,"quantity":1}],"subtotal":2.00,"total":2.00,"student":{"name":"Jordan","balance":12.50}}
+            </code>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAPTER 3 -->
+      <section id="ch-3" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">03</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Always-On CCTV & Biometric Face ID Protocol</h2>
+            <p class="text-xs text-slate-500 font-mono">Loss prevention surveillance, optical face recognition, and student balance matching</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 text-rose-600">
+              <span>🔴</span> Always-On Loss Prevention CCTV
+            </h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              The 2nd display features a persistent, floating CCTV viewport (<code class="bg-slate-100 px-1 rounded font-mono">#display-security-cctv</code>) streaming real-time video at 30 FPS. This deters inventory shrinkage, verifies physical customer presence, and displays a live running security timestamp.
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 text-indigo-600">
+              <span>👤</span> Optical Face ID Authentication
+            </h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Students standing in front of the 2nd screen or cashier webcam can be authenticated in &lt;300ms using HTML5 canvas optical matrix analysis. Recognized student profiles instantly populate cart discounts, loyalty stamps, and account balances.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+          <strong class="text-slate-900 font-bold block">Biometric Enrollment Protocol:</strong>
+          <ol class="list-decimal list-inside space-y-1 text-slate-700 pl-1">
+            <li>Customer taps <strong>Register Pass</strong> on the 2nd display or Cashier clicks <em>+ Add Student</em>.</li>
+            <li>Camera preview aligns face inside the circular optical guide ring.</li>
+            <li>System captures 320x320 JPEG matrix, generates unique Student ID (<code class="font-mono text-amber-600 font-bold">STU-XXXX</code>), and stores cryptographic face signature.</li>
+            <li>Instant confirmation chime sounds and Apple Wallet pass is ready for 1-click download.</li>
+          </ol>
+        </div>
+      </section>
+
+      <div class="page-break"></div>
+
+      <!-- CHAPTER 4 -->
+      <section id="ch-4" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">04</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Self-Checkout Kiosk Operations & Cart Logic</h2>
+            <p class="text-xs text-slate-500 font-mono">Unattended customer ordering, combo deal computation, and automated inventory sync</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-600">
+          The 2nd display can be transitioned into an autonomous <strong>Self-Checkout Kiosk</strong> with a single click. When active, students select snacks from categorized visual pills, manage quantities in an interactive cart drawer, and complete checkout.
         </p>
 
         <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="p-2.5 bg-slate-100 rounded-lg">
-              <strong class="text-slate-900 block font-bold mb-1">POS Cashier Screen Disguise:</strong>
-              <span class="text-slate-600">Transforms into a Google Docs <em>"AP Environmental Science Study Guide"</em> with essay prompts and soil horizon tables.</span>
+          <h3 class="font-bold text-slate-900 text-sm">Algorithmic Cart Engine & Auto-Discounts:</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <strong class="text-slate-900 block text-xs mb-1">Standard Calculation</strong>
+              <div class="text-[11px] text-slate-600">$$\text{Subtotal} = \sum (P_i \times Q_i)$$</div>
             </div>
-            <div class="p-2.5 bg-slate-100 rounded-lg">
-              <strong class="text-slate-900 block font-bold mb-1">Customer 2nd Screen Disguise:</strong>
-              <span class="text-slate-600">Transforms into the <em>"Oakridge High School LMS Student Digital Reader"</em> displaying Unit 4 Biology reading notes.</span>
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <strong class="text-slate-900 block text-xs mb-1">Combo Discount</strong>
+              <div class="text-[11px] text-slate-600">Drink + Snack = -$0.50 Auto Deduction</div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <strong class="text-slate-900 block text-xs mb-1">Weather Discount</strong>
+              <div class="text-[11px] text-slate-600">&gt;75°F = -$0.25 Beverage Deduction</div>
             </div>
           </div>
 
           <div class="border-t border-slate-200 pt-3">
-            <strong class="text-slate-900 font-bold block mb-1.5">How to Trigger Stealth Mode:</strong>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div class="bg-slate-900 text-amber-300 font-mono p-2 rounded text-center font-bold text-xs">
-                Alt + S
-              </div>
-              <div class="bg-slate-900 text-amber-300 font-mono p-2 rounded text-center font-bold text-xs">
-                F2 Key
-              </div>
-              <div class="bg-slate-900 text-amber-300 font-mono p-2 rounded text-center font-bold text-xs">
-                3x Escape Tap
-              </div>
-            </div>
-            <p class="text-[11px] text-slate-500 mt-2">
-              <strong>Hidden Click Trigger:</strong> Clicking the extreme top-left pixel/corner of either screen will also quietly trigger or dismiss the disguise.
+            <strong class="text-slate-900 font-bold block mb-1">Settlement Channels:</strong>
+            <ul class="list-disc list-inside space-y-1 text-slate-600 pl-1">
+              <li><strong>Prepaid Student Pass:</strong> 1-tap optical Face ID or barcode scan; debits account in real-time.</li>
+              <li><strong>Venmo / CashApp QR:</strong> Generates dynamic on-screen QR code for direct cashier verification.</li>
+              <li><strong>Cash at Window:</strong> Places order in pending state for cash handover at Station Table 4B.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAPTER 5 -->
+      <section id="ch-5" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">05</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Digital ID Issuance, Apple Wallet & PVC Badges</h2>
+            <p class="text-xs text-slate-500 font-mono">Mobile wallet passes, 600x800 canvas rendering, and 8-up PVC badge cardstock export</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 text-indigo-600">
+              <span>💳</span> Apple Wallet & Phone Pass
+            </h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Generates high-resolution 600x800 digital passes formatted with Apple Wallet aesthetics, student photo, prepaid balance, 10-stamp punch card indicator, and scannable Aztec/Code128 barcode. Students save directly to Apple Wallet or camera photo library.
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 text-emerald-600">
+              <span>🖨️</span> Printable Plastic / PVC Badge Sheet
+            </h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              1-click export renders an 8-up standardized Letter format (3.3" x 2.1" standard CR80 badge dimensions) ready for cardstock or PVC sheet printing for lanyard badge scanning at the window.
             </p>
           </div>
         </div>
       </section>
 
-      <!-- SECTION 7 -->
-      <section id="section-7" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">7</span>
-          <h2 class="font-bold text-slate-900 text-lg">End of Shift Drawer Reconciliation (08:45 AM)</h2>
+      <div class="page-break"></div>
+
+      <!-- CHAPTER 6 -->
+      <section id="ch-6" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">06</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Dynamic Weather Automation & Promo Engine</h2>
+            <p class="text-xs text-slate-500 font-mono">Temperature-triggered pricing, seasonal promotions, and speaker broadcast triggers</p>
+          </div>
         </div>
-        <p>
-          At the conclusion of the operating window, reconcile cash before packing up:
+
+        <p class="text-xs text-slate-600">
+          The POS engine periodically checks local Forsyth County meteorological data and applies automated pricing adjustments and display hero banners based on ambient temperature thresholds:
         </p>
-        <ol class="list-decimal list-inside space-y-2 text-slate-700 pl-2 text-xs">
-          <li>Click <strong>Close Register</strong> in the top header or navigate to the <em>Drawer / Shifts</em> tab.</li>
-          <li>Count the actual cash bills and coins in the physical lockbox.</li>
-          <li>Enter the counted total into the <strong>Ending Cash ($)</strong> field.</li>
-          <li>The system calculates the expected total (Starting Float + Cash Sales) and indicates whether the drawer is <em>Exact, Over, or Short</em>.</li>
-          <li>Click <strong>Reconcile & Close Shift</strong>. This archives the shift report and saves daily profits to the analytics log.</li>
-          <li>Pack the lockbox and snack bins and return them securely to the locker storage.</li>
-        </ol>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-amber-500/10 border-2 border-amber-500/40 p-4 rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-amber-900 text-sm">☀️ Warm Day Trigger (&gt;75°F)</span>
+              <span class="text-xs bg-amber-500 text-slate-950 font-bold px-2 py-0.5 rounded">Summer Promo</span>
+            </div>
+            <ul class="text-xs text-amber-950 list-disc list-inside space-y-1">
+              <li>Auto-spotlights chilled Powerade, iced tea, and cold drinks.</li>
+              <li>Applies automated <strong>25¢ beverage discount</strong> across kiosk and POS cart calculations.</li>
+              <li>Triggers customer screen banner: <em>"25¢ Off Cold Drinks Today!"</em></li>
+            </ul>
+          </div>
+
+          <div class="bg-blue-500/10 border-2 border-blue-500/40 p-4 rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-blue-900 text-sm">❄️ Chilly Morning Trigger (&lt;50°F)</span>
+              <span class="text-xs bg-blue-600 text-white font-bold px-2 py-0.5 rounded">Winter Promo</span>
+            </div>
+            <ul class="text-xs text-blue-950 list-disc list-inside space-y-1">
+              <li>Auto-spotlights warm pastries, hot chocolate, and fresh popcorn.</li>
+              <li>Applies bundle savings on morning bakery items.</li>
+              <li>Triggers customer screen banner: <em>"Warm Treat Deals Active!"</em></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAPTER 7 -->
+      <section id="ch-7" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">07</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">Crisis Evasion & Dual-Interface Assignment Disguise</h2>
+            <p class="text-xs text-slate-500 font-mono">Instant operational masking, classroom assignment disguise, and hardware triggers</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-600">
+          In the event of approaching administrative staff or unannounced perimeter inspections, operators must execute the <strong>Crisis Evasion Disguise Protocol</strong>. This immediately freezes all transaction state and replaces both UI screens with standard academic assignments in &lt;16ms:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider text-blue-600 font-mono">
+              Cashier POS Screen Mask
+            </h3>
+            <p class="text-xs text-slate-600">
+              Swaps to a full-fidelity <strong>Google Docs AP Environmental Science Assignment</strong> with formatted study guide questions, soil horizon diagrams, and editable essay fields.
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider text-emerald-600 font-mono">
+              Customer 2nd Display Mask
+            </h3>
+            <p class="text-xs text-slate-600">
+              Swaps to the <strong>Oakridge High School LMS Student Digital Reader</strong> displaying Chapter 4 Ecology reading materials and interactive reading progress bars.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 text-white p-4 rounded-xl space-y-2 text-xs">
+          <strong class="text-amber-400 font-mono block">STEALTH TRIGGER SHORTCUTS:</strong>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-center">
+            <div class="bg-slate-800 p-2 rounded border border-slate-700 font-bold text-amber-300">Alt + S</div>
+            <div class="bg-slate-800 p-2 rounded border border-slate-700 font-bold text-amber-300">F2 Key</div>
+            <div class="bg-slate-800 p-2 rounded border border-slate-700 font-bold text-amber-300">3x Esc Tap</div>
+            <div class="bg-slate-800 p-2 rounded border border-slate-700 font-bold text-amber-300">Top-Left Pixel</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="page-break"></div>
+
+      <!-- CHAPTER 8 -->
+      <section id="ch-8" class="sop-card bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-sm">08</span>
+          <div>
+            <h2 class="font-extrabold text-slate-950 text-xl tracking-tight">End-of-Day Shift Reconciliation & Vault Audit</h2>
+            <p class="text-xs text-slate-500 font-mono">Cash float counting, mathematical delta reconciliation, and secure locker stowage</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-600">
+          At 08:44:00 AM sharp, the cashier initiates the mandatory drawer audit protocol:
+        </p>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
+          <h3 class="font-bold text-slate-900 text-sm">Reconciliation Formula & Variance Auditing:</h3>
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 font-mono text-center text-xs sm:text-sm font-bold text-slate-800">
+            $$\text{Expected Cash} = \text{Starting Float} + \sum \text{Cash Sales} - \sum \text{Cash Refunds}$$
+            $$\Delta = \text{Counted Cash} - \text{Expected Cash}$$
+          </div>
+
+          <ol class="list-decimal list-inside space-y-1.5 text-slate-700 pl-1">
+            <li>Click <strong>Close Register</strong> in the top header to lock checkout operations.</li>
+            <li>Perform manual count of all physical bills ($20, $10, $5, $1) and coins (quarters, dimes, nickels).</li>
+            <li>Enter physical count into the <strong>Ending Cash ($)</strong> field.</li>
+            <li>Verify drawer status displays <span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold font-mono">EXACT ($0.00)</span> or record variance explanation.</li>
+            <li>Click <strong>Reconcile & Close Shift</strong> to seal the ledger entry in the SQLite database.</li>
+            <li>Place cash box and remaining bins into Locker Vault #314, rotate combination dial 3 full turns counter-clockwise to scramble lock, and depart for first period.</li>
+          </ol>
+        </div>
       </section>
 
     </div>
 
     <!-- Document Footer -->
-    <footer class="mt-12 pt-6 border-t-2 border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-      <div>
-        <strong>Jordan's Snack Shack</strong> • Standard Operating Procedures Manual
+    <footer class="mt-14 pt-8 border-t-2 border-slate-300 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🍿</span>
+        <span><strong>Jordan's Snack Shack Enterprise</strong> • Forsyth County, GA</span>
       </div>
-      <div>
-        Generated for Store Management & Crew • Forsyth County, GA
+      <div class="font-mono text-[11px] text-slate-400">
+        Generated: September 2026 • Confidential Retail SOP Manual
       </div>
     </footer>
 
   </main>
 
   <script>
-    // Auto-focus print if opened with ?print=true
     if (window.location.search.includes('print=true')) {
       setTimeout(() => window.print(), 500);
     }

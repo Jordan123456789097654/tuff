@@ -75,6 +75,28 @@
     </div>
   </div>
 
+  <!-- AUDIO UNLOCK BANNER (If Browser Auto-Plays Muted) -->
+  <div id="audio-unlock-banner" class="hidden bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-700 text-white font-bold text-xs py-2 px-4 flex items-center justify-between shadow-lg cursor-pointer animate-in fade-in" onclick="unlockAudioSystem()">
+    <div class="flex items-center gap-2">
+      <span class="text-base animate-bounce">🔊</span>
+      <span>Voice Audio & Announcements are muted by your browser. Tap here to enable sound!</span>
+    </div>
+    <button class="bg-white text-purple-950 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider shadow hover:bg-purple-100 transition">
+      Enable Audio Now
+    </button>
+  </div>
+
+  <!-- DYNAMIC WEATHER AUTO-DEALS BANNER -->
+  <div id="display-weather-deals-bar" class="hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white font-extrabold text-xs py-1.5 px-4 shadow-md flex items-center justify-between gap-3 shrink-0">
+    <div class="flex items-center gap-2">
+      <span id="weather-deal-icon" class="text-base">☀️</span>
+      <span id="weather-deal-title" class="tracking-wide uppercase font-heading text-xs">DYNAMIC WEATHER AUTO-PROMO ACTIVE</span>
+    </div>
+    <span id="weather-deal-badge" class="font-bold text-[11px] bg-slate-950 text-cyan-300 px-3 py-0.5 rounded-full border border-cyan-400/40">
+      25¢ Off Cold Drinks Today (>75°F)
+    </span>
+  </div>
+
   <!-- HAPPY HOUR FLASH DEALS BANNER -->
   <div id="display-happy-hour-bar" class="hidden bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-slate-950 font-extrabold text-xs py-2 px-4 shadow-xl flex items-center justify-between gap-3 shrink-0 animate-pulse">
     <div class="flex items-center gap-2">
@@ -122,22 +144,28 @@
 
     <!-- Live Clock, Buttons & Sync Status -->
     <div class="flex items-center gap-2">
+      <!-- Self-Checkout Kiosk Mode Toggle -->
+      <button id="display-btn-kiosk" onclick="toggleKioskMode()" class="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Switch between Customer Display & Self-Checkout Kiosk">
+        <span>🛒</span>
+        <span id="kiosk-toggle-label" class="hidden sm:inline">Self-Checkout</span>
+      </button>
+
+      <!-- Apple Wallet & Digital ID Pass Generator -->
+      <button id="display-btn-apple-wallet" onclick="openAppleWalletPassModal()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Generate Apple Wallet / Printable ID Pass">
+        <span>💳</span>
+        <span class="hidden md:inline">Wallet Pass</span>
+      </button>
+
+      <!-- Always-On Security CCTV Toggle -->
+      <button id="display-btn-cctv" onclick="toggleSecurityCctv()" class="flex items-center gap-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition active:scale-95" title="Toggle Live Security CCTV Monitoring Feed">
+        <span class="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
+        <span class="hidden lg:inline">CCTV</span>
+      </button>
+
       <!-- Full Live Menu Board Trigger -->
       <button id="display-btn-menu" onclick="openDisplayMenu()" class="flex items-center gap-1.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-white border border-amber-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>📋</span>
-        <span class="hidden md:inline">Full Menu</span>
-      </button>
-
-      <!-- Nutrition & Menu Inspector Trigger -->
-      <button id="display-btn-nutrition" onclick="openNutritionModal()" class="flex items-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
-        <span>🍎</span>
-        <span class="hidden lg:inline">Nutrition & Allergens</span>
-      </button>
-
-      <!-- Wishlist Suggestion Trigger -->
-      <button id="display-btn-wishlist" onclick="openWishlistModal()" class="flex items-center gap-1.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 hover:text-white border border-purple-500/40 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
-        <span>💡</span>
-        <span class="hidden md:inline">Snack Wishlist</span>
+        <span class="hidden md:inline">Menu</span>
       </button>
 
       <!-- Student Face ID Scanner Trigger -->
@@ -161,7 +189,7 @@
       <!-- Lucky Spin Wheel Trigger -->
       <button id="display-btn-spin" onclick="openSpinWheel()" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md transition active:scale-95">
         <span>🎟️</span>
-        <span class="hidden sm:inline">Spin Wheel</span>
+        <span class="hidden sm:inline">Spin</span>
       </button>
 
       <div id="sync-status-badge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold shadow-sm">
@@ -176,6 +204,130 @@
 
   <!-- MAIN DYNAMIC CONTENT AREA -->
   <main class="flex-1 flex overflow-y-auto p-4 sm:p-6 items-center justify-center">
+
+    <!-- ==================================================== -->
+    <!-- VIEW KIOSK: CUSTOMER SELF-CHECKOUT KIOSK MODE -->
+    <!-- ==================================================== -->
+    <div id="view-kiosk" class="hidden w-full flex-1 flex flex-col max-w-7xl mx-auto space-y-4 animate-in fade-in zoom-in duration-200 py-2 h-full">
+      <!-- Top Kiosk Bar -->
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-orange-500/10 text-orange-400 border border-orange-500/30 flex items-center justify-center text-xl font-bold">
+            🛒
+          </div>
+          <div>
+            <h2 class="font-heading font-extrabold text-lg text-white flex items-center gap-2">
+              <span>Self-Checkout Kiosk</span>
+              <span class="text-[10px] bg-orange-500 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase">Fast Lane</span>
+            </h2>
+            <p class="text-xs text-slate-400">Tap snacks below to add to your order, then pay with your Student Pass or QR</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Category Filter Buttons -->
+          <div class="flex flex-wrap gap-1.5" id="kiosk-category-pills">
+            <button onclick="filterKioskCategory(null)" class="kiosk-cat-pill active bg-orange-500 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl transition">All</button>
+            <button onclick="filterKioskCategory('Chips')" class="kiosk-cat-pill bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition">🥔 Chips</button>
+            <button onclick="filterKioskCategory('Drinks')" class="kiosk-cat-pill bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition">🥤 Drinks</button>
+            <button onclick="filterKioskCategory('Candy')" class="kiosk-cat-pill bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition">🍬 Candy</button>
+          </div>
+
+          <button onclick="toggleKioskMode(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition">
+            Exit Kiosk
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Kiosk Body: Grid on Left, Cart on Right -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
+        
+        <!-- Left 2 Cols: Product Catalog Grid -->
+        <div class="lg:col-span-2 overflow-y-auto pr-1 space-y-3 max-h-[72vh]">
+          <div id="kiosk-products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+
+        <!-- Right Col: Interactive Self-Checkout Cart -->
+        <div class="bg-slate-900 border-2 border-orange-500/40 rounded-3xl p-5 flex flex-col justify-between shadow-2xl space-y-4 max-h-[75vh]">
+          <div class="space-y-3 flex-1 flex flex-col min-h-0">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <span class="font-heading font-extrabold text-sm text-white flex items-center gap-1.5">
+                <span>🛍️</span> Your Self-Checkout Cart
+              </span>
+              <button onclick="clearKioskCart()" class="text-[11px] text-rose-400 hover:text-rose-300 font-bold">Clear All</button>
+            </div>
+
+            <!-- Student Pass Scanner Bar -->
+            <div id="kiosk-student-bar" class="bg-slate-950 border border-slate-800 p-2.5 rounded-2xl flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div id="kiosk-student-avatar" class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-sm shrink-0">
+                  👤
+                </div>
+                <div class="min-w-0">
+                  <div id="kiosk-student-name" class="font-bold text-xs text-white truncate">Guest Customer</div>
+                  <div id="kiosk-student-info" class="text-[10px] text-slate-400 font-mono">No Pass Selected</div>
+                </div>
+              </div>
+
+              <button onclick="openDisplayFaceScanner()" class="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] px-2.5 py-1.5 rounded-xl transition shadow-md shrink-0 flex items-center gap-1">
+                <span>👤</span>
+                <span>Scan Pass</span>
+              </button>
+            </div>
+
+            <!-- Cart Items Scroll List -->
+            <div id="kiosk-cart-items" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[120px]">
+              <div class="text-center text-slate-500 text-xs py-8">
+                Your cart is empty.<br>Tap snacks on the left to add!
+              </div>
+            </div>
+
+            <!-- Calculations Box -->
+            <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs">
+              <div class="flex justify-between text-slate-400">
+                <span>Subtotal:</span>
+                <span id="kiosk-subtotal" class="font-mono font-bold text-white">$0.00</span>
+              </div>
+              <div id="kiosk-combo-row" class="hidden flex justify-between text-amber-300 font-bold">
+                <span>Auto-Combo Deal:</span>
+                <span id="kiosk-combo-amount" class="font-mono">-$0.50</span>
+              </div>
+              <div id="kiosk-weather-row" class="hidden flex justify-between text-cyan-300 font-bold">
+                <span>Weather Promo:</span>
+                <span id="kiosk-weather-amount" class="font-mono">-$0.25</span>
+              </div>
+              <div class="flex justify-between text-sm font-heading font-extrabold text-white pt-1.5 border-t border-slate-800">
+                <span>Total Due:</span>
+                <span id="kiosk-total" class="text-amber-400 text-lg font-mono font-black">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checkout Buttons -->
+          <div class="space-y-2 pt-1">
+            <button onclick="checkoutKioskPass()" id="btn-kiosk-pass-pay" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition disabled:opacity-50">
+              <i data-lucide="credit-card" class="w-4 h-4"></i>
+              <span>Pay with Student Pass Balance</span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="checkoutKioskQR()" class="bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-emerald-400 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                <span>📱</span>
+                <span>Pay QR (Venmo/CashApp)</span>
+              </button>
+              <button onclick="checkoutKioskCash()" class="bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                <span>💵</span>
+                <span>Pay Cash at Window</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
 
     <!-- ==================================================== -->
     <!-- VIEW 0: REGISTER CLOSED MODE -->
@@ -1318,13 +1470,156 @@
           </div>
         </div>
 
-        <button type="button" onclick="closeDisplayRegisterModal()" class="w-full max-w-md mx-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-xl shadow-emerald-900/30 transition">
-          🚀 Done • Return to Store
+  <!-- ==================================================== -->
+  <!-- MODAL: 💳 APPLE WALLET & DIGITAL ID PASS GENERATOR -->
+  <!-- ==================================================== -->
+  <div id="modal-apple-wallet-pass" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto">
+      <button onclick="closeAppleWalletPassModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl font-bold shadow-lg">
+          💳
+        </div>
+        <div>
+          <h3 class="font-heading font-extrabold text-xl text-white flex items-center gap-2">
+            <span>Apple Wallet & Digital Student Pass</span>
+            <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">Digital ID</span>
+          </h3>
+          <p class="text-xs text-slate-400">Save your Snack Shack pass to your phone or export printable lanyard cards</p>
+        </div>
+      </div>
+
+      <!-- Pass Search / Student Selector -->
+      <div class="flex gap-2">
+        <input
+          type="text"
+          id="wallet-search-input"
+          placeholder="Enter Student Name or ID (e.g. STU-1082)..."
+          class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white uppercase font-mono focus:outline-none focus:border-indigo-500"
+          onkeyup="if(event.key==='Enter') searchAndRenderWalletPass()"
+        />
+        <button onclick="searchAndRenderWalletPass()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition">
+          🔍 Find Pass
+        </button>
+      </div>
+
+      <!-- Interactive Apple Wallet Simulated Card -->
+      <div id="wallet-pass-card-container" class="flex justify-center py-2">
+        <div id="apple-wallet-card" class="w-80 sm:w-96 bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 rounded-3xl p-5 border-2 border-indigo-500/50 shadow-2xl space-y-4 text-white relative overflow-hidden">
+          
+          <!-- Top Pass Strip -->
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🍿</span>
+              <div>
+                <span class="text-[9px] uppercase tracking-widest text-indigo-400 font-bold block">Apple Wallet Pass</span>
+                <strong class="text-xs font-black text-white">JORDAN'S SNACK SHACK</strong>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 text-[10px] text-slate-300 font-mono">
+              <span>📶 NFC TAP</span>
+            </div>
+          </div>
+
+          <!-- Student Profile & Balance Row -->
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div id="wallet-card-avatar" class="w-14 h-14 rounded-2xl border-2 border-indigo-400 overflow-hidden bg-slate-800 flex items-center justify-center text-3xl shadow-md">
+                👤
+              </div>
+              <div class="min-w-0">
+                <span id="wallet-card-grade" class="text-[10px] text-indigo-300 font-bold uppercase block">9th Grade</span>
+                <h4 id="wallet-card-name" class="font-heading font-black text-base text-white truncate">Student Name</h4>
+                <div id="wallet-card-id" class="font-mono text-xs text-amber-400 font-bold">STU-10042</div>
+              </div>
+            </div>
+
+            <div class="text-right">
+              <span class="text-[9px] text-slate-400 uppercase font-bold block">Prepaid Balance</span>
+              <div id="wallet-card-balance" class="font-heading font-extrabold text-xl text-emerald-400">$0.00</div>
+            </div>
+          </div>
+
+          <!-- Loyalty Stamps Strip -->
+          <div class="bg-slate-950/90 p-2.5 rounded-xl border border-slate-800 space-y-1">
+            <div class="flex justify-between text-[9px] text-slate-400 font-bold">
+              <span>10-STAMP PUNCH CARD:</span>
+              <span id="wallet-card-stamps" class="text-amber-300 font-bold">1 / 10 Stamps</span>
+            </div>
+            <div class="grid grid-cols-10 gap-1 text-center text-[10px]" id="wallet-stamps-grid">
+              <span class="bg-amber-500 text-slate-950 font-bold rounded py-0.5">⭐</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">2</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">3</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">4</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">5</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">6</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">7</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">8</span>
+              <span class="bg-slate-900 border border-slate-800 text-slate-600 rounded py-0.5">9</span>
+              <span class="bg-slate-900 border border-amber-500/30 text-amber-400 rounded py-0.5">🎁</span>
+            </div>
+          </div>
+
+          <!-- White Scannable Barcode Strip (Apple Wallet Style) -->
+          <div class="bg-white p-2.5 rounded-2xl flex flex-col items-center justify-center space-y-1 text-slate-900 shadow-inner">
+            <div id="wallet-barcode-container" class="font-mono tracking-widest text-xs font-black select-all py-1">
+              ||| | |||| | ||||| ||| | ||| |||||
+            </div>
+            <span id="wallet-barcode-num" class="font-mono text-[10px] text-slate-600 font-extrabold tracking-wider">STU-10042</span>
+          </div>
+
+          <div class="text-[9px] text-slate-500 text-center">
+            Valid at Jordan's Snack Shack • Forsyth County, GA
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+        <button onclick="downloadAppleWalletCardImage()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2 transition active:scale-95">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Save Pass to Phone / Photos</span>
+        </button>
+
+        <button onclick="openPrintableBadgeSheet()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white border border-emerald-500/40 font-extrabold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition active:scale-95">
+          <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i>
+          <span>Print PVC Lanyard Badges (PDF)</span>
         </button>
       </div>
 
     </div>
   </div>
+
+  <!-- ==================================================== -->
+  <!-- ALWAYS-ON LIVE SECURITY CCTV MONITORING WIDGET -->
+  <!-- ==================================================== -->
+  <div id="display-security-cctv" class="fixed bottom-4 left-4 z-40 bg-slate-950/90 border-2 border-red-500/70 rounded-2xl shadow-2xl p-2.5 backdrop-blur-md max-w-[200px] sm:max-w-[220px] space-y-1.5 transition-all">
+    <div class="flex items-center justify-between text-[10px] font-extrabold text-red-400">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+        <span>🔴 LIVE CCTV</span>
+      </div>
+      <button onclick="toggleSecurityCctv()" class="text-slate-400 hover:text-white" title="Minimize / Expand">
+        <i data-lucide="minus" class="w-3 h-3" id="cctv-toggle-icon"></i>
+      </button>
+    </div>
+    <div id="cctv-viewport-container" class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-slate-800">
+      <video id="cctv-live-video" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+      <div class="absolute top-1 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-red-400 font-bold flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+        <span>REC</span>
+      </div>
+      <div id="cctv-timestamp" class="absolute bottom-1 right-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-mono text-white">08:00:00</div>
+    </div>
+    <div class="text-[9px] text-slate-400 text-center font-medium leading-tight">
+      Jordan's Snack Shack Security & Loss Prevention
+    </div>
+  </div>
+
 
   <footer class="bg-slate-900/60 border-t border-slate-800/80 px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0">
     <div class="flex items-center gap-2">
@@ -3377,6 +3672,606 @@
       }
     }
 
+    // ==========================================
+    // 🔊 AUDIO & VOICE SYNTHESIS ENGINE
+    // ==========================================
+    let isAudioUnlocked = false;
+    let audioCtx = null;
+    let speakerBannerTimeout = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(()=>{});
+      }
+      return audioCtx;
+    }
+
+    function unlockAudioSystem() {
+      try {
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        isAudioUnlocked = true;
+        const banner = document.getElementById('audio-unlock-banner');
+        if (banner) banner.classList.add('hidden');
+
+        // Play pleasant chime
+        playChimeSound('welcome');
+
+        // Test speech
+        if ('speechSynthesis' in window) {
+          const testUtt = new SpeechSynthesisUtterance("Jordan's Snack Shack audio active!");
+          testUtt.volume = 0.9;
+          testUtt.rate = 1.0;
+          window.speechSynthesis.speak(testUtt);
+        }
+      } catch (err) {
+        console.warn('Audio unlock notice:', err);
+      }
+    }
+
+    // Auto-unlock on first user interaction anywhere on screen
+    window.addEventListener('click', () => {
+      if (!isAudioUnlocked) unlockAudioSystem();
+    }, { once: true });
+    window.addEventListener('touchstart', () => {
+      if (!isAudioUnlocked) unlockAudioSystem();
+    }, { once: true });
+
+    function playChimeSound(type = 'bell') {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(587.33, now); // D5
+        o.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+        g.gain.setValueAtTime(0.3, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(now);
+        o.stop(now + 0.4);
+      } catch(e){}
+    }
+
+    function playSpeakerBroadcast(text, emoji = '📢') {
+      if (!text) return;
+
+      // 1. Show Pop-up Banner
+      const banner = document.getElementById('display-speaker-banner');
+      const emojiEl = document.getElementById('speaker-banner-emoji');
+      const textEl = document.getElementById('speaker-banner-text');
+
+      if (banner && textEl) {
+        if (emojiEl) emojiEl.textContent = emoji;
+        textEl.textContent = text;
+        banner.classList.remove('hidden');
+
+        if (speakerBannerTimeout) clearTimeout(speakerBannerTimeout);
+        speakerBannerTimeout = setTimeout(() => {
+          banner.classList.add('hidden');
+        }, 8000);
+      }
+
+      // 2. Play chime
+      playChimeSound('bell');
+
+      // 3. Web Speech Synthesis Voice Announcement
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.volume = 1.0;
+          utterance.rate = 1.02;
+          utterance.pitch = 1.05;
+
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const englishVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Alex')));
+            if (englishVoice) utterance.voice = englishVoice;
+          }
+
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          console.warn('Speech synthesis error:', err);
+        }
+      }
+    }
+
+    // ==========================================
+    // 🔴 ALWAYS-ON SECURITY CCTV MONITOR
+    // ==========================================
+    let cctvStream = null;
+    let isCctvMinimized = false;
+
+    async function startSecurityCctv() {
+      const video = document.getElementById('cctv-live-video');
+      if (!video) return;
+      try {
+        cctvStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: 320, height: 320 }
+        });
+        video.srcObject = cctvStream;
+        video.play().catch(()=>{});
+      } catch (err) {
+        console.warn('Security CCTV stream notice:', err);
+      }
+    }
+
+    function toggleSecurityCctv() {
+      const widget = document.getElementById('display-security-cctv');
+      const container = document.getElementById('cctv-viewport-container');
+      const icon = document.getElementById('cctv-toggle-icon');
+      if (!container || !widget) return;
+
+      isCctvMinimized = !isCctvMinimized;
+      container.classList.toggle('hidden', isCctvMinimized);
+      if (icon) {
+        icon.setAttribute('data-lucide', isCctvMinimized ? 'maximize-2' : 'minus');
+        lucide.createIcons();
+      }
+    }
+
+    setInterval(() => {
+      const ts = document.getElementById('cctv-timestamp');
+      if (ts) {
+        ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+    }, 1000);
+
+    // ==========================================
+    // 🛒 SELF-CHECKOUT KIOSK MODE
+    // ==========================================
+    let isKioskActive = false;
+    let kioskProducts = [];
+    let kioskCart = [];
+    let kioskActiveCategory = null;
+    let kioskCustomer = null;
+
+    async function toggleKioskMode(force = null) {
+      isKioskActive = (force !== null) ? !!force : !isKioskActive;
+      const kioskView = document.getElementById('view-kiosk');
+      const idleView = document.getElementById('view-idle');
+      const activeView = document.getElementById('view-active');
+      const toggleBtnLabel = document.getElementById('kiosk-toggle-label');
+
+      if (kioskView) kioskView.classList.toggle('hidden', !isKioskActive);
+      if (isKioskActive) {
+        if (idleView) idleView.classList.add('hidden');
+        if (activeView) activeView.classList.add('hidden');
+        if (toggleBtnLabel) toggleBtnLabel.textContent = 'Exit Kiosk';
+        await loadKioskProducts();
+        renderKioskCart();
+      } else {
+        if (toggleBtnLabel) toggleBtnLabel.textContent = 'Self-Checkout';
+        loadInitialDisplayState();
+      }
+    }
+
+    async function loadKioskProducts() {
+      try {
+        const res = await fetch('/api/products');
+        kioskProducts = await res.json();
+        renderKioskProducts();
+      } catch (e) {
+        console.warn('Kiosk products fetch error:', e);
+      }
+    }
+
+    function filterKioskCategory(cat) {
+      kioskActiveCategory = cat;
+      document.querySelectorAll('.kiosk-cat-pill').forEach(btn => {
+        btn.className = 'kiosk-cat-pill bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition';
+      });
+      if (event && event.target) {
+        event.target.className = 'kiosk-cat-pill active bg-orange-500 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl transition';
+      }
+      renderKioskProducts();
+    }
+
+    function renderKioskProducts() {
+      const container = document.getElementById('kiosk-products-grid');
+      if (!container) return;
+
+      let list = kioskProducts.filter(p => p.is_active !== false);
+      if (kioskActiveCategory) {
+        list = list.filter(p => (p.category_name && p.category_name.toLowerCase().includes(kioskActiveCategory.toLowerCase())) ||
+                                (p.name && p.name.toLowerCase().includes(kioskActiveCategory.toLowerCase())));
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = '<div class="col-span-full text-center text-slate-500 text-xs py-8">No snacks found in this category.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(p => `
+        <div onclick="addKioskItem(${p.id})" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-orange-500/50 p-3.5 rounded-3xl flex flex-col justify-between space-y-2 cursor-pointer transition transform hover:scale-[1.02] active:scale-98 shadow-md group select-none">
+          <div class="flex items-center justify-between">
+            <span class="text-3xl group-hover:scale-110 transition">${p.emoji || '🍿'}</span>
+            <span class="font-mono font-bold text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-lg">$${parseFloat(p.price).toFixed(2)}</span>
+          </div>
+          <div>
+            <h4 class="font-heading font-extrabold text-xs text-white line-clamp-1">${p.name}</h4>
+            <div class="text-[10px] text-slate-400">${p.stock_quantity > 0 ? `${p.stock_quantity} left` : '<span class="text-rose-400">Out of stock</span>'}</div>
+          </div>
+          <button class="w-full bg-orange-500/20 group-hover:bg-orange-500 text-orange-300 group-hover:text-slate-950 font-bold py-1.5 rounded-xl text-xs flex items-center justify-center gap-1 transition">
+            <span>+ Add</span>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function addKioskItem(productId) {
+      const prod = kioskProducts.find(p => p.id === productId);
+      if (!prod) return;
+      const existing = kioskCart.find(i => i.id === productId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        kioskCart.push({ ...prod, quantity: 1 });
+      }
+      playChimeSound('bell');
+      renderKioskCart();
+    }
+
+    function updateKioskQty(productId, delta) {
+      const item = kioskCart.find(i => i.id === productId);
+      if (!item) return;
+      item.quantity += delta;
+      if (item.quantity <= 0) {
+        kioskCart = kioskCart.filter(i => i.id !== productId);
+      }
+      renderKioskCart();
+    }
+
+    function clearKioskCart() {
+      kioskCart = [];
+      renderKioskCart();
+    }
+
+    function renderKioskCart() {
+      const container = document.getElementById('kiosk-cart-items');
+      const subtotalEl = document.getElementById('kiosk-subtotal');
+      const totalEl = document.getElementById('kiosk-total');
+      const comboRow = document.getElementById('kiosk-combo-row');
+      const weatherRow = document.getElementById('kiosk-weather-row');
+      const payPassBtn = document.getElementById('btn-kiosk-pass-pay');
+
+      if (!container) return;
+
+      if (kioskCart.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-500 text-xs py-8">Your cart is empty.<br>Tap snacks on the left to add!</div>';
+        if (subtotalEl) subtotalEl.textContent = '$0.00';
+        if (totalEl) totalEl.textContent = '$0.00';
+        if (comboRow) comboRow.classList.add('hidden');
+        if (weatherRow) weatherRow.classList.add('hidden');
+        return;
+      }
+
+      container.innerHTML = kioskCart.map(item => `
+        <div class="bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-lg shrink-0">${item.emoji || '🍿'}</span>
+            <div class="min-w-0">
+              <div class="font-bold text-xs text-white truncate">${item.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono">$${parseFloat(item.price).toFixed(2)} each</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="updateKioskQty(${item.id}, -1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center">-</button>
+            <span class="font-mono font-bold text-xs text-white px-1.5">${item.quantity}</span>
+            <button onclick="updateKioskQty(${item.id}, 1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center">+</button>
+          </div>
+        </div>
+      `).join('');
+
+      let subtotal = kioskCart.reduce((sum, i) => sum + (parseFloat(i.price) * i.quantity), 0);
+      
+      let hasDrink = kioskCart.some(i => (i.category_name && i.category_name.toLowerCase().includes('drink')) || (i.name && (i.name.toLowerCase().includes('powerade') || i.name.toLowerCase().includes('tea') || i.name.toLowerCase().includes('water'))));
+      let hasSnack = kioskCart.some(i => !((i.category_name && i.category_name.toLowerCase().includes('drink')) || (i.name && (i.name.toLowerCase().includes('powerade') || i.name.toLowerCase().includes('tea') || i.name.toLowerCase().includes('water')))));
+      
+      let comboDiscount = (hasDrink && hasSnack) ? 0.50 : 0.00;
+      let weatherDiscount = (currentTemperature > 75 && hasDrink) ? 0.25 : 0.00;
+
+      let total = Math.max(0, subtotal - comboDiscount - weatherDiscount);
+
+      if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+      if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
+
+      if (comboRow) {
+        comboRow.classList.toggle('hidden', comboDiscount <= 0);
+      }
+      if (weatherRow) {
+        weatherRow.classList.toggle('hidden', weatherDiscount <= 0);
+      }
+
+      if (payPassBtn) {
+        payPassBtn.disabled = kioskCart.length === 0;
+      }
+    }
+
+    async function checkoutKioskPass() {
+      if (kioskCart.length === 0) return alert('Cart is empty!');
+      if (!kioskCustomer) {
+        openDisplayFaceScanner();
+        return;
+      }
+
+      const total = parseFloat(document.getElementById('kiosk-total').textContent.replace('$', '')) || 0;
+      if (parseFloat(kioskCustomer.balance || 0) < total) {
+        alert(`Insufficient student balance! (Balance: $${parseFloat(kioskCustomer.balance).toFixed(2)}, Total: $${total.toFixed(2)}). Please reload or pay QR/Cash.`);
+        return;
+      }
+
+      const orderPayload = {
+        cashier_name: 'Self-Checkout Kiosk',
+        payment_method: 'student_pass',
+        student_id: kioskCustomer.id,
+        items: kioskCart.map(i => ({ product_id: i.id, product_name: i.name, unit_price: i.price, quantity: i.quantity, total_price: (i.price * i.quantity) })),
+        subtotal: kioskCart.reduce((sum, i) => sum + (parseFloat(i.price) * i.quantity), 0),
+        discount: 0.50,
+        total: total,
+        amount_paid: total,
+        change_due: 0
+      };
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload)
+        });
+        const orderData = await res.json();
+        
+        kioskCart = [];
+        toggleKioskMode(false);
+        renderState({ state: 'celebrate', order: orderData });
+        confetti({ particleCount: 100, spread: 80 });
+      } catch (err) {
+        console.error('Kiosk checkout error:', err);
+      }
+    }
+
+    function checkoutKioskQR() {
+      if (kioskCart.length === 0) return alert('Cart is empty!');
+      const total = parseFloat(document.getElementById('kiosk-total').textContent.replace('$', '')) || 0;
+      toggleKioskMode(false);
+      renderState({ state: 'active', cart: kioskCart, subtotal: total, total: total, student: kioskCustomer });
+    }
+
+    function checkoutKioskCash() {
+      if (kioskCart.length === 0) return alert('Cart is empty!');
+      alert('🔔 Order placed! Please hand your cash to the cashier at the window.');
+      checkoutKioskQR();
+    }
+
+    // ==========================================
+    // 💳 APPLE WALLET & PRINTABLE ID BADGE GENERATOR
+    // ==========================================
+    let currentWalletStudent = null;
+
+    async function openAppleWalletPassModal(student = null) {
+      const modal = document.getElementById('modal-apple-wallet-pass');
+      if (modal) modal.classList.remove('hidden');
+      if (student) {
+        renderWalletCard(student);
+      } else {
+        try {
+          const res = await fetch('/api/students');
+          const list = await res.json();
+          if (list && list.length > 0) {
+            renderWalletCard(list[0]);
+          }
+        } catch(e){}
+      }
+    }
+
+    function closeAppleWalletPassModal() {
+      const modal = document.getElementById('modal-apple-wallet-pass');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function searchAndRenderWalletPass() {
+      const q = document.getElementById('wallet-search-input').value.trim();
+      if (!q) return;
+      try {
+        const res = await fetch(`/api/students?q=${encodeURIComponent(q)}`);
+        const list = await res.json();
+        if (list && list.length > 0) {
+          renderWalletCard(list[0]);
+        } else {
+          alert('No student found matching that name or ID.');
+        }
+      } catch(e){}
+    }
+
+    function renderWalletCard(student) {
+      if (!student) return;
+      currentWalletStudent = student;
+
+      const nameEl = document.getElementById('wallet-card-name');
+      const idEl = document.getElementById('wallet-card-id');
+      const gradeEl = document.getElementById('wallet-card-grade');
+      const balEl = document.getElementById('wallet-card-balance');
+      const avatarEl = document.getElementById('wallet-card-avatar');
+      const stampsEl = document.getElementById('wallet-card-stamps');
+      const barcodeNum = document.getElementById('wallet-barcode-num');
+
+      if (nameEl) nameEl.textContent = student.name;
+      if (idEl) idEl.textContent = student.student_id;
+      if (gradeEl) gradeEl.textContent = student.grade || '9th Grade';
+      if (balEl) balEl.textContent = `$${parseFloat(student.balance || 0).toFixed(2)}`;
+      if (stampsEl) stampsEl.textContent = `${student.punch_card || 1} / 10 Stamps`;
+      if (barcodeNum) barcodeNum.textContent = student.student_id;
+
+      if (avatarEl) {
+        if (student.photo_data) {
+          avatarEl.innerHTML = `<img src="${student.photo_data}" class="w-full h-full object-cover" />`;
+        } else {
+          avatarEl.innerHTML = '👤';
+        }
+      }
+    }
+
+    function downloadAppleWalletCardImage() {
+      if (!currentWalletStudent) return alert('Please select a student pass first.');
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = 600;
+      canvas.height = 800;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0f172a';
+      if (ctx.roundRect) ctx.roundRect(20, 20, 560, 760, 32);
+      else ctx.rect(20, 20, 560, 760);
+      ctx.fill();
+
+      const grad = ctx.createLinearGradient(20, 20, 580, 200);
+      grad.addColorStop(0, '#4338ca');
+      grad.addColorStop(1, '#6366f1');
+      ctx.fillStyle = grad;
+      if (ctx.roundRect) ctx.roundRect(20, 20, 560, 160, [32, 32, 0, 0]);
+      else ctx.rect(20, 20, 560, 160);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText("JORDAN'S SNACK SHACK", 50, 80);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#c7d2fe';
+      ctx.fillText("OFFICIAL STUDENT DIGITAL PASS", 50, 110);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText(currentWalletStudent.name, 50, 240);
+      ctx.font = 'bold 18px monospace';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(currentWalletStudent.student_id, 50, 275);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(currentWalletStudent.grade || '9th Grade', 50, 305);
+
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 36px monospace';
+      ctx.fillText(`$${parseFloat(currentWalletStudent.balance || 0).toFixed(2)}`, 380, 260);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px sans-serif';
+      ctx.fillText("PREPAID BALANCE", 380, 290);
+
+      ctx.fillStyle = '#1e293b';
+      if (ctx.roundRect) ctx.roundRect(50, 350, 500, 70, 16);
+      else ctx.rect(50, 350, 500, 70);
+      ctx.fill();
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(`⭐ LOYALTY STAMPS: ${currentWalletStudent.punch_card || 1} OF 10 STAMPS`, 70, 392);
+
+      ctx.fillStyle = '#ffffff';
+      if (ctx.roundRect) ctx.roundRect(50, 460, 500, 220, 20);
+      else ctx.rect(50, 460, 500, 220);
+      ctx.fill();
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 32px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText("||||| ||| |||| | ||||| ||| |||", 300, 560);
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(currentWalletStudent.student_id, 300, 620);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText("Scan barcode at register window for 0.2s checkout", 300, 650);
+
+      const link = document.createElement('a');
+      link.download = `Snack_Shack_Pass_${currentWalletStudent.student_id}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function openPrintableBadgeSheet() {
+      const w = window.open('', '_blank');
+      w.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Jordan's Snack Shack - Printable Student ID Badges</title>
+          <style>
+            @page { size: letter portrait; margin: 0.5in; }
+            body { font-family: sans-serif; margin: 0; padding: 0; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .badge { border: 2px dashed #333; border-radius: 12px; padding: 15px; width: 3.3in; height: 2.1in; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; page-break-inside: avoid; }
+            .badge-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 4px; font-weight: bold; font-size: 11pt; }
+            .badge-body { display: flex; gap: 10px; align-items: center; margin: 6px 0; }
+            .avatar { width: 60px; height: 60px; border: 1px solid #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24pt; background: #eee; }
+            .info { font-size: 10pt; }
+            .name { font-weight: bold; font-size: 12pt; }
+            .barcode { background: #fff; border: 1px solid #999; padding: 4px; text-align: center; font-family: monospace; font-size: 10pt; font-weight: bold; letter-spacing: 2px; }
+          </style>
+        </head>
+        <body>
+          <h2 style="text-align:center; margin-bottom: 15px;">Jordan's Snack Shack • Official Student ID Badges</h2>
+          <div class="grid">
+            \${Array(8).fill(0).map((_, i) => \`
+              <div class="badge">
+                <div class="badge-header">
+                  <span>🍿 JORDAN'S SNACK SHACK</span>
+                  <span>STUDENT PASS</span>
+                </div>
+                <div class="badge-body">
+                  <div class="avatar">\${currentWalletStudent && currentWalletStudent.photo_data ? \`<img src="\${currentWalletStudent.photo_data}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />\` : '👤'}</div>
+                  <div class="info">
+                    <div class="name">\${currentWalletStudent ? currentWalletStudent.name : 'Student Name'}</div>
+                    <div>ID: \${currentWalletStudent ? currentWalletStudent.student_id : 'STU-1002'}</div>
+                    <div>Grade: \${currentWalletStudent ? (currentWalletStudent.grade || '9th') : '9th Grade'}</div>
+                  </div>
+                </div>
+                <div class="barcode">
+                  |||| ||| ||||| || ||||| <br>
+                  \${currentWalletStudent ? currentWalletStudent.student_id : 'STU-1002'}
+                </div>
+              </div>
+            \`).join('')}
+          </div>
+          <script>setTimeout(() => window.print(), 500);<\\/script>
+        </body>
+        </html>
+      `);
+      w.document.close();
+    }
+
+    // ==========================================
+    // 🌤️ DYNAMIC WEATHER AUTO-DEALS ENGINE
+    // ==========================================
+    let currentTemperature = 78;
+
+    function checkDynamicWeatherDeals() {
+      const banner = document.getElementById('display-weather-deals-bar');
+      const icon = document.getElementById('weather-deal-icon');
+      const badge = document.getElementById('weather-deal-badge');
+
+      if (!banner) return;
+
+      if (currentTemperature >= 75) {
+        banner.classList.remove('hidden');
+        if (icon) icon.textContent = '☀️';
+        if (badge) badge.textContent = `25¢ Off Cold Drinks & Slushies Today (${currentTemperature}°F Warm Day Promo!)`;
+      } else if (currentTemperature <= 50) {
+        banner.classList.remove('hidden');
+        if (icon) icon.textContent = '❄️';
+        if (badge) badge.textContent = `Free Hot Cocoa / Warm Snack Deal (${currentTemperature}°F Chilly Morning Promo!)`;
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
     function handleIncomingSyncMessage(data) {
       if (!data) return;
       if (data.type === 'settings_update') {
@@ -3389,11 +4284,21 @@
         isShiftActive = !!data.active;
         updateDisplayShiftUI();
       } else if (data.type === 'speaker_broadcast') {
-        showSpeakerBroadcastBanner(data.text || data.message, data.emoji);
+        playSpeakerBroadcast(data.text || data.message, data.emoji);
       } else if (data.type === 'birthday_alert') {
         triggerBirthdaySiren(data.student?.name || 'Alex');
       } else if (data.type === 'request_display_face_scan') {
         openDisplayFaceScanner();
+      } else if (data.type === 'student_face_identified') {
+        kioskCustomer = data.student;
+        const nameEl = document.getElementById('kiosk-student-name');
+        const infoEl = document.getElementById('kiosk-student-info');
+        const avEl = document.getElementById('kiosk-student-avatar');
+        if (nameEl) nameEl.textContent = data.student.name;
+        if (infoEl) infoEl.textContent = `Balance: $${parseFloat(data.student.balance || 0).toFixed(2)}`;
+        if (avEl && data.student.photo_data) {
+          avEl.innerHTML = `<img src="${data.student.photo_data}" class="w-full h-full object-cover rounded-full" />`;
+        }
       } else if (data.state) {
         renderState(data);
       }
@@ -3536,8 +4441,11 @@
     loadTrending();
     loadWeatherForecast();
     loadSecretDailyPassword();
+    checkDynamicWeatherDeals();
+    startSecurityCctv();
     setInterval(loadAnnouncements, 60000);
     setInterval(loadTrending, 30000);
+    setInterval(checkDynamicWeatherDeals, 60000);
 
     // ==========================================
     // 📚 STEALTH MODE / SCHOOL DISGUISE (DISPLAY)
